@@ -4,9 +4,9 @@
  */
 
 export const APP_CONFIG = {
-  VERSION: "Kalejdoskop_36",
-  API_URL: "https://script.google.com/macros/s/AKfycbxCMvWgJ0br3tJCKWAsy9x1SIQIGBq0fociZWVTEC85_QYMG5lXsQEFNgzKtkMsnjRd/exec",
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxCMvWgJ0br3tJCKWAsy9x1SIQIGBq0fociZWVTEC85_QYMG5lXsQEFNgzKtkMsnjRd/exec",
+  VERSION: "Kalejdoskop_37",
+  API_URL: "https://script.google.com/macros/s/AKfycbwaPxFAvBkFLAgOBFLWsaVOBYB6pxC4J8Zvvvm9L3L_Te0VxsdNqoqb88KeEJHWT1bx/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwaPxFAvBkFLAgOBFLWsaVOBYB6pxC4J8Zvvvm9L3L_Te0VxsdNqoqb88KeEJHWT1bx/exec",
   HEADERS: {
     "Content-Type": "text/plain;charset=utf-8"
   },
