@@ -1,0 +1,22 @@
+{
+  "name": "kalejdoskop-cafe",
+  "version": "2.0.0",
+  "description": "Kalejdoskop Café - Wirtualna Baza Wiedzy i Potok AI dla SKN Seksuologii",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "gemini",
+    "ai",
+    "sexology",
+    "apps-script",
+    "tailwind"
+  ],
+  "author": "SKN Seksuologii",
+  "license": "MIT",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.2.108"
+  }
+}

@@ -1,0 +1,25 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary and log files
+logs/
+*.log
+scratch/

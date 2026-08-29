@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kalejdoskop Café | Wirtualna Baza Wiedzy & Pipeline AI</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <!-- Custom Light Theme Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Natychmiastowe funkcje modali i wczesna inicjalizacja stanu sesji -->
+  <script>
+    function openLoginModal() {
+      var modal = document.getElementById('loginModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.zIndex = '99999';
+        var pinInput = document.getElementById('authPinInput');
+        if (pinInput) {
+          pinInput.value = '';
+          setTimeout(function() { pinInput.focus(); }, 60);
+        }
+        var errEl = document.getElementById('loginErrorMsg');
+        if (errEl) errEl.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    function closeLoginModal() {
+      var modal = document.getElementById('loginModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.setProperty('display', 'none', 'important');
+      }
+      var pinInput = document.getElementById('authPinInput');
+      if (pinInput) pinInput.value = '';
+    }
+
+    function openUploadModal() {
+      var modal = document.getElementById('uploadModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.zIndex = '99999';
+        if (typeof resetUploadForm === 'function') {
+          resetUploadForm();
+        }
+      }
+    }
+
+    function closeUploadModal() {
+      var modal = document.getElementById('uploadModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    function openConfigModal() {
+      var modal = document.getElementById('configModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.zIndex = '99999';
+        var input = document.getElementById('gasWebAppUrlInput');
+        if (input) {
+          input.value = localStorage.getItem('APPS_SCRIPT_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbzdFSVsOW4Ee68Ny3aaNf-jxlBjZs__nGz8NT6S_sInO61-hBz6sJJbVKXvxMFNBoHZ/exec';
+        }
+      }
+    }
+
+    function closeConfigModal() {
+      var modal = document.getElementById('configModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    function closeSyncModal() {
+      var modal = document.getElementById('syncModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var role = localStorage.getItem('kalejdoskop_role') || sessionStorage.getItem('kc_role');
+      if (role === 'ADMIN') {
+        var uploadBtn = document.getElementById('open-upload-btn');
+        if (uploadBtn) uploadBtn.style.setProperty('display', 'inline-flex', 'important');
+        var syncBtn = document.getElementById('btn-sync-drive');
+        if (syncBtn) syncBtn.style.setProperty('display', 'inline-flex', 'important');
+        var configBtn = document.getElementById('btn-config-drive');
+        if (configBtn) configBtn.style.setProperty('display', 'inline-flex', 'important');
+        var adminBar = document.getElementById('admin-actions-bar');
+        if (adminBar) adminBar.style.setProperty('display', 'block', 'important');
+        var loginBtn = document.getElementById('btnLoginOpen');
+        if (loginBtn) loginBtn.style.setProperty('display', 'none', 'important');
+        var logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) logoutBtn.style.setProperty('display', 'inline-flex', 'important');
+      }
+    });
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Sticky Glassmorphic Light Navbar -->
+  <header class="sticky top-0 z-40 light-header px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all">
+    <div class="flex items-center gap-3.5 min-w-[260px] shrink-0 pr-3 overflow-visible">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-kaleidoscope flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+        <i class="fas fa-shapes text-white text-lg"></i>
+      </div>
+      <div class="overflow-visible whitespace-nowrap">
+        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2 overflow-visible whitespace-nowrap">
+          <span>Kalejdoskop</span>
+          <span class="text-gradient-kaleidoscope italic pr-1 overflow-visible inline-block">Café</span>
+        </h1>
+        <p class="text-[11px] text-slate-500 font-medium tracking-wide uppercase">SKN Seksuologii • Baza Wiedzy & AI</p>
+      </div>
+    </div>
+
+    <!-- Right Controls: Role Badge & Action Buttons -->
+    <div class="flex items-center gap-2">
+      <!-- Badge Roli / Status Sesji -->
+      <div id="auth-role-badge">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          <i class="fas fa-eye text-slate-400"></i> Gość (Widok Publiczny)
+        </span>
+      </div>
+
+      <!-- Pigułka Zalogowanego Użytkownika -->
+      <div id="user-session-pill" class="hidden items-center gap-2 bg-indigo-50/90 border border-indigo-200 rounded-xl px-3 py-1 text-xs shadow-xs" style="display: none;">
+        <span class="font-bold text-slate-900 flex items-center gap-1.5">
+          <i class="fas fa-user-circle text-indigo-600 text-sm"></i>
+          <span id="user-display-name">Członek SKN</span>
+        </span>
+        <span class="text-indigo-300">•</span>
+        <span id="user-display-role" class="font-semibold text-indigo-700 text-[11px]">Członek SKN</span>
+        <button type="button" onclick="handleLogout()" class="ml-1 text-slate-400 hover:text-rose-600 p-0.5 rounded transition cursor-pointer" title="Wyloguj z sesji">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+
+      <!-- Przycisk Logowania Członka -->
+      <button id="btnLoginOpen" onclick="openLoginModal()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
+        <i class="fas fa-id-badge text-xs"></i>
+        <span>Logowanie Członka</span>
+      </button>
+
+      <!-- Przycisk Wyloguj (Zapasowy / Mobile) -->
+      <button id="logout-btn" onclick="handleLogout()" style="display: none;" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-medium border border-slate-200 transition flex items-center gap-1.5 cursor-pointer" title="Wyloguj">
+        <i class="fas fa-sign-out-alt"></i>
+        <span class="hidden sm:inline">Wyloguj</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Header Section -->
+  <section class="w-full text-center pt-6 pb-2 px-4 max-w-5xl mx-auto">
+    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50/80 border border-indigo-100 text-[11px] sm:text-xs text-indigo-700 font-medium mb-2 shadow-sm">
+      <i class="fas fa-sparkles text-amber-500"></i> Standard DSM-5-TR & ICD-11 • Magazyn: Dysk SKN (Bezpieczny) • Soft Delete
+    </div>
+    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-1.5">
+      Inteligentna Biblioteka <span class="text-gradient-kaleidoscope">Seksuologii</span>
+    </h2>
+    <p class="text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
+      Dwuwarstwowe repozytorium publikacji naukowych, abstraktów klinicznych oraz tłumaczeń akademickich SKN.
+    </p>
+  </section>
+
+  <!-- Główny Układ 3-Kolumnowy (Full-Width Dashboard Layout: 250px 1fr 260px) -->
+  <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 flex-1">
+    <div class="grid grid-cols-1 lg:grid-cols-[250px_1fr] xl:grid-cols-[250px_1fr_260px] gap-4 items-start">
+      
+      <!-- 1. LEWY PANEL BOCZNY (Kategorie & Filtry Tematyczne) -->
+      <aside class="sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
+        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <i class="fas fa-shapes text-indigo-600"></i>
+            <span>Kategorie Wiedzy</span>
+          </h3>
+          <span id="total-categories-badge" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">0 prac</span>
+        </div>
+
+        <nav id="categories-container" class="space-y-1.5">
+          <!-- Dynamicznie renderowane pigułki w układzie pionowym przez renderCategoryPills() w app.js -->
+        </nav>
+
+        <div class="pt-2.5 border-t border-slate-100 text-[10.5px] text-slate-400 leading-relaxed">
+          <p><i class="fas fa-sparkles text-amber-500 mr-1"></i> Standardy DSM-5-TR / ICD-11</p>
+        </div>
+      </aside>
+
+      <!-- 2. ŚRODKOWA KOLUMNA GŁÓWNA (Wyszukiwarka & Siatka Publikacji) -->
+      <main class="w-full min-w-0 flex flex-col gap-3.5">
+        <!-- Dyskretny pasek wyszukiwarki z zaawansowanym sortowaniem i filtrami -->
+        <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-3 space-y-2.5">
+          <div class="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-3 py-1.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100">
+            <i class="fas fa-search text-slate-400 text-sm ml-1"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="Szukaj po tytule, autorze, abstrakcie, tagach..." 
+              class="w-full bg-transparent border-0 text-slate-800 placeholder-slate-400 px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-0"
+            >
+            <button id="clear-search-btn" class="hidden text-slate-400 hover:text-slate-600 px-2 py-1 text-sm cursor-pointer" onclick="clearSearchInput()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Pasek Opcji: Sortowanie + Szybki Przełącznik Tłumaczeń + Aktywny Tag -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100/80">
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Dropdown Sortowania -->
+              <div class="flex items-center gap-1.5 text-xs text-slate-600">
+                <i class="fas fa-arrow-down-short-wide text-indigo-500 text-xs"></i>
+                <label for="sort-select" class="font-medium text-[11.5px]">Sortuj:</label>
+                <select id="sort-select" onchange="handleSortChange(this.value)" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer transition">
+                  <option value="date_desc">Najnowsze dodane (domyślnie)</option>
+                  <option value="year_desc">Rok publikacji: od najnowszych (↓)</option>
+                  <option value="year_asc">Rok publikacji: od najstarszych (↑)</option>
+                  <option value="title_asc">Tytuł alfabetycznie (A-Z)</option>
+                  <option value="authors_asc">Autorzy alfabetycznie (A-Z)</option>
+                </select>
+              </div>
+
+              <!-- Szybki Przełącznik Tłumaczeń PL -->
+              <button type="button" id="filter-translation-toggle" onclick="toggleTranslationFilter()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-sm" title="Pokaż tylko artykuły z gotowym tłumaczeniem PL">
+                <i class="fas fa-language text-purple-600"></i>
+                <span id="filter-translation-label">🇵🇱 Tylko z tłumaczeniem PL</span>
+              </button>
+            </div>
+
+            <!-- Aktywny Tag / Filtr Chip -->
+            <div id="active-tag-chip" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-purple-50 text-purple-800 border border-purple-200 font-medium">
+              <i class="fas fa-tag text-[10px] text-purple-600"></i>
+              <span id="active-tag-label">#tag</span>
+              <button type="button" onclick="clearTagFilter()" class="text-purple-400 hover:text-purple-800 ml-1 cursor-pointer font-bold" title="Usuń filtr tagu">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pasek wyników i statusu -->
+        <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-layer-group text-indigo-600"></i>
+            <span>Znalezionych publikacji: <strong id="results-count" class="text-slate-900 font-bold">0</strong></span>
+          </div>
+          <div id="loading-spinner" class="hidden flex items-center gap-2 text-indigo-600 font-medium">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <span>Łączenie z Dyskiem Google...</span>
+          </div>
+        </div>
+
+        <!-- Siatka Kart Publikacji (3 do 4 w jednym rzędzie) -->
+        <div id="articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-full mt-2"></div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16 px-4 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm">
+          <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fas fa-book-reader"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-800 mb-1.5">Brak wyników w tej kategorii</h3>
+          <p class="text-xs text-slate-500 max-w-md mx-auto">
+            Nie znaleziono publikacji odpowiadających Twoim kryteriom wyszukiwania. Spróbuj zmienić zapytanie lub przełączyć kategorię.
+          </p>
+        </div>
+      </main>
+
+      <!-- 3. PRAWY PANEL BOCZNY (Zarządzanie & Dysk Google) -->
+      <aside class="sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
+        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <i class="fas fa-cloud-arrow-up text-indigo-600"></i>
+            <span>Integracja & Narzędzia</span>
+          </h3>
+        </div>
+
+        <!-- Sekcja 1: Status Połączenia (Czysty pionowy flexbox bez nakładania) -->
+        <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex flex-col items-start gap-1.5">
+          <div class="flex items-center gap-2 text-slate-900 font-bold text-xs">
+            <i class="fab fa-google-drive text-emerald-600 text-base shrink-0"></i>
+            <span>Dysk Google</span>
+          </div>
+          <span id="gas-status-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 w-fit max-w-full leading-tight static">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
+            <span id="gas-status-text" class="truncate">Połączono z Google Apps Script</span>
+          </span>
+          <p id="gas-status-subtext" class="text-[10px] text-slate-500">Apps Script Backend</p>
+        </div>
+
+        <!-- Sekcja 2A: Przyciski Administratora (Tylko ADMIN) -->
+        <div id="admin-actions-container" class="space-y-2">
+          <button id="open-upload-btn" onclick="openUploadModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+            <i class="fas fa-file-circle-plus text-sm"></i>
+            <span>Dodaj dokument</span>
+          </button>
+          
+          <button id="btn-sync-drive" onclick="handleSyncDriveFolder()" class="w-full py-2.5 px-3.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+            <i class="fas fa-arrows-rotate text-indigo-600"></i>
+            <span>Skanuj Folder Dysku</span>
+          </button>
+
+          <button id="btn-stats-dashboard" onclick="openStatsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+            <i class="fas fa-chart-pie text-sm"></i>
+            <span>Statystyki Repozytorium</span>
+          </button>
+          
+          <button id="btn-config-drive" onclick="openConfigModal()" class="w-full py-2 px-3 bg-white hover:bg-slate-100 text-slate-600 text-xs font-medium rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fas fa-gear text-slate-500"></i>
+            <span>Ustawienia API</span>
+          </button>
+        </div>
+
+        <!-- Sekcja 2B: Przycisk dla Członka SKN (Zaproponuj publikację) -->
+        <div id="member-actions-container" class="hidden space-y-2" style="display: none;">
+          <button type="button" onclick="sendArticleProposal()" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+            <i class="fas fa-paper-plane text-xs"></i>
+            <span>✉ Zaproponuj publikację do bazy</span>
+          </button>
+        </div>
+
+        <!-- Sekcja 3: Dyskretna informacja systemowa (Tylko ADMIN) -->
+        <div id="admin-system-info" class="border-t border-slate-100 pt-3 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
+          <p class="flex items-center gap-1.5"><i class="fas fa-folder text-amber-500"></i><span>Folder:</span> <strong class="text-slate-700 font-mono text-[10px]">08_Kalejdoskop_Cafe</strong></p>
+          <p class="flex items-center gap-1.5"><i class="fas fa-tag text-indigo-500"></i><span>Prefiks:</span> <code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-700 font-mono text-[10px]">KC-YYYYMMDD...</code></p>
+          <p class="flex items-center gap-1.5 text-emerald-700"><i class="fas fa-shield-halved text-emerald-500"></i><span>Bezpieczny Soft Delete (Kosz)</span></p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-200 bg-white py-6 px-4 sm:px-8 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-700">Kalejdoskop Café</span>
+        <span>•</span>
+        <span>Studenckie Koło Naukowe Seksuologii</span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400">
+        <span>Google Drive API</span>
+        <span>•</span>
+        <span>Magazyn: Dysk SKN (Bezpieczny)</span>
+        <span>•</span>
+        <span>Soft Delete (Kosz)</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: Dwuetapowe Logowanie i Pierwsza Rejestracja Członków SKN -->
+  <div id="loginModal" onclick="handleBackdropClick(event, 'loginModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 cursor-pointer">
+        <i class="fas fa-times text-base"></i>
+      </button>
+      
+      <!-- Nagłówek -->
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-lg shadow-xs">
+          <i class="fas fa-id-card-clip"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Strefa Członkowska SKN</h3>
+          <p class="text-xs text-slate-500">Baza Wiedzy & Materiały Wewnętrzne</p>
+        </div>
+      </div>
+
+      <!-- Przełącznik Zakładek: [ 🔑 Zaloguj się ] | [ 📝 Rejestracja / Wniosek o Dostęp ] -->
+      <div class="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl mb-4 text-xs font-semibold">
+        <button type="button" id="auth-tab-btn-login" onclick="switchAuthTab('login')" class="flex-1 py-1.5 rounded-lg transition-all cursor-pointer bg-white text-indigo-700 shadow-xs font-bold text-center">
+          <i class="fas fa-key mr-1"></i> Logowanie PIN
+        </button>
+        <button type="button" id="auth-tab-btn-activate" onclick="switchAuthTab('activate')" class="flex-1 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 hover:text-indigo-700 text-center">
+          <i class="fas fa-user-plus text-purple-600 mr-1"></i> Rejestracja / Wniosek
+        </button>
+      </div>
+
+      <!-- Komunikat o błędzie -->
+      <div id="loginErrorMsg" class="hidden text-xs text-rose-600 mb-3 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2" style="display: none;">
+        <i class="fas fa-circle-exclamation shrink-0 text-sm"></i>
+        <span id="loginErrorText">Nieprawidłowe dane logowania. Spróbuj ponownie.</span>
+      </div>
+
+      <!-- Komunikat informacyjny (np. reset / re-aktywacja) -->
+      <div id="loginNoticeMsg" class="hidden text-xs text-amber-900 mb-3 p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2" style="display: none;">
+        <i class="fas fa-circle-info shrink-0 text-amber-600 text-sm mt-0.5"></i>
+        <span id="loginNoticeText">Twoje konto wymaga nadania nowego PIN-u (np. po resecie przez Zarząd). Wprowadź dane i ustal nowy kod.</span>
+      </div>
+
+      <!-- WIDOK 1: Logowanie PIN (Domyślny) -->
+      <div id="auth-view-login" class="space-y-3.5">
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5" autocomplete="off">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail lub Numer Indeksu:</label>
+            <input 
+              type="text" 
+              id="authLoginIdentifierInput" 
+              placeholder="np. tomasz@student.wskz.pl lub 15998" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kod PIN / Hasło:</label>
+            <input 
+              type="password" 
+              id="authLoginPinInput" 
+              maxlength="32"
+              placeholder="Wprowadź swój PIN / hasło" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono tracking-wider"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div class="pt-1">
+            <button type="submit" id="submit-login-btn" class="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/20 cursor-pointer flex items-center justify-center gap-1.5">
+              <i class="fas fa-right-to-bracket text-xs"></i>
+              <span>Zaloguj się</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="pt-2 text-center border-t border-slate-100 flex flex-col gap-1.5">
+          <button type="button" onclick="switchAuthTab('activate')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline transition cursor-pointer">
+            Nie masz konta? Zarejestruj się do Bazy Wiedzy →
+          </button>
+          <button type="button" onclick="switchAuthTab('reset')" class="text-xs text-purple-600 hover:text-purple-800 font-medium hover:underline transition cursor-pointer">
+            <i class="fas fa-question-circle mr-1"></i> ❓ Zapomniałeś PIN-u? Zresetuj hasło →
+          </button>
+        </div>
+      </div>
+
+      <!-- WIDOK 2: Rejestracja / Wniosek o Dostęp -->
+      <div id="auth-view-activate" class="hidden space-y-3" style="display: none;">
+        <div class="bg-purple-50/80 border border-purple-200/80 rounded-xl p-3 text-xs text-purple-950">
+          <div class="font-bold flex items-center gap-1.5 text-purple-900 mb-0.5">
+            <i class="fas fa-user-plus text-purple-600"></i>
+            <span>Rejestracja / Wniosek o Dostęp</span>
+          </div>
+          <p class="text-[11px] text-slate-600">Wprowadź swoje dane akademickie. Zgłoszenie zostanie przekazane do weryfikacji przez Zarząd Koła.</p>
+        </div>
+
+        <div id="registerSuccessBox" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900" style="display: none;">
+          <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+            <i class="fas fa-circle-check text-emerald-600"></i>
+            <span>Zgłoszenie zostało wysłane!</span>
+          </div>
+          <p class="text-[11px] text-emerald-700 leading-relaxed">
+            Zgłoszenie zostało wysłane! Po zaakceptowaniu przez Zarząd otrzymasz dostęp do Bazy Wiedzy.
+          </p>
+        </div>
+
+        <form id="registerForm" onsubmit="handleActivationSubmit(event)" class="space-y-2.5" autocomplete="off">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Imię i Nazwisko:</label>
+            <input 
+              type="text" 
+              id="activateFullNameInput" 
+              placeholder="np. Jan Kowalski" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Adres E-mail:</label>
+            <input 
+              type="email" 
+              id="activateEmailInput" 
+              placeholder="np. jan.kowalski@student.wskz.pl" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Numer Indeksu:</label>
+            <input 
+              type="text" 
+              id="activateIndexInput" 
+              placeholder="np. 12345" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Utwórz PIN:</label>
+              <input 
+                type="password" 
+                id="activatePinInput" 
+                maxlength="32"
+                placeholder="Wpisz min. 6 znaków" 
+                class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono tracking-wider"
+                required
+                autocomplete="new-password"
+              />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Powtórz PIN:</label>
+              <input 
+                type="password" 
+                id="activatePinConfirmInput" 
+                maxlength="32"
+                placeholder="Powtórz PIN" 
+                class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono tracking-wider"
+                required
+                autocomplete="new-password"
+              />
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-400 mt-0.5">Hasło może zawierać małe/wielkie litery, cyfry oraz znaki specjalne.</p>
+
+          <div class="pt-1">
+            <button type="submit" id="submit-activate-btn" class="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-500/20 cursor-pointer flex items-center justify-center gap-1.5">
+              <i class="fas fa-paper-plane text-xs"></i>
+              <span>Wyślij Wniosek o Dostęp</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="pt-1.5 text-center border-t border-slate-100">
+          <button type="button" onclick="switchAuthTab('login')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline transition cursor-pointer">
+            ← Wróć do logowania
+          </button>
+        </div>
+      </div>
+
+      <!-- WIDOK 3A: Resetowanie PIN-u (Wyślij Link) -->
+      <div id="auth-view-reset-request" class="hidden space-y-3" style="display: none;">
+        <div class="bg-indigo-50/80 border border-indigo-200/80 rounded-xl p-3 text-xs text-indigo-950">
+          <div class="font-bold flex items-center gap-1.5 text-indigo-900 mb-0.5">
+            <i class="fas fa-key text-indigo-600"></i>
+            <span>Resetowanie PIN-u (Wyślij Link)</span>
+          </div>
+          <p class="text-[11px] text-slate-600">Jeśli konto istnieje w rejestrze, bezpieczny link ważny przez 15 minut zostanie wysłany na Twój e-mail.</p>
+        </div>
+
+        <div id="resetReqSuccessBox" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900" style="display: none;">
+          <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+            <i class="fas fa-envelope-circle-check text-emerald-600"></i>
+            <span>Wysłano link weryfikacyjny!</span>
+          </div>
+          <p class="text-[11px] text-emerald-700 leading-relaxed">
+            Jeśli konto istnieje w rejestrze, bezpieczny link ważny przez <strong>15 minut</strong> został wysłany na Twój e-mail.
+          </p>
+        </div>
+
+        <form id="resetRequestForm" onsubmit="handleResetRequestSubmit(event)" class="space-y-2.5" autocomplete="off">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Adres E-mail:</label>
+            <input 
+              type="email" 
+              id="resetReqEmailInput" 
+              placeholder="twoj.email@student.wskz.pl" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Numer Indeksu (opcjonalnie):</label>
+            <input 
+              type="text" 
+              id="resetReqIndexInput" 
+              placeholder="np. 12345" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="pt-1">
+            <button type="submit" id="submit-reset-request-btn" class="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/20 cursor-pointer flex items-center justify-center gap-1.5">
+              <i class="fas fa-paper-plane text-xs"></i>
+              <span>Wyślij bezpieczny link resetujący</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="pt-1.5 text-center border-t border-slate-100">
+          <button type="button" onclick="switchAuthTab('login')" class="text-xs text-slate-600 hover:text-indigo-800 font-medium hover:underline transition cursor-pointer">
+            ← Wróć do logowania
+          </button>
+        </div>
+      </div>
+
+      <!-- WIDOK 3B: Ustaw Nowy PIN (Dostępny TYLKO po kliknięciu linku mailowego) -->
+      <div id="auth-view-reset-confirm" class="hidden space-y-3" style="display: none;">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-950">
+          <div class="font-bold flex items-center gap-1.5 text-blue-800 mb-0.5">
+            <i class="fas fa-shield-check text-blue-600"></i>
+            <span>Link zweryfikowany pomyślnie</span>
+          </div>
+          <p class="text-[11px] text-blue-700">⏱ Link zweryfikowany pomyślnie. Zdefiniuj nowy PIN (aktywny przez 15 minut).</p>
+        </div>
+
+        <form id="resetConfirmForm" onsubmit="handleResetConfirmSubmit(event)" class="space-y-2.5" autocomplete="off">
+          <input type="hidden" id="resetConfirmTokenInput" value="" />
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Nowy PIN:</label>
+            <input 
+              type="password" 
+              id="resetConfirmPinInput" 
+              maxlength="32"
+              placeholder="Wpisz nowy PIN (min. 6 znaków)" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono tracking-wider"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Powtórz Nowy PIN:</label>
+            <input 
+              type="password" 
+              id="resetConfirmPinRepeatInput" 
+              maxlength="32"
+              placeholder="Powtórz nowy PIN" 
+              class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-inner font-mono tracking-wider"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+
+          <p class="text-xs text-slate-400 mt-0.5">Hasło może zawierać małe/wielkie litery, cyfry oraz znaki specjalne.</p>
+
+          <div class="pt-1">
+            <button type="submit" id="submit-reset-confirm-btn" class="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-500/20 cursor-pointer flex items-center justify-center gap-1.5">
+              <i class="fas fa-check-double text-xs"></i>
+              <span>Zapisz Nowy PIN i Zaloguj</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="pt-1.5 text-center border-t border-slate-100">
+          <button type="button" onclick="switchAuthTab('login')" class="text-xs text-slate-600 hover:text-indigo-800 font-medium hover:underline transition cursor-pointer">
+            ← Wróć do logowania
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Konfiguracja Google Apps Script (Exec URL) -->
+  <div id="configModal" onclick="handleBackdropClick(event, 'configModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeConfigModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 cursor-pointer">
+        <i class="fas fa-times text-base"></i>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center text-lg">
+          <i class="fas fa-plug"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Konfiguracja Połączenia Google Drive</h3>
+          <p class="text-xs text-slate-500">Google Apps Script Web App (Exec URL)</p>
+        </div>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-slate-600 leading-relaxed">
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
+          <p class="font-bold flex items-center gap-1.5"><i class="fas fa-info-circle text-amber-600"></i> Jak połączyć z Twoim kontem Google Drive?</p>
+          <ol class="list-decimal ml-4 mt-1.5 space-y-1 text-[11px]">
+            <li>Otwórz projekt na <strong>script.google.com</strong> z plikami backendu.</li>
+            <li>Kliknij <strong>Wdróż (Deploy) -> Nowe wdrożenie -> Aplikacja internetowa</strong>.</li>
+            <li>Ustaw: <em>Wykonaj jako:</em> <strong>Ja</strong>, <em>Kto ma dostęp:</em> <strong>Każdy (Anyone)</strong>.</li>
+            <li>Skopiuj otrzymany <strong>Adres URL aplikacji internetowej</strong> (kończący się na <code>/exec</code>) i wklej poniżej.</li>
+          </ol>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Apps Script Web App Exec URL:</label>
+          <input 
+            type="url" 
+            id="gasWebAppUrlInput" 
+            placeholder="https://script.google.com/macros/s/AKfycby.../exec" 
+            class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 font-mono"
+          />
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 flex gap-2.5 justify-end mt-4">
+        <button type="button" onclick="closeConfigModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer">
+          Anuluj
+        </button>
+        <button type="button" onclick="handleSaveGasConfig()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer">
+          Zapisz i Połącz
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Wyniki Synchronizacji Folderu Dysku Google -->
+  <div id="syncModal" onclick="handleBackdropClick(event, 'syncModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center text-lg">
+          <i class="fas fa-arrows-rotate"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Synchronizacja Folderu Dysku Google</h3>
+          <p class="text-xs text-slate-500">Katalogowanie i nadawanie ID w nazwach plików</p>
+        </div>
+      </div>
+
+      <div id="sync-modal-body" class="my-4 space-y-3">
+        <p id="sync-summary-text" class="text-xs text-slate-700 font-semibold"></p>
+        <div id="sync-items-list" class="max-h-60 overflow-y-auto space-y-2 pr-1 text-xs"></div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-200 flex justify-end">
+        <button type="button" onclick="closeSyncModal()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition cursor-pointer">
+          Rozumiem / Zamknij
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Potwierdzenie Usunięcia (Kosz / Soft Delete) -->
+  <div id="deleteModal" onclick="handleBackdropClick(event, 'deleteModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-rose-200 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center text-lg">
+          <i class="fas fa-trash-can"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Przenieść artykuł do Kosza?</h3>
+          <p class="text-xs text-slate-500">Procedura Soft Delete (Google Drive & Baza)</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 my-4 text-xs text-slate-700 space-y-2">
+        <p class="font-semibold text-slate-900 leading-relaxed" id="delete-modal-article-title"></p>
+        <p class="text-[11px] text-slate-500">
+          <i class="fas fa-info-circle text-rose-500 mr-1"></i>
+          Pliki oryginału i tłumaczenia zostaną przeniesione do <strong>Kosza Google Drive</strong> (gdzie pozostaną przez 30 dni z możliwością przywrócenia), a wpis zostanie wycofany z wyników biblioteki.
+        </p>
+      </div>
+
+      <div class="flex gap-2.5 pt-2">
+        <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300 transition cursor-pointer">
+          Anuluj
+        </button>
+        <button type="button" id="confirm-delete-btn" onclick="handleConfirmDelete()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-trash-can"></i> Przenieś do Kosza
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Szczegóły Artykułu / Pełny Abstrakt -->
+  <div id="detailModal" onclick="handleBackdropClick(event, 'detailModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-hidden" onclick="event.stopPropagation()">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
+          <h3 id="detail-title-pl" class="text-lg sm:text-xl font-bold text-slate-900 mt-2 leading-snug"></h3>
+          <p id="detail-title-orig" class="text-xs text-slate-500 italic mt-1"></p>
+        </div>
+        <button type="button" onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 text-lg p-1 cursor-pointer">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-4 text-xs text-slate-600 py-3 border-y border-slate-200 mb-3">
+        <div><strong class="text-slate-700">Autorzy:</strong> <span id="detail-authors"></span></div>
+        <div><strong class="text-slate-700">Rok:</strong> <span id="detail-year"></span></div>
+        <div><strong class="text-slate-700">ID:</strong> <span id="detail-id" class="font-mono text-indigo-600 font-bold"></span></div>
+      </div>
+
+      <!-- Pasek Narzędzi Cytowania Akademickiego (APA 7th & BibTeX) -->
+      <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 mb-3.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+          <i class="fas fa-quote-right text-indigo-600"></i>
+          <span>Cytowanie naukowe:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="btn-copy-apa" onclick="copyCitationFromDetail('APA7')" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-sm cursor-pointer" title="Kopiuj sformatowane cytowanie w standardzie APA 7th">
+            <i class="fas fa-clipboard text-indigo-500"></i>
+            <span>📋 Kopiuj cytowanie (APA 7)</span>
+          </button>
+          <button type="button" id="btn-copy-bibtex" onclick="copyCitationFromDetail('BIBTEX')" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-sm cursor-pointer" title="Kopiuj rekord BibTeX (Zotero, Mendeley, LaTeX)">
+            <i class="fas fa-tag text-purple-500"></i>
+            <span>🏷 Kopiuj BibTeX</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Przełącznik Zakładek: [ 📄 Streszczenie ] | [ 🤖 Dyskutuj z Artykułem AI ] -->
+      <div class="flex items-center gap-2 border-b border-slate-200 pb-2.5 mb-3.5">
+        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 transition cursor-pointer">
+          <i class="fas fa-file-lines"></i>
+          <span>Streszczenie & Metadane</span>
+        </button>
+        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition cursor-pointer">
+          <i class="fas fa-robot text-purple-600"></i>
+          <span>🤖 Dyskutuj z Artykułem AI</span>
+          <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 ml-0.5">Journal Club</span>
+        </button>
+      </div>
+
+      <!-- ZAKŁADKA 1: Streszczenie i Tagi -->
+      <div id="tab-content-abstract" class="overflow-y-auto pr-2 space-y-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed flex-1">
+        <h4 class="font-bold text-indigo-700 text-xs uppercase tracking-wider flex items-center gap-2">
+          <i class="fas fa-align-left"></i> Streszczenie Merytoryczne (Abstrakt PL)
+        </h4>
+        <div id="detail-abstract" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm"></div>
+
+        <div>
+          <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2 mb-2">
+            <i class="fas fa-tags text-indigo-500"></i> Słowa kluczowe / Tagi
+          </h4>
+          <div id="detail-tags" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- ZAKŁADKA 2: Interaktywny Asystent AI Q&A (Journal Club Assistant) -->
+      <div id="tab-content-chat" class="hidden overflow-y-auto pr-2 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col min-h-[300px]" style="display: none;">
+        <!-- Kontener Wiadomości Czatu -->
+        <div id="ai-chat-messages" class="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/90 max-h-[280px]">
+          <!-- Wiadomość Powitalna Asystenta -->
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 mt-0.5 font-bold">
+              <i class="fas fa-robot"></i>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 text-xs text-slate-700 shadow-sm leading-relaxed max-w-[90%]">
+              <p class="font-bold text-indigo-900 mb-1">Cześć! Jestem Twoim Asystentem Journal Club SKN Seksuologii.</p>
+              <p>Zadaj dowolne pytanie dotyczące tego badania lub kliknij jeden z gotowych szablonów poniżej, aby przeanalizować metodologię i implikacje kliniczne.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Szybkie Szablony Pytań (Quick Chips) -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+          <span class="text-[11px] font-semibold text-slate-500 mr-1"><i class="fas fa-sparkles text-amber-500"></i> Szybkie pytania:</span>
+          <button type="button" onclick="sendAiQuickQuestion('Jaka była próba badawcza, kryteria doboru i metodologia badania?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer font-medium">
+            🔬 Próba i metodologia
+          </button>
+          <button type="button" onclick="sendAiQuickQuestion('Jakie są kluczowe wnioski i implikacje dla praktyki klinicznej / seksuologicznej?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition cursor-pointer font-medium">
+            💡 Wnioski kliniczne
+          </button>
+          <button type="button" onclick="sendAiQuickQuestion('Jakie ograniczenia badania (limitations) oraz kwestie metodologiczne należy wziąć pod uwagę?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer font-medium">
+            ⚠️ Ograniczenia badania
+          </button>
+          <button type="button" onclick="sendAiQuickQuestion('Podsumuj w 3 kluczowych punktach najważniejsze odkrycia tej publikacji.')" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition cursor-pointer font-medium">
+            🎯 Główne tezy
+          </button>
+        </div>
+
+        <!-- Formularz wprowadzania pytania -->
+        <form id="ai-chat-form" onsubmit="handleAiChatSubmit(event)" class="flex items-center gap-2 mt-auto pt-2">
+          <div class="relative flex-1">
+            <input 
+              type="text" 
+              id="ai-chat-input" 
+              placeholder="Zadaj pytanie do tego badania (np. Jaka była próba? Jakie są wnioski?)..." 
+              class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-100 transition shadow-inner"
+            />
+          </div>
+          <button 
+            type="submit" 
+            id="ai-chat-send-btn" 
+            class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <i class="fas fa-paper-plane text-xs"></i>
+            <span>Zapytaj AI</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4">
+        <button type="button" id="detail-btn-original" onclick="openSecureViewerFromDetail('original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-file-pdf text-red-500"></i> 📄 Czytaj Oryginał
+        </button>
+        <div id="detail-translation-btn-wrapper" class="w-full flex">
+          <button type="button" id="detail-btn-translation" onclick="openSecureViewerFromDetail('translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fas fa-language text-indigo-100"></i> 🇵🇱 Czytaj Tłumaczenie PL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Panel Administratora (Drag & Drop + Pipeline AI) -->
+  <div id="uploadModal" onclick="handleBackdropClick(event, 'uploadModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative text-left max-h-[95vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
+            <i class="fas fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Zapis na Dysk Google & Pipeline AI</h3>
+            <p class="text-xs text-slate-500">Magazyn: Dysk SKN (Bezpieczny)</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+          <i class="fas fa-times text-base"></i>
+        </button>
+      </div>
+
+      <!-- Upload Form Inputs -->
+      <div id="upload-form-inputs" class="space-y-4">
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 rounded-2xl p-6 text-center transition cursor-pointer relative">
+          <input type="file" id="file-input" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+          
+          <div id="drop-prompt">
+            <i class="fas fa-file-pdf text-3xl text-indigo-500 mb-2"></i>
+            <p class="text-xs sm:text-sm font-bold text-slate-800">Przeciągnij i upuść plik PDF artykułu</p>
+            <p class="text-[11px] text-slate-500 mt-1">lub kliknij, aby wybrać z dysku (Maks. 20MB)</p>
+          </div>
+
+          <div id="selected-file-info" class="hidden" style="display: none;">
+            <div class="flex items-center justify-center gap-3 text-left bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <i class="fas fa-file-pdf text-2xl text-red-500"></i>
+              <div class="overflow-hidden">
+                <p id="selected-file-name" class="text-xs font-bold text-slate-900 truncate"></p>
+                <p id="selected-file-size" class="text-[10px] text-slate-500"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Poziom Dostępu</label>
+            <select id="upload-access-level" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
+              <option value="PUBLIC">PUBLIC (Dla wszystkich)</option>
+              <option value="MEMBERS">MEMBERS (Tylko SKN)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kategoria</label>
+            <select id="upload-category" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
+              <option value="AUTO">Automatyczna (Gemini AI)</option>
+              <option value="Relacje i Bliskość">Relacje i Bliskość</option>
+              <option value="Biologia & Psychofizjologia">Biologia & Psychofizjologia</option>
+              <option value="Tożsamość & Gender">Tożsamość & Gender</option>
+              <option value="Edukacja Seksualna">Edukacja Seksualna</option>
+              <option value="Psychometria & Metodologia">Psychometria & Metodologia</option>
+              <option value="Materiały Własne SKN">🔒 Materiały Własne SKN (Strefa Wewnętrzna)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Container -->
+      <div id="pipeline-progress-container" class="hidden my-4 space-y-3" style="display: none;">
+        <div class="text-center py-2">
+          <p id="pipeline-status-text" class="text-xs font-bold text-indigo-700 animate-pulse"></p>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div id="step-1" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+            <span class="step-icon w-5 text-center"><i class="far fa-circle"></i></span>
+            <span>1. Weryfikacja duplikatów i generowanie ID KC-YYYYMMDDHHMMSS</span>
+          </div>
+          <div id="step-2" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+            <span class="step-icon w-5 text-center"><i class="far fa-circle"></i></span>
+            <span>2. Fizyczny zapis pliku w folderze Google Drive (DriveApp.createFile)</span>
+          </div>
+          <div id="step-3" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+            <span class="step-icon w-5 text-center"><i class="far fa-circle"></i></span>
+            <span>3. Wielomodalna analiza Gemini (DSM-5-TR / ICD-11)</span>
+          </div>
+          <div id="step-4" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+            <span class="step-icon w-5 text-center"><i class="far fa-circle"></i></span>
+            <span>4. Kompilacja i zapis tłumaczenia PDF (*_PL.pdf) na Dysku</span>
+          </div>
+          <div id="step-5" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+            <span class="step-icon w-5 text-center"><i class="far fa-circle"></i></span>
+            <span>5. Rejestracja w Arkuszu Google (Baza_Artykulow)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Error Box -->
+      <div id="pipeline-error-box" class="hidden text-center py-4 bg-rose-50 border border-rose-200 rounded-2xl p-4 my-3" style="display: none;">
+        <i class="fas fa-triangle-exclamation text-3xl text-rose-600 mb-2"></i>
+        <h4 class="text-sm font-bold text-slate-900">Błąd Połączenia z Google Drive</h4>
+        <p id="pipeline-error-text" class="text-xs text-rose-700 mt-1 whitespace-pre-line"></p>
+        <div class="mt-3 flex gap-2 justify-center">
+          <button type="button" onclick="openConfigModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-xs text-white font-semibold rounded-lg shadow-sm transition cursor-pointer">
+            <i class="fas fa-plug mr-1"></i> Sprawdź URL Apps Script
+          </button>
+          <button type="button" onclick="resetUploadForm()" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-xs text-slate-700 rounded-lg border border-slate-300 transition cursor-pointer">
+            Spróbuj ponownie
+          </button>
+        </div>
+      </div>
+
+      <!-- Pipeline Success Box -->
+      <div id="pipeline-complete-box" class="hidden text-center py-4 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 my-3" style="display: none;">
+        <i class="fas fa-check-circle text-3xl text-emerald-600 mb-2"></i>
+        <h4 class="text-sm font-bold text-slate-900">Artykuł pomyślnie zapisany na Dysku Google!</h4>
+        <p class="mt-1"><span class="font-semibold text-slate-600 text-xs">ID Publikacji:</span> <strong id="res-article-id" class="font-mono text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded"></strong></p>
+        <p class="mt-1 text-xs text-slate-600"><span class="font-semibold">Plik na Dysku Google:</span> <span id="res-drive-filename" class="font-mono text-[11px] text-indigo-700 break-all"></span></p>
+        <p id="res-article-title" class="text-xs text-slate-700 mt-1.5 italic line-clamp-2"></p>
+        
+        <div class="flex gap-2 justify-center mt-4">
+          <button type="button" id="res-view-orig" onclick="openSecureViewerFromUploadResult('original')" class="px-3.5 py-2 bg-white hover:bg-slate-100 rounded-xl text-xs text-slate-700 border border-slate-300 transition flex items-center gap-2 cursor-pointer">
+            <i class="fas fa-file-shield text-indigo-600"></i> Bezpieczny Podgląd PDF
+          </button>
+          <button type="button" id="res-view-trans" onclick="openSecureViewerFromUploadResult('translation')" class="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-2 cursor-pointer">
+            <i class="fas fa-language text-indigo-100"></i> Podgląd Tłumaczenia
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="mt-5">
+        <button type="button" id="start-upload-btn" onclick="handleUploadPipeline()" disabled class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-cloud-arrow-up"></i> Zapisz na Dysku Google & Analizuj
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pulpit Statystyk i Analityki Bazy Wiedzy (Dashboard SKN) -->
+  <div id="statsModal" onclick="handleBackdropClick(event, 'statsModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-hidden" onclick="event.stopPropagation()">
+      <div class="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-lg">
+            <i class="fas fa-chart-pie"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900">Pulpit Statystyk & Analityki Repozytorium</h3>
+            <p class="text-xs text-slate-500">Baza Wiedzy SKN Seksuologii • Raport analityczny na żywo</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeStatsModal()" class="text-slate-400 hover:text-slate-700 text-lg p-1 cursor-pointer">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto pr-1 space-y-5 text-xs sm:text-sm text-slate-700 flex-1">
+        <!-- 1. Kafelki KPI -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-200/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div class="flex items-center justify-between text-indigo-600 text-xs font-semibold mb-1">
+              <span>Wszystkie publikacje</span>
+              <i class="fas fa-book text-base"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="stats-kpi-total">0</div>
+            <div class="text-[11px] text-slate-500 mt-1">w aktywnym repozytorium</div>
+          </div>
+
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div class="flex items-center justify-between text-purple-600 text-xs font-semibold mb-1">
+              <span>Tłumaczenia PL</span>
+              <i class="fas fa-language text-base"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="stats-kpi-translations">0</div>
+            <div class="text-[11px] text-purple-700 font-semibold mt-1" id="stats-kpi-translations-pct">0% bazy</div>
+          </div>
+
+          <div class="bg-gradient-to-br from-rose-50 to-rose-100/50 border border-rose-200/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div class="flex items-center justify-between text-rose-600 text-xs font-semibold mb-1">
+              <span>Materiały Własne SKN</span>
+              <i class="fas fa-lock text-base"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="stats-kpi-internal">0</div>
+            <div class="text-[11px] text-rose-700 font-medium mt-1">zabezpieczone znakiem wodnym</div>
+          </div>
+        </div>
+
+        <!-- 2. Rozkład Kategorii Tematycznych -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="fas fa-layer-group text-indigo-600"></i>
+            <span>Rozkład Kategorii Tematycznych</span>
+          </h4>
+          <div id="stats-categories-bars" class="space-y-2.5">
+            <!-- Dynamiczne paski postępu -->
+          </div>
+        </div>
+
+        <!-- 3. Najczęstsze Tagi & Najaktywniejsi Autorzy -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Tagi -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
+              <i class="fas fa-tags text-purple-600"></i>
+              <span>Top Słowa Kluczowe (#Tagi)</span>
+            </h4>
+            <div id="stats-top-tags" class="flex flex-wrap gap-1.5">
+              <!-- Dynamiczne tagi z licznikami -->
+            </div>
+          </div>
+
+          <!-- Autorzy -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
+              <i class="fas fa-users text-blue-600"></i>
+              <span>Najczęstsi Autorzy / Zespoły</span>
+            </h4>
+            <div id="stats-top-authors" class="space-y-1.5 text-xs text-slate-700">
+              <!-- Dynamiczni autorzy -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 flex justify-end mt-4">
+        <button type="button" onclick="closeStatsModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition cursor-pointer">
+          Zamknij Pulpit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Zabezpieczony Czytnik Dokumentów PDF (Ochrona przed wyciąganiem PDF / DevTools) -->
+  <div id="securePdfViewerModal" onclick="handleBackdropClick(event, 'securePdfViewerModal')" style="display: none;" class="fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md items-center justify-center p-2 sm:p-4 select-none" oncontextmenu="return false;" ondragstart="return false;">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none" onclick="event.stopPropagation()">
+      
+      <!-- Pasek Narzędzi Czytnika (Header & Controls - Mobile Responsive) -->
+      <div class="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-4 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <!-- Tytuł i Wersja -->
+        <div class="flex items-center gap-2 min-w-0 max-w-[50%] sm:max-w-none">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-900/60 border border-indigo-700/60 text-indigo-300 flex items-center justify-center text-xs sm:text-sm shrink-0">
+            <i class="fas fa-file-shield"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span id="viewer-doc-badge" class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-700">Oryginał PDF</span>
+              <h3 id="viewer-doc-title" class="text-xs sm:text-sm font-bold text-slate-100 truncate max-w-[120px] sm:max-w-xs md:max-w-md">Dokument Naukowy</h3>
+            </div>
+            <p class="text-[9px] sm:text-[10px] text-slate-400 truncate">Bezpieczny Czytnik PDF • SKN Seksuologii</p>
+          </div>
+        </div>
+
+        <!-- Kontrolki Stron i Zoomu -->
+        <div class="flex items-center gap-1 sm:gap-1.5 bg-slate-800/90 border border-slate-700/70 rounded-xl px-2 py-1 text-slate-200 text-xs shrink-0 order-3 sm:order-2">
+          <!-- Poprzednia / Następna -->
+          <button type="button" onclick="viewerPrevPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Poprzednia strona (←)">
+            <i class="fas fa-chevron-left text-xs"></i>
+          </button>
+          
+          <span class="font-mono text-[11px] sm:text-xs text-slate-300 px-0.5">
+            <span id="viewer-page-num" class="font-bold text-white">1</span>/<span id="viewer-page-count" class="text-slate-400">1</span>
+          </span>
+
+          <button type="button" onclick="viewerNextPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Następna strona (→)">
+            <i class="fas fa-chevron-right text-xs"></i>
+          </button>
+
+          <div class="w-px h-3.5 bg-slate-700 mx-0.5"></div>
+
+          <!-- Zoom Out / Zoom In / Fit Width -->
+          <button type="button" onclick="viewerZoomOut()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Pomniejsz (-)">
+            <i class="fas fa-magnifying-glass-minus text-xs"></i>
+          </button>
+
+          <span id="viewer-zoom-label" class="font-mono text-[10px] sm:text-[11px] text-slate-300 w-8 sm:w-9 text-center">100%</span>
+
+          <button type="button" onclick="viewerZoomIn()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Powiększ (+)">
+            <i class="fas fa-magnifying-glass-plus text-xs"></i>
+          </button>
+
+          <button type="button" onclick="viewerFitWidth()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Dopasuj do szerokości ekranu">
+            <i class="fas fa-arrows-left-right text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Akcje i Zamknięcie -->
+        <div class="flex items-center gap-1.5 shrink-0 order-2 sm:order-3">
+          <button type="button" id="viewer-download-btn" onclick="viewerDownloadWatermarked()" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white rounded-xl text-[11px] sm:text-xs font-semibold shadow-sm transition cursor-pointer" title="Pobierz podpisany i ostemplowany plik PDF">
+            <i class="fas fa-download text-xs"></i>
+            <span class="hidden xs:inline">Pobierz</span>
+          </button>
+
+          <button type="button" onclick="closeSecureViewer()" class="text-slate-400 hover:text-white p-1.5 text-base rounded-lg hover:bg-slate-800 transition cursor-pointer" title="Zamknij czytnik (Esc)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch Optimized) -->
+      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-y-auto overflow-x-hidden p-2 sm:p-6 flex flex-col items-center justify-start relative select-none touch-pan-y" style="-webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
+        <!-- Pływający pasek bezpieczeństwa / stempel -->
+        <div class="sticky top-1 sm:top-2 z-10 bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md flex items-center gap-1.5 mb-2 sm:mb-3 select-none pointer-events-none text-center">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>🔒 Zabezpieczony podgląd akademicki • Baza Wiedzy SKN Seksuologii</span>
+        </div>
+
+        <!-- Spinner Ładowania PDF -->
+        <div id="viewer-loading-spinner" class="flex flex-col items-center justify-center my-auto py-16 text-indigo-400 gap-3">
+          <i class="fas fa-circle-notch fa-spin text-3xl"></i>
+          <span class="text-xs font-medium text-slate-300">Wczytywanie i renderowanie dokumentu...</span>
+        </div>
+
+        <!-- Canvas Wyświetlający Stronę -->
+        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg overflow-hidden border border-slate-800 select-none bg-white max-w-full" style="display: none;">
+          <canvas id="pdf-render-canvas" class="block max-w-full h-auto mx-auto" style="max-width: 100%; height: auto; display: block; margin: 0 auto 16px auto;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.9/dist/pdf-lib.min.js"></script>
+  <script src="config.js"></script>
+  <script src="authResetFlow.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
