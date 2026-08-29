@@ -1003,7 +1003,9 @@ function renderArticleCards(articles) {
   grid.classList.remove("hidden");
 
   articles.forEach((art) => {
+    const meta = art.meta || art.data || art || {};
     const isInternal = isInternalArticle(art);
+    const isPublic = Boolean(art.isPublic !== undefined ? art.isPublic : (art.accessLevel ? art.accessLevel === "PUBLIC" : (!isInternal && art.status !== "INTERNAL")));
     const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(art.id);
 
     let accessBadge = "";
