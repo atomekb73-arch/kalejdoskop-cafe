@@ -1749,29 +1749,47 @@ async function renderViewerPage(num) {
 
   try {
     const page = await ViewerState.pdfDoc.getPage(num);
-    const viewport = page.getViewport({ scale: ViewerState.scale });
 
     if (canvas) {
-      const ctx = canvas.getContext("2d");
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      canvas.style.width = `${viewport.width}px`;
-      canvas.style.height = `${viewport.height}px`;
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      // 1. Obliczenie współczynnika gęstości ekranu (HiDPI / Retina)
+      const pixelRatio = window.devicePixelRatio || 1;
+      const zoom = ViewerState.scale || 1.25;
+
+      // 2. Viewport bazowy dla stylów CSS oraz transformacji
+      const viewport = page.getViewport({ scale: zoom });
+
+      // 3. Rozdzielczość bufora graficznego (Canvas wewnętrzny - ostrość HiDPI)
+      canvas.width = Math.floor(viewport.width * pixelRatio);
+      canvas.height = Math.floor(viewport.height * pixelRatio);
+
+      // 4. Wymiary wyświetlania w CSS (dopasowanie do widoku i płynne przewijanie)
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
       canvas.style.maxWidth = "none";
       canvas.style.display = "block";
       canvas.style.margin = "0 auto 16px auto";
 
+      // 5. Kontekst renderowania z transformacją skali
+      const transform = pixelRatio !== 1 ? [pixelRatio, 0, 0, pixelRatio, 0, 0] : null;
+
       const renderContext = {
         canvasContext: ctx,
+        transform: transform,
         viewport: viewport
       };
+
+      // Czyszczenie tła na biało przed renderowaniem strony
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const renderTask = page.render(renderContext);
       await renderTask.promise;
 
-      // Nakładanie znaku wodnego z zabezpieczeniem try/catch:
+      // Nakładanie znaku wodnego z zabezpieczeniem try/catch z uwzględnieniem rozdzielczości:
       try {
-        drawWatermarkOnCanvas(ctx, viewport.width, viewport.height);
+        drawWatermarkOnCanvas(ctx, canvas.width, canvas.height, pixelRatio);
       } catch (wmErr) {
         console.warn("Pominięto znak wodny:", wmErr);
       }
@@ -1917,17 +1935,18 @@ function closeSecureViewer() {
 window.closeSecureViewer = closeSecureViewer;
 
 /**
- * Rysowanie pikselowego znaku wodnego i stempla audytowego na elemencie Canvas
+ * Rysowanie pikselowego znaku wodnego i stempla audytowego na elemencie Canvas (HiDPI)
  */
-function drawWatermarkOnCanvas(ctx, width, height) {
+function drawWatermarkOnCanvas(ctx, width, height, pixelRatio = 1) {
   if (!ctx) return;
   try {
     ctx.save();
 
     // 1. Diagonalny Znak Wodny (Środek, -45 deg)
+    const fontSize = Math.max(14, Math.round(16 * pixelRatio));
     ctx.translate(width / 2, height / 2);
     ctx.rotate((-45 * Math.PI) / 180);
-    ctx.font = "bold 16px sans-serif";
+    ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = "rgba(200, 200, 200, 0.25)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -1941,10 +1960,11 @@ function drawWatermarkOnCanvas(ctx, width, height) {
 
     // 2. Dolny Stempel Audytowy
     ctx.save();
-    ctx.font = "11px monospace";
+    const stampSize = Math.max(10, Math.round(11 * pixelRatio));
+    ctx.font = `${stampSize}px monospace`;
     ctx.fillStyle = "rgba(71, 85, 105, 0.65)";
     ctx.textAlign = "left";
-    ctx.fillText(`🔒 Zabezpieczony podgląd • ${userEmail} • ${dateStr} • SKN Seksuologii`, 20, height - 15);
+    ctx.fillText(`🔒 Zabezpieczony podgląd • ${userEmail} • ${dateStr} • SKN Seksuologii`, 20 * pixelRatio, height - (15 * pixelRatio));
     ctx.restore();
   } catch (wmErr) {
     console.warn("Pominięto znak wodny:", wmErr);
