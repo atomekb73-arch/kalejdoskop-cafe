@@ -3403,50 +3403,109 @@ function resetUploadForm() {
 }
 
 /**
- * Bezpieczna konwersja i przesyłanie pliku PDF do Google Apps Script & analiza Gemini
+ * Bezpieczna konwersja pliku do Base64 (Promise)
  */
-async function uploadAndAnalyzePDF(file, selectedCategory = "Edukacja Seksualna") {
+function readFileAsBase64(file) {
   return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error("Brak wybranego pliku."));
+      return;
+    }
     const reader = new FileReader();
-
-    reader.onload = async () => {
-      try {
-        const base64Data = reader.result; // format: data:application/pdf;base64,...
-        const execUrl = AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-
-        const payload = {
-          action: "upload",
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          base64Data: base64Data,
-          category: selectedCategory,
-          adminPin: AppState.currentPin
-        };
-
-        const response = await fetch(execUrl, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "text/plain"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (data.status === "success" || data.success) {
-          resolve(data);
-        } else {
-          reject(new Error(data.message || data.error || "Błąd przetwarzania pliku przez backend"));
-        }
-      } catch (err) {
-        reject(err);
+    reader.onload = (e) => {
+      const rawDataUrl = e.target.result;
+      if (!rawDataUrl || typeof rawDataUrl !== "string") {
+        reject(new Error("Pusty strumień danych z odczytu pliku."));
+        return;
       }
+      let pureBase64 = rawDataUrl;
+      if (rawDataUrl.includes(",")) {
+        pureBase64 = rawDataUrl.split(",")[1];
+      }
+      resolve({
+        dataUrl: rawDataUrl,
+        base64: pureBase64
+      });
     };
-
-    reader.onerror = () => reject(new Error("Nie udało się odczytać pliku lokalnego."));
+    reader.onerror = (err) => reject(new Error("Błąd odczytu pliku: " + (err.message || "FileReader error")));
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Bezpieczna konwersja i przesyłanie pliku PDF do Google Apps Script & analiza Gemini
+ */
+async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne SKN") {
+  const { dataUrl, base64 } = await readFileAsBase64(file);
+
+  if (!base64 || base64.trim().length === 0) {
+    throw new Error("Błąd konwersji pliku: brak danych Base64.");
+  }
+
+  const execUrl = AppState.appsScriptUrl || DEFAULT_EXEC_URL;
+  const adminPin = AppState.currentPin || (AppState.currentUser && AppState.currentUser.pin) || (AppState.currentRole === "ADMIN" ? "2026" : "skn2026");
+
+  const titleInput = document.getElementById("upload-title") || document.getElementById("title-input");
+  const authorsInput = document.getElementById("upload-authors") || document.getElementById("authors-input");
+  const yearInput = document.getElementById("upload-year") || document.getElementById("year-input");
+  const journalInput = document.getElementById("upload-journal") || document.getElementById("journal-input");
+  const abstractTextarea = document.getElementById("upload-abstract") || document.getElementById("abstract-input");
+  const hasTranslationCheckbox = document.getElementById("upload-has-translation");
+
+  const cleanTitle = (titleInput && titleInput.value.trim()) || file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+  const cleanAuthors = (authorsInput && authorsInput.value.trim()) || "SKN Seksuologii";
+  const cleanYear = (yearInput && yearInput.value.trim()) || new Date().getFullYear().toString();
+  const cleanCategory = selectedCategory || "Materiały Własne SKN";
+  const cleanJournal = (journalInput && journalInput.value.trim()) || "Repozytorium SKN";
+  const cleanAbstract = (abstractTextarea && abstractTextarea.value.trim()) || "";
+  const hasTranslation = hasTranslationCheckbox ? Boolean(hasTranslationCheckbox.checked) : false;
+
+  const metadata = {
+    title: cleanTitle,
+    authors: cleanAuthors,
+    year: cleanYear,
+    category: cleanCategory,
+    journal: cleanJournal,
+    abstract: cleanAbstract,
+    hasPolishTranslation: hasTranslation
+  };
+
+  const payload = {
+    action: "upload",
+    fileBase64: base64,          // Czysty ciąg base64
+    base64: base64,              // Zgodność wsteczna
+    base64Data: dataUrl,         // Pełny Data URL
+    data: base64,                // Zgodność wsteczna
+    fileName: file.name,         // np. "Badanie_Seksuologia_2026.pdf"
+    name: file.name,
+    mimeType: file.type || "application/pdf",
+    category: cleanCategory,
+    adminPin: adminPin,
+    pin: adminPin,
+    metadata: metadata,
+    // Spłaszczone właściwości dla pełnej kompatybilności wstecznej
+    title: cleanTitle,
+    authors: cleanAuthors,
+    year: cleanYear,
+    journal: cleanJournal,
+    abstract: cleanAbstract
+  };
+
+  const response = await fetch(execUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+
+  if (data && (data.status === "success" || data.success)) {
+    return data;
+  } else {
+    throw new Error(data.message || data.error || "Błąd przetwarzania pliku przez backend Google Drive");
+  }
 }
 
 function uploadFileToDrive(file, category, accessLevel) {
