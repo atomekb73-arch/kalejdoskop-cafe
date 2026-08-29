@@ -168,56 +168,167 @@ const CATEGORY_ICONS = {
 };
 
 /**
- * Pigułki kategorii w lewym panelu bocznym
+ * Pigułki kategorii w lewym panelu bocznym oraz mobilnym Drawerze
  */
 function renderCategoryPills() {
   const container = document.getElementById("categories-container");
+  const mobileContainer = document.getElementById("mobile-categories-container");
   const totalBadge = document.getElementById("total-categories-badge");
+  const mobileActiveLabel = document.getElementById("mobile-active-category-label");
+  const mobileCountBadge = document.getElementById("mobile-category-count-badge");
+  const drawerCount = document.getElementById("drawer-categories-count");
   
+  const currentCategoryCount = getCategoryCount(AppState.activeCategory);
+
   if (totalBadge) {
     totalBadge.textContent = `${AppState.articles.length} prac`;
   }
-  
-  if (!container) return;
+  if (mobileActiveLabel) {
+    mobileActiveLabel.textContent = AppState.activeCategory;
+  }
+  if (mobileCountBadge) {
+    mobileCountBadge.textContent = `${currentCategoryCount} prac`;
+  }
+  if (drawerCount) {
+    drawerCount.textContent = `Aktywna: ${AppState.activeCategory} (${currentCategoryCount} prac)`;
+  }
 
-  container.innerHTML = "";
-
-  AppState.categories.forEach((category) => {
+  // Funkcja pomocnicza do tworzenia przycisku kategorii
+  const createCategoryButton = (category, isMobileDrawer = false) => {
     const isActive = AppState.activeCategory === category;
     const count = getCategoryCount(category);
     const iconClass = CATEGORY_ICONS[category] || "fas fa-folder text-slate-400";
 
     const btn = document.createElement("button");
-    btn.className = `w-full text-left px-3 py-2 rounded-xl transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer ${
+    btn.type = "button";
+    btn.className = `w-full text-left px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer active:scale-98 ${
       isActive
         ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 font-semibold scale-[1.01]"
-        : "bg-white/85 hover:bg-indigo-50/70 text-slate-700 hover:text-indigo-900 border border-slate-200/80"
+        : "bg-white hover:bg-indigo-50/70 text-slate-700 hover:text-indigo-900 border border-slate-200/80 shadow-xs"
     }`;
 
     btn.innerHTML = `
-      <div class="flex items-center gap-2 min-w-0 flex-1">
-        <i class="${iconClass} text-sm shrink-0 ${isActive ? "!text-white" : ""}"></i>
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="w-6 h-6 rounded-lg ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-indigo-600"} flex items-center justify-center shrink-0">
+          <i class="${iconClass} text-xs ${isActive ? "!text-white" : ""}"></i>
+        </div>
         <span class="text-[12.5px] font-medium leading-[1.25] text-left break-words whitespace-normal flex-1">${category}</span>
       </div>
       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono shrink-0 ${
-        isActive ? "bg-white/20 text-white font-bold" : "bg-slate-100 text-slate-600 border border-slate-200/60"
+        isActive ? "bg-white/25 text-white font-bold" : "bg-slate-100 text-slate-600 border border-slate-200/60"
       }">${count}</span>
     `;
 
     btn.addEventListener("click", () => {
       if (category === "Materiały Własne SKN" && AppState.currentRole === "PUBLIC") {
         showToast("Strefa Materiałów Własnych SKN wymaga autoryzacji. Zaloguj się kodem PIN członka/administratora.", "info");
+        if (isMobileDrawer) closeCategoryDrawer();
         openLoginModal();
         return;
       }
       AppState.activeCategory = category;
       renderCategoryPills();
       filterAndRenderArticles();
+      if (isMobileDrawer) {
+        closeCategoryDrawer();
+      }
     });
 
-    container.appendChild(btn);
+    return btn;
+  };
+
+  // Renderowanie dla desktopu
+  if (container) {
+    container.innerHTML = "";
+    AppState.categories.forEach((category) => {
+      container.appendChild(createCategoryButton(category, false));
+    });
+  }
+
+  // Renderowanie dla mobilnego drawera
+  if (mobileContainer) {
+    mobileContainer.innerHTML = "";
+    AppState.categories.forEach((category) => {
+      mobileContainer.appendChild(createCategoryButton(category, true));
+    });
+  }
+}
+
+/**
+ * Kontrola Off-Canvas Mobile Category Drawer (Wysuwany z prawej strony)
+ */
+function openCategoryDrawer() {
+  const modal = document.getElementById("categoryDrawerModal");
+  const backdrop = document.getElementById("categoryDrawerBackdrop");
+  const panel = document.getElementById("categoryDrawerPanel");
+
+  if (!modal || !backdrop || !panel) return;
+
+  renderCategoryPills();
+
+  modal.style.display = "block";
+  modal.classList.remove("hidden");
+
+  requestAnimationFrame(() => {
+    backdrop.classList.remove("opacity-0");
+    backdrop.classList.add("opacity-100");
+    panel.classList.remove("translate-x-full");
+    panel.classList.add("translate-x-0");
   });
 }
+window.openCategoryDrawer = openCategoryDrawer;
+
+function closeCategoryDrawer() {
+  const modal = document.getElementById("categoryDrawerModal");
+  const backdrop = document.getElementById("categoryDrawerBackdrop");
+  const panel = document.getElementById("categoryDrawerPanel");
+
+  if (!modal || !backdrop || !panel) return;
+
+  backdrop.classList.remove("opacity-100");
+  backdrop.classList.add("opacity-0");
+  panel.classList.remove("translate-x-0");
+  panel.classList.add("translate-x-full");
+
+  setTimeout(() => {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }, 300);
+}
+window.closeCategoryDrawer = closeCategoryDrawer;
+
+// Obsługa gestów dotykowych (Swipe gestures) dla mobilnego menu
+(function initDrawerSwipeGestures() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    if (!e.changedTouches || e.changedTouches.length === 0) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartX;
+    const diffY = Math.abs(touchEndY - touchStartY);
+
+    // Gest swipe left z prawej krawędzi (otwarcie)
+    const screenWidth = window.innerWidth;
+    if (screenWidth <= 1024 && diffX < -70 && diffY < 50 && touchStartX > screenWidth - 60) {
+      openCategoryDrawer();
+    }
+
+    // Gest swipe right wewnątrz otwartego panelu (zamknięcie)
+    const modal = document.getElementById("categoryDrawerModal");
+    if (modal && modal.style.display !== "none" && diffX > 70 && diffY < 60) {
+      closeCategoryDrawer();
+    }
+  }, { passive: true });
+})();
 
 function getCategoryCount(category) {
   if (category === "Wszystko") {

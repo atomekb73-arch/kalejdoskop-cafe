@@ -27,7 +27,7 @@
   </script>
 
   <!-- FontAwesome 6 Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
   <link rel="stylesheet" href="styles.css">
@@ -202,11 +202,11 @@
   </section>
 
   <!-- Główny Układ 3-Kolumnowy (Full-Width Dashboard Layout: 250px 1fr 260px) -->
-  <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 flex-1">
+  <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 flex-1 safe-area-bottom">
     <div class="grid grid-cols-1 lg:grid-cols-[250px_1fr] xl:grid-cols-[250px_1fr_260px] gap-4 items-start">
       
-      <!-- 1. LEWY PANEL BOCZNY (Kategorie & Filtry Tematyczne) -->
-      <aside class="sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
+      <!-- 1. LEWY PANEL BOCZNY (Kategorie & Filtry Tematyczne - Tylko Desktop) -->
+      <aside class="hidden lg:block sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
             <i class="fas fa-shapes text-indigo-600"></i>
@@ -226,6 +226,21 @@
 
       <!-- 2. ŚRODKOWA KOLUMNA GŁÓWNA (Wyszukiwarka & Siatka Publikacji) -->
       <main class="w-full min-w-0 flex flex-col gap-3.5">
+        <!-- Mobilny pasek wyboru kategorii (widoczny tylko na ekranach <= 1024px) -->
+        <div class="lg:hidden flex items-center justify-between gap-2 p-2 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs">
+          <button type="button" onclick="openCategoryDrawer()" class="flex-1 flex items-center justify-between px-3 py-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-xs font-bold transition active:scale-98 cursor-pointer">
+            <span class="flex items-center gap-2 truncate">
+              <i class="fas fa-folder-open text-indigo-600 text-sm shrink-0"></i>
+              <span class="text-slate-500 font-normal">Kategoria:</span>
+              <span id="mobile-active-category-label" class="text-indigo-900 font-bold truncate">Wszystko</span>
+            </span>
+            <span id="mobile-category-count-badge" class="ml-2 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-white text-indigo-700 border border-indigo-200 shadow-xs shrink-0">0 prac</span>
+          </button>
+          <button type="button" onclick="openCategoryDrawer()" class="p-2.5 bg-white hover:bg-slate-50 text-indigo-600 border border-slate-200 rounded-xl text-xs transition cursor-pointer shadow-xs active:scale-95 flex items-center justify-center shrink-0" title="Otwórz menu kategorii">
+            <i class="fas fa-sliders text-sm"></i>
+          </button>
+        </div>
+
         <!-- Dyskretny pasek wyszukiwarki z zaawansowanym sortowaniem i filtrami -->
         <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-3 space-y-2.5">
           <div class="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-3 py-1.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100">
@@ -383,6 +398,46 @@
       </div>
     </div>
   </footer>
+
+  <!-- Off-Canvas Mobile Category Drawer (Wysuwany z prawej strony) -->
+  <div id="categoryDrawerModal" style="display: none;" class="fixed inset-0 z-[100000] transition-opacity duration-300">
+    <!-- Backdrop z blur -->
+    <div id="categoryDrawerBackdrop" onclick="closeCategoryDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Wysuwany panel boczny (Off-Canvas z prawej) -->
+    <div id="categoryDrawerPanel" class="absolute top-0 right-0 bottom-0 w-[85%] max-w-[340px] bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out border-l border-slate-200 z-10">
+      <!-- Nagłówek Drawera -->
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+            <i class="fas fa-shapes"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Kategorie Wiedzy</h3>
+            <p id="drawer-categories-count" class="text-[10.5px] text-slate-500 font-medium">Wybierz dziedzinę publikacji</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCategoryDrawer()" class="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 flex items-center justify-center transition cursor-pointer active:scale-95" title="Zamknij panel">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Lista kategorii w drawerze -->
+      <div class="flex-1 overflow-y-auto p-3.5 space-y-1.5" id="mobile-categories-container">
+        <!-- Dynamicznie renderowane przez renderCategoryPills() -->
+      </div>
+
+      <!-- Stopka Drawera z Safe Area -->
+      <div class="p-4 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-500 flex items-center justify-between safe-area-bottom">
+        <span class="flex items-center gap-1.5 text-slate-500 text-[10.5px]">
+          <i class="fas fa-sparkles text-amber-500"></i> Standardy DSM-5-TR
+        </span>
+        <button type="button" onclick="closeCategoryDrawer()" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm transition active:scale-95 cursor-pointer">
+          Gotowe
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: Dwuetapowe Logowanie i Pierwsza Rejestracja Członków SKN -->
   <div id="loginModal" onclick="handleBackdropClick(event, 'loginModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
