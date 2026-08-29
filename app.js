@@ -3157,16 +3157,23 @@ function applyLocalDeletion(articleId) {
 }
 
 // Generator cytowania w standardzie APA 7th Edition
-function formatAPA7(doc) {
-  if (!doc) return "";
-  const meta = doc.meta || doc.data || doc;
-  const authors = cleanDisplayText(meta.authors || doc.authors || "Autor nieznany");
-  const year = meta.year || doc.year || "b.d.";
-  const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || doc.titlePL || doc.title || "Bez tytułu");
-  const titleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || doc.titleEN || doc.titleOriginal || "");
-  const original = titleEN && titleEN !== titlePL ? ` [${titleEN}]` : "";
-  return `${authors} (${year}). ${titlePL}${original}. Repozytorium Kalejdoskop Café - SKN Seksuologii.`;
+function generateApaCitation(article) {
+  if (!article) return "";
+  const meta = article.meta || article.data || article;
+  const rawAuthors = meta.authors || article.authors || "";
+  const cleanAuthors = cleanDisplayText(rawAuthors);
+  const authors = cleanAuthors && cleanAuthors !== "Zespół Badawczy SKN" && cleanAuthors !== "SKN Seksuologii" && cleanAuthors !== "Autor nieznany"
+    ? cleanAuthors
+    : "Autorzy nieznani";
+  const year = meta.year || article.year || new Date().getFullYear();
+  const title = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.title || article.name || "Brak tytułu");
+  const titleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || article.titleEN || article.titleOriginal || "");
+  const originalTitle = (titleEN && titleEN !== title) ? ` [${titleEN}]` : "";
+
+  return `${authors} (${year}). ${title}${originalTitle}. Repozytorium Kalejdoskop Café - SKN Seksuologii WSKZ.`;
 }
+
+const formatAPA7 = generateApaCitation;
 
 // Generator rekordu BibTeX
 function formatBibTeX(doc) {
@@ -3199,8 +3206,8 @@ async function copyCitation(format, articleId) {
   let successMsg = "";
 
   if (format === "APA7" || format === "APA") {
-    textToCopy = formatAPA7(article);
-    successMsg = "Skopiowano cytowanie APA do schowka! ✓";
+    textToCopy = generateApaCitation(article);
+    successMsg = "Skopiowano cytowanie APA 7 do schowka! ✓";
   } else if (format === "BIBTEX") {
     textToCopy = formatBibTeX(article);
     successMsg = "Skopiowano rekord BibTeX do schowka! ✓";
@@ -3238,6 +3245,7 @@ function copyCitationFromDetail(format) {
   }
 }
 window.copyCitationFromDetail = copyCitationFromDetail;
+window.generateApaCitation = generateApaCitation;
 window.formatAPA7 = formatAPA7;
 window.formatBibTeX = formatBibTeX;
 
