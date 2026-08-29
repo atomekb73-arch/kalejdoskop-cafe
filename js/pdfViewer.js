@@ -40,43 +40,53 @@ export async function renderPdfPage(pdfDoc, pageNumber, canvas, scale = 1.25) {
   await page.render(renderContext).promise;
 }
 
-export function handlePdfDownload(customFileName) {
-  const base64Data = window.currentPdfBase64 || window.lastLoadedPdfBase64;
-  const fileName = customFileName || window.currentPdfFileName || 'Publikacja_SKN.pdf';
-
-  if (!base64Data && !window.currentPdfBytes) {
-    console.error("Brak danych pliku Base64 w pamięci.");
-    return;
-  }
-
+export async function downloadCurrentPdfFile(customFileName) {
   try {
-    let bytes = null;
-    if (window.currentPdfBytes instanceof Uint8Array) {
-      bytes = window.currentPdfBytes;
-    } else if (base64Data) {
-      const cleanBase64 = String(base64Data).replace(/^data:.*?;base64,/, '').replace(/[^A-Za-z0-9+/=]/g, '').trim();
+    let pdfBytes = null;
+
+    if (window.pdfDoc && typeof window.pdfDoc.getData === 'function') {
+      pdfBytes = await window.pdfDoc.getData();
+    } else if (window.currentPdfBytes instanceof Uint8Array && window.currentPdfBytes.length > 0) {
+      pdfBytes = window.currentPdfBytes;
+    } else if (window.currentPdfBase64 || window.lastLoadedPdfBase64) {
+      const raw = window.currentPdfBase64 || window.lastLoadedPdfBase64;
+      const cleanBase64 = String(raw).replace(/^data:.*?;base64,/, '').trim();
       const binaryString = atob(cleanBase64);
-      bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
+      pdfBytes = bytes;
     }
 
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-    const downloadUrl = URL.createObjectURL(blob);
+    if (!pdfBytes || pdfBytes.length === 0) {
+      throw new Error("Pusty bufor dokumentu.");
+    }
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const fileName = customFileName || window.currentPdfFileName || 'Publikacja_SKN.pdf';
+    const safeFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+    
+    const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = fileName;
+    link.href = blobUrl;
+    link.download = safeFileName;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }, 200);
+
   } catch (err) {
-    console.error("Błąd podczas konwersji do pobrania:", err);
+    console.error("Błąd pobierania:", err);
   }
 }
 
 export default {
   renderPdfPage,
-  handlePdfDownload
+  handlePdfDownload: downloadCurrentPdfFile,
+  downloadCurrentPdfFile
 };
