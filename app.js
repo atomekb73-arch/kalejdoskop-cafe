@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxWpi5BQHlsiyilsEa7GoktwKodlsgsG7LD23rbO14x44apSLgkxM1k98VhtpPzbWj6/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxCMvWgJ0br3tJCKWAsy9x1SIQIGBq0fociZWVTEC85_QYMG5lXsQEFNgzKtkMsnjRd/exec";
 
 const AppState = {
   articles: [],
