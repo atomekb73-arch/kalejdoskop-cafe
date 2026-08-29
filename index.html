@@ -1280,8 +1280,8 @@
         </div>
       </div>
 
-      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch Optimized) -->
-      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-y-auto overflow-x-hidden p-2 sm:p-6 flex flex-col items-center justify-start relative select-none touch-pan-y" style="-webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
+      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch Optimized & 2D Zoom Scroll) -->
+      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-auto p-2 sm:p-6 flex flex-col items-center justify-start relative select-none touch-pan-y" style="-webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
         <!-- Pływający pasek bezpieczeństwa / stempel -->
         <div class="sticky top-1 sm:top-2 z-10 bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md flex items-center gap-1.5 mb-2 sm:mb-3 select-none pointer-events-none text-center">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -1294,9 +1294,9 @@
           <span class="text-xs font-medium text-slate-300">Wczytywanie i renderowanie dokumentu...</span>
         </div>
 
-        <!-- Canvas Wyświetlający Stronę -->
-        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg overflow-hidden border border-slate-800 select-none bg-white max-w-full" style="display: none;">
-          <canvas id="pdf-render-canvas" class="block max-w-full h-auto mx-auto" style="max-width: 100%; height: auto; display: block; margin: 0 auto 16px auto;"></canvas>
+        <!-- Canvas Wyświetlający Stronę (Brak ograniczenia max-width przy powiększeniu) -->
+        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg border border-slate-800 select-none bg-white max-w-none" style="display: none;">
+          <canvas id="pdf-render-canvas" class="block mx-auto" style="display: block; margin: 0 auto;"></canvas>
         </div>
       </div>
     </div>

@@ -1743,8 +1743,9 @@ async function renderViewerPage(num) {
       const ctx = canvas.getContext("2d");
       canvas.height = viewport.height;
       canvas.width = viewport.width;
-      canvas.style.maxWidth = "100%";
-      canvas.style.height = "auto";
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+      canvas.style.maxWidth = "none";
       canvas.style.display = "block";
       canvas.style.margin = "0 auto 16px auto";
 
@@ -1828,9 +1829,90 @@ function viewerFitWidth() {
 }
 window.viewerFitWidth = viewerFitWidth;
 
-function viewerDownloadWatermarked() {
-  if (ViewerState.currentArticleId) {
-    downloadWatermarkedPdf(ViewerState.currentArticleId);
+async function viewerDownloadWatermarked() {
+  const articleId = ViewerState.currentArticleId;
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+
+  if (!article && !ViewerState.rawPdfBytes) {
+    showToast("Brak dokumentu do pobrania.", "error");
+    return;
+  }
+
+  showToast("Przygotowywanie bezpiecznego pliku PDF do pobrania...", "info");
+
+  // Bezpośrednie i natychmiastowe generowanie pliku z pamięci podręcznej
+  if (ViewerState.rawPdfBytes) {
+    try {
+      if (typeof window.PDFLib === "undefined" && typeof PDFLib === "undefined") {
+        await loadPdfLibScript();
+      }
+      const pdfLibInstance = typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib;
+      if (pdfLibInstance && pdfLibInstance.PDFDocument) {
+        const pdfDoc = await pdfLibInstance.PDFDocument.load(ViewerState.rawPdfBytes, { ignoreEncryption: true });
+        const helveticaBold = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.HelveticaBold);
+        const helveticaRegular = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.Helvetica);
+        const userName = AppState.currentUser?.name || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Dostęp Akademicki");
+        const dateStr = new Date().toLocaleDateString("pl-PL");
+        const watermarkText = `EGZEMPLARZ: ${userName.toUpperCase()} • SKN SEKSUOLOGII`;
+        const auditText = "Pobrano przez: " + userName + " • SKN Seksuologii • " + dateStr;
+
+        const pages = pdfDoc.getPages();
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i];
+          const { width, height } = page.getSize();
+          const diagonalFontSize = Math.max(14, Math.min(22, width / 30));
+          const textWidth = helveticaBold.widthOfTextAtSize(watermarkText, diagonalFontSize);
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const rad = -45 * (Math.PI / 180);
+          const x = centerX - (textWidth / 2) * Math.cos(rad);
+          const y = centerY - (textWidth / 2) * Math.sin(rad);
+
+          page.drawText(watermarkText, {
+            x: x,
+            y: y,
+            size: diagonalFontSize,
+            font: helveticaBold,
+            color: pdfLibInstance.rgb(0.45, 0.2, 0.55),
+            opacity: 0.14,
+            rotate: pdfLibInstance.degrees(-45)
+          });
+
+          page.drawText(auditText, {
+            x: 30,
+            y: 15,
+            size: 8,
+            font: helveticaRegular,
+            color: pdfLibInstance.rgb(0.25, 0.25, 0.25),
+            opacity: 0.85
+          });
+        }
+
+        const modifiedBytes = await pdfDoc.save();
+        const blob = new Blob([modifiedBytes], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        const title = (article?.titleOriginal || article?.titlePL || "Dokument_SKN")
+          .replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "")
+          .trim()
+          .replace(/\s+/g, "_");
+        a.download = `${title}_SKN.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 500);
+        showToast("Plik PDF został pomyślnie pobrany!", "success");
+        return;
+      }
+    } catch (e) {
+      console.warn("Szybkie pobieranie z pamięci nie powiodło się, próba standardowa:", e);
+    }
+  }
+
+  // Fallback do standardowej procedury pobierania
+  if (articleId) {
+    downloadWatermarkedPdf(articleId);
   }
 }
 window.viewerDownloadWatermarked = viewerDownloadWatermarked;
