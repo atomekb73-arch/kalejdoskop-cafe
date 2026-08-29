@@ -40,7 +40,7 @@ export async function renderPdfPage(pdfDoc, pageNumber, canvas, scale = 1.25) {
   await page.render(renderContext).promise;
 }
 
-export async function downloadCurrentPdfFile(customFileName) {
+export async function downloadWatermarkedPdf(customFileName) {
   try {
     let pdfBytes = null;
 
@@ -51,42 +51,81 @@ export async function downloadCurrentPdfFile(customFileName) {
     } else if (window.currentPdfBase64 || window.lastLoadedPdfBase64) {
       const raw = window.currentPdfBase64 || window.lastLoadedPdfBase64;
       const cleanBase64 = String(raw).replace(/^data:.*?;base64,/, '').trim();
-      const binaryString = atob(cleanBase64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      pdfBytes = bytes;
+      pdfBytes = Uint8Array.from(atob(cleanBase64), c => c.charCodeAt(0));
     }
 
     if (!pdfBytes || pdfBytes.length === 0) {
       throw new Error("Pusty bufor dokumentu.");
     }
 
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const fileName = customFileName || window.currentPdfFileName || 'Publikacja_SKN.pdf';
-    const safeFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-    
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = safeFileName;
-    document.body.appendChild(link);
-    link.click();
-    
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    }, 200);
+    const pdfLibInstance = window.PDFLib || (typeof PDFLib !== 'undefined' ? PDFLib : null);
 
+    if (pdfLibInstance && pdfLibInstance.PDFDocument) {
+      const { PDFDocument, rgb, degrees, StandardFonts } = pdfLibInstance;
+      const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+      const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      const pages = pdfDoc.getPages();
+      const userEmail = (window.currentUser && (window.currentUser.email || window.currentUser.name)) || "Członek SKN";
+      const downloadDate = new Date().toISOString().split('T')[0];
+
+      for (const page of pages) {
+        const { width, height } = page.getSize();
+
+        // 1. Duży diagonalny znak wodny na środku (45 stopni)
+        const watermarkText = 'Inteligentna Biblioteka SKN Seksuologii';
+        const fontSize = Math.max(14, Math.min(24, width / 25));
+        page.drawText(watermarkText, {
+          x: width / 6,
+          y: height / 3,
+          size: fontSize,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+          opacity: 0.15,
+          rotate: degrees(45),
+        });
+
+        // 2. Dyskretna stopka ewidencyjna na dole strony
+        const auditText = `SKN Seksuologii WSKZ • Egzemplarz autoryzowany: ${userEmail} • Data: ${downloadDate}`;
+        page.drawText(auditText, {
+          x: 40,
+          y: 20,
+          size: 9,
+          font: regularFont,
+          color: rgb(0.4, 0.4, 0.4),
+          opacity: 0.5,
+        });
+      }
+
+      const modifiedPdfBytes = await pdfDoc.save();
+      triggerFileSave(modifiedPdfBytes, customFileName || window.currentPdfFileName || "Publikacja_SKN.pdf");
+    } else {
+      triggerFileSave(pdfBytes, customFileName || window.currentPdfFileName || "Publikacja_SKN.pdf");
+    }
   } catch (err) {
-    console.error("Błąd pobierania:", err);
+    console.error("Błąd nakładania znaku wodnego:", err);
   }
+}
+
+function triggerFileSave(bytes, fileName) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  const safeName = fileName || "Publikacja_SKN.pdf";
+  link.download = safeName.endsWith('.pdf') ? safeName : `${safeName}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 300);
 }
 
 export default {
   renderPdfPage,
-  handlePdfDownload: downloadCurrentPdfFile,
-  downloadCurrentPdfFile
+  downloadWatermarkedPdf,
+  downloadCurrentPdfFile: downloadWatermarkedPdf,
+  handlePdfDownload: downloadWatermarkedPdf
 };

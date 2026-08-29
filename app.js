@@ -1864,18 +1864,16 @@ function viewerFitWidth() {
 window.viewerFitWidth = viewerFitWidth;
 
 /**
- * Obsługa kliknięcia przycisku pobierania (czerwona ikona)
- * Pobieranie bezpośrednio z aktywnej instancji PDF.js (pdfDoc.getData()) lub pamięci podręcznej
+ * Obsługa pobierania z trwałym wypaleniem znaku wodnego (pdf-lib)
+ * Środek: Inteligentna Biblioteka SKN Seksuologii (kąt 45 st.)
+ * Stopka: SKN Seksuologii WSKZ • Egzemplarz autoryzowany: [USER_EMAIL] • Data: [DATA_POBRANIA]
  */
-async function downloadCurrentPdfFile() {
+async function downloadWatermarkedPdf() {
   try {
     let pdfBytes = null;
 
-    // 1. Próba pobrania bajtów bezpośrednio z aktywnej instancji dokumentu PDF.js
     if (window.pdfDoc && typeof window.pdfDoc.getData === "function") {
       pdfBytes = await window.pdfDoc.getData();
-    } else if (ViewerState && ViewerState.pdfDoc && typeof ViewerState.pdfDoc.getData === "function") {
-      pdfBytes = await ViewerState.pdfDoc.getData();
     } else if (window.currentPdfBytes instanceof Uint8Array && window.currentPdfBytes.length > 0) {
       pdfBytes = window.currentPdfBytes;
     } else if (ViewerState && ViewerState.rawPdfBytes instanceof Uint8Array && ViewerState.rawPdfBytes.length > 0) {
@@ -1883,55 +1881,100 @@ async function downloadCurrentPdfFile() {
     } else if (window.currentPdfBase64 || window.lastLoadedPdfBase64 || (ViewerState && ViewerState.rawBase64)) {
       const raw = window.currentPdfBase64 || window.lastLoadedPdfBase64 || (ViewerState && ViewerState.rawBase64);
       const cleanBase64 = String(raw).replace(/^data:.*?;base64,/, "").trim();
-      const binaryString = atob(cleanBase64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      pdfBytes = bytes;
+      pdfBytes = Uint8Array.from(atob(cleanBase64), (c) => c.charCodeAt(0));
     }
 
     if (!pdfBytes || pdfBytes.length === 0) {
-      throw new Error("Pusty bufor dokumentu.");
+      throw new Error("Brak danych pliku do pobrania.");
     }
 
-    // 2. Utworzenie Bloba i natychmiastowe pobranie pliku
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
-    const fileName = window.currentPdfFileName || (ViewerState && ViewerState.currentArticleId ? `${ViewerState.currentArticleId}_SKN.pdf` : "Publikacja_SKN.pdf");
-    const safeFileName = fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`;
+    const pdfLibInstance = window.PDFLib || (typeof PDFLib !== "undefined" ? PDFLib : null);
 
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = safeFileName;
-    document.body.appendChild(link);
-    link.click();
+    // Jeśli pdf-lib jest dostępny, modyfikujemy strukturę PDF (wypalanie znaku wodnego)
+    if (pdfLibInstance && pdfLibInstance.PDFDocument) {
+      const { PDFDocument, rgb, degrees, StandardFonts } = pdfLibInstance;
+      const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+      const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    }, 200);
+      const pages = pdfDoc.getPages();
+      const userEmail = (window.currentUser && (window.currentUser.email || window.currentUser.name)) || (AppState && AppState.currentUser && (AppState.currentUser.email || AppState.currentUser.name)) || (AppState && AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Student WSKZ");
+      const downloadDate = new Date().toISOString().split("T")[0];
 
-    if (typeof showToast === "function") {
-      showToast(`Pobrano dokument «${safeFileName}»!`, "success");
+      for (const page of pages) {
+        const { width, height } = page.getSize();
+
+        // 1. Duży diagonalny znak wodny na środku (45 stopni)
+        const watermarkText = "Inteligentna Biblioteka SKN Seksuologii";
+        const fontSize = Math.max(14, Math.min(24, width / 25));
+        page.drawText(watermarkText, {
+          x: width / 6,
+          y: height / 3,
+          size: fontSize,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+          opacity: 0.15,
+          rotate: degrees(45)
+        });
+
+        // 2. Dyskretna stopka ewidencyjna na dole strony
+        const auditText = `SKN Seksuologii WSKZ • Egzemplarz autoryzowany: ${userEmail} • Data: ${downloadDate}`;
+        page.drawText(auditText, {
+          x: 40,
+          y: 20,
+          size: 9,
+          font: regularFont,
+          color: rgb(0.4, 0.4, 0.4),
+          opacity: 0.5
+        });
+      }
+
+      const modifiedPdfBytes = await pdfDoc.save();
+      triggerFileSave(modifiedPdfBytes, window.currentPdfFileName || (ViewerState && ViewerState.currentArticleId ? `${ViewerState.currentArticleId}_SKN.pdf` : "Publikacja_SKN.pdf"));
+    } else {
+      // Fallback: pobranie oryginału jeśli biblioteka offline
+      triggerFileSave(pdfBytes, window.currentPdfFileName || (ViewerState && ViewerState.currentArticleId ? `${ViewerState.currentArticleId}_SKN.pdf` : "Publikacja_SKN.pdf"));
     }
   } catch (err) {
-    console.error("Błąd pobierania:", err);
+    console.error("Błąd nakładania znaku wodnego:", err);
     if (typeof showToast === "function") {
-      showToast(`Błąd podczas pobierania pliku: ${err.message}`, "error");
+      showToast("Błąd podczas pobierania pliku: " + (err.message || err), "error");
     }
   }
 }
-window.downloadCurrentPdfFile = downloadCurrentPdfFile;
-window.handlePdfDownload = downloadCurrentPdfFile;
-window.viewerDownloadWatermarked = downloadCurrentPdfFile;
-window.downloadCurrentPdf = downloadCurrentPdfFile;
+
+function triggerFileSave(bytes, fileName) {
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  const safeName = fileName || "Publikacja_SKN.pdf";
+  link.download = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 300);
+
+  if (typeof showToast === "function") {
+    showToast(`Pobrano dokument «${link.download}» ze znakiem wodnym!`, "success");
+  }
+}
+
+window.downloadWatermarkedPdf = downloadWatermarkedPdf;
+window.downloadCurrentPdfFile = downloadWatermarkedPdf;
+window.handlePdfDownload = downloadWatermarkedPdf;
+window.viewerDownloadWatermarked = downloadWatermarkedPdf;
+window.downloadCurrentPdf = downloadWatermarkedPdf;
 
 function closeSecureViewer() {
   hideModalElement("securePdfViewerModal");
   ViewerState.pdfDoc = null;
+  window.pdfDoc = null;
   ViewerState.rawPdfBytes = null;
+  window.currentPdfBytes = null;
+  window.currentPdfBase64 = null;
   const canvas = document.getElementById("pdf-render-canvas");
   if (canvas) {
     const ctx = canvas.getContext("2d");
@@ -1949,28 +1992,30 @@ function drawWatermarkOnCanvas(ctx, width, height, pixelRatio = 1) {
     ctx.save();
 
     // 1. Diagonalny Znak Wodny (Środek, -45 deg)
-    const fontSize = Math.max(14, Math.round(16 * pixelRatio));
+    const fontSize = Math.max(13, Math.round(18 * pixelRatio));
     ctx.translate(width / 2, height / 2);
     ctx.rotate((-45 * Math.PI) / 180);
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.fillStyle = "rgba(200, 200, 200, 0.25)";
+    ctx.font = `bold ${fontSize}px 'Plus Jakarta Sans', sans-serif`;
+    ctx.fillStyle = "rgba(100, 100, 100, 0.12)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     
-    const userEmail = AppState.currentUser?.email || (AppState.currentUser?.name ? AppState.currentUser.name : (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Student WSKZ"));
-    const dateStr = new Date().toLocaleDateString("pl-PL");
-    const watermarkText = `SKN Seksuologii • ${userEmail} • ${dateStr}`;
+    const watermarkText = "Inteligentna Biblioteka SKN Seksuologii";
     ctx.fillText(watermarkText, 0, 0);
 
     ctx.restore();
 
-    // 2. Dolny Stempel Audytowy
+    // 2. Dolny Stempel Audytowy (Ewidencyjny)
     ctx.save();
+    const userEmail = (AppState.currentUser && (AppState.currentUser.email || AppState.currentUser.name)) || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Student WSKZ");
+    const downloadDate = new Date().toISOString().split("T")[0];
+    const auditText = `SKN Seksuologii WSKZ • Egzemplarz autoryzowany: ${userEmail} • Data: ${downloadDate}`;
+
     const stampSize = Math.max(10, Math.round(11 * pixelRatio));
     ctx.font = `${stampSize}px monospace`;
     ctx.fillStyle = "rgba(71, 85, 105, 0.65)";
     ctx.textAlign = "left";
-    ctx.fillText(`🔒 Zabezpieczony podgląd • ${userEmail} • ${dateStr} • SKN Seksuologii`, 20 * pixelRatio, height - (15 * pixelRatio));
+    ctx.fillText(auditText, 30 * pixelRatio, height - (15 * pixelRatio));
     ctx.restore();
   } catch (wmErr) {
     console.warn("Pominięto znak wodny:", wmErr);
