@@ -39,10 +39,12 @@ const AuthResetFlow = {
     }
 
     try {
-      const response = await fetch(execUrl, {
+      const urlWithAction = `${execUrl}?action=requestResetPin`;
+      const response = await fetch(urlWithAction, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: "follow"
       });
       const data = await response.json();
       return data;
@@ -98,10 +100,12 @@ const AuthResetFlow = {
     }
 
     try {
-      const response = await fetch(execUrl, {
+      const urlWithAction = `${execUrl}?action=confirmResetPin`;
+      const response = await fetch(urlWithAction, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: "follow"
       });
       const data = await response.json();
       return data;

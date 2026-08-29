@@ -35,6 +35,35 @@ const AppState = {
   currentUser: null
 };
 
+/**
+ * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
+ */
+async function callGoogleScript(action, payload = {}) {
+  const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
+  const urlWithAction = `${scriptUrl}?action=${encodeURIComponent(action)}`;
+
+  const bodyData = JSON.stringify({
+    action: action,
+    ...payload
+  });
+
+  const response = await fetch(urlWithAction, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: bodyData,
+    redirect: "follow"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+window.callGoogleScript = callGoogleScript;
+
 // Start aplikacji po załadowaniu drzewa DOM
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
@@ -87,15 +116,18 @@ function restoreAuthSession() {
         AppState.currentUser = {
           name: parsedUser.name,
           role: parsedUser.role === "ADMIN" ? "ADMIN" : "CZLONEK",
-          token: parsedUser.token
+          token: parsedUser.token,
+          email: parsedUser.email,
+          indexNumber: parsedUser.indexNumber
         };
-        AppState.currentRole = AppState.currentUser.role;
+        AppState.currentRole = parsedUser.role === "ADMIN" ? "ADMIN" : "MEMBERS";
+        AppState.currentPin = parsedUser.role === "ADMIN" ? "2026" : "skn2026";
       } else {
         AppState.currentUser = null;
         AppState.currentRole = "PUBLIC";
       }
     } catch (e) {
-      console.warn("Błąd parsowania sesji autoryzacyjnej:", e);
+      console.warn("Błąd parsowania sesji użytkownika:", e);
       AppState.currentUser = null;
       AppState.currentRole = "PUBLIC";
     }
@@ -368,13 +400,10 @@ function loadArticles() {
       })
       .apiGetArticles(AppState.currentRole, AppState.currentPin);
   } else if (AppState.appsScriptUrl) {
-    const fetchUrl = `${AppState.appsScriptUrl}?action=getArticles&role=${encodeURIComponent(AppState.currentRole)}&pin=${encodeURIComponent(AppState.currentPin)}`;
-
-    fetch(fetchUrl, {
-      method: "GET",
-      mode: "cors"
+    callGoogleScript("getArticles", {
+      role: AppState.currentRole,
+      pin: AppState.currentPin
     })
-      .then((res) => res.json())
       .then((data) => {
         showLoadingSpinner(false);
         const list = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
@@ -863,12 +892,7 @@ async function fetchPdfBytes(fileId) {
     }
   } else {
     try {
-      const res = await fetch(execUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "getSecurePdf", fileId, token })
-      });
-      const data = await res.json();
+      const data = await callGoogleScript("getSecurePdf", { fileId, token });
       if (data && (data.base64 || data.data || data.pdfBase64 || data.fileBase64)) {
         const raw = data.base64 || data.data || data.pdfBase64 || data.fileBase64;
         window.lastLoadedPdfBase64 = raw;
@@ -876,6 +900,7 @@ async function fetchPdfBytes(fileId) {
         ViewerState.rawBase64 = raw;
         const bytes = base64ToUint8Array(raw);
         ViewerState.rawPdfBytes = bytes;
+        window.currentPdfBytes = bytes;
         return bytes;
       }
     } catch (e) {
@@ -968,18 +993,7 @@ async function requestAiTranslation(articleId) {
           .apiProcessArticle(payload);
       });
     } else {
-      const execUrl = AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-      const response = await fetch(execUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-      const text = await response.text();
-      try {
-        result = JSON.parse(text);
-      } catch (e) {
-        throw new Error(text || "Błąd formatu odpowiedzi serwera.");
-      }
+      result = await callGoogleScript("translate", payload);
     }
 
     if (result && (result.status === "success" || result.success) && (result.translationUrl || result.urlTranslation || result.url)) {
@@ -2328,12 +2342,11 @@ async function handleLoginSubmit(e) {
       }
     } else {
       try {
-        const res = await fetch(execUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "auth", emailOrIndex: (identifier.includes("@") ? identifier : cleanIndex), identifier: rawIdentifier, pin })
+        const data = await callGoogleScript("auth", {
+          emailOrIndex: (identifier.includes("@") ? identifier : cleanIndex),
+          identifier: rawIdentifier,
+          pin: pin
         });
-        const data = await res.json();
         
         if (data && (data.code === "NEEDS_ACTIVATION" || data.status === "needs_activation" || (data.error && data.error.includes("NEEDS_ACTIVATION")))) {
           resetBtn();
@@ -2505,11 +2518,7 @@ async function handleActivationSubmit(e) {
       });
     } else {
       try {
-        await fetch(execUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
+        await callGoogleScript("registerRequest", payload);
       } catch (fetchErr) {
         console.warn("GAS registerRequest fetch warning:", fetchErr);
       }
@@ -2753,12 +2762,9 @@ async function handleSyncDriveFolder() {
       .apiSyncFolder(AppState.currentPin);
   } else {
     try {
-      const res = await fetch(`${execUrl}?action=scan`, {
-        method: "GET",
-        mode: "cors"
+      const data = await callGoogleScript("scan", {
+        adminPin: AppState.currentPin || "2026"
       });
-
-      const data = await res.json();
       showLoadingSpinner(false);
 
       const filesList = data.files || (data.data && data.data.items) || (data.data && data.data.files) || [];
@@ -2873,20 +2879,11 @@ async function handleConfirmDelete() {
       .apiDeleteArticle(articleId, AppState.currentPin);
   } else {
     try {
-      const res = await fetch(execUrl, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "text/plain"
-        },
-        body: JSON.stringify({
-          action: "deleteArticle",
-          articleId: articleId,
-          adminPin: AppState.currentPin
-        })
+      const data = await callGoogleScript("deleteArticle", {
+        articleId: articleId,
+        adminPin: AppState.currentPin
       });
 
-      const data = await res.json();
       resetDeleteButton();
       closeDeleteModal();
 
@@ -3192,13 +3189,7 @@ async function handleAiChatSubmit(e) {
       });
       aiReply = gasRes.answer || gasRes.reply || gasRes.message || "";
     } else {
-      const execUrl = AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-      const res = await fetch(execUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      const data = await callGoogleScript("askDocument", payload);
       aiReply = data.answer || data.reply || data.response || data.message || "";
     }
 
@@ -3650,15 +3641,7 @@ async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne 
     abstract: cleanAbstract
   };
 
-  const response = await fetch(execUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await response.json();
+  const data = await callGoogleScript("upload", payload);
 
   if (data && (data.status === "success" || data.success)) {
     return data;

@@ -1,20 +1,49 @@
 /**
  * Kalejdoskop Café - Serwis API (Google Apps Script WebApp)
- * Obsługa akcji: auth, registerRequest, requestResetPin, confirmResetPin, getArticles, upload, getSecurePdf
+ * Bezpieczna komunikacja odporna na blokady CORS (text/plain + redirect: follow)
+ * Obsługa akcji: auth, registerRequest, requestResetPin, confirmResetPin, getArticles, upload, getSecurePdf, chat, scan, delete, proposal
  */
 
 import { APP_CONFIG } from './config.js';
 
-export async function sendGasRequest(payload) {
-  const url = APP_CONFIG.API_URL;
-  const response = await fetch(url, {
+/**
+ * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS:
+ * @param {string} action - Nazwa akcji backendu (np. 'getArticles', 'upload', 'getSecurePdf')
+ * @param {Object} payload - Obiekt danych
+ * @returns {Promise<Object>}
+ */
+export async function callGoogleScript(action, payload = {}) {
+  const scriptUrl = localStorage.getItem('APPS_SCRIPT_WEBAPP_URL') || localStorage.getItem('gas_api_url') || APP_CONFIG.API_URL;
+  
+  // Dołączamy akcję również do query params dla 100% pewności routingu
+  const urlWithAction = `${scriptUrl}?action=${encodeURIComponent(action)}`;
+
+  const bodyData = JSON.stringify({
+    action: action,
+    ...payload
+  });
+
+  const response = await fetch(urlWithAction, {
     method: 'POST',
+    // Użycie text/plain zapobiega wysyłaniu zapytania preflight OPTIONS, które blokuje Apps Script
     headers: {
       'Content-Type': 'text/plain;charset=utf-8'
     },
-    body: JSON.stringify(payload)
+    body: bodyData,
+    redirect: 'follow'
   });
-  return await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  return result;
+}
+
+export async function sendGasRequest(payload) {
+  const action = payload.action || 'getArticles';
+  return await callGoogleScript(action, payload);
 }
 
 /**
@@ -58,7 +87,6 @@ export async function uploadPdfArticle(file, metadata = {}, adminPin = "2026") {
   }
 
   const payload = {
-    action: "upload",
     fileBase64: base64,
     base64: base64,
     base64Data: dataUrl,
@@ -77,10 +105,11 @@ export async function uploadPdfArticle(file, metadata = {}, adminPin = "2026") {
     }
   };
 
-  return await sendGasRequest(payload);
+  return await callGoogleScript("upload", payload);
 }
 
 export default {
+  callGoogleScript,
   sendGasRequest,
   readFileAsBase64,
   uploadPdfArticle
