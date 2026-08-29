@@ -1661,6 +1661,8 @@ async function openSecureViewer(articleId, mode = "original") {
   ViewerState.rawPdfBytes = null;
 
   const title = cleanDisplayText(article.titlePL || article.titleOriginal || article.name || "Dokument");
+  window.currentPdfFileName = `${title.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "_").trim().replace(/\s+/g, "_")}_SKN.pdf`;
+
   const docTitleEl = document.getElementById("viewer-doc-title");
   const docBadgeEl = document.getElementById("viewer-doc-badge");
   const canvasWrapper = document.getElementById("viewer-canvas-wrapper");
@@ -1695,6 +1697,7 @@ async function openSecureViewer(articleId, mode = "original") {
 
     const pdfBytes = await fetchPdfBytes(fileId);
     ViewerState.rawPdfBytes = pdfBytes;
+    window.currentPdfBytes = pdfBytes;
 
     const loadingTask = pdfjsLib.getDocument({
       data: pdfBytes,
@@ -1860,67 +1863,59 @@ function viewerFitWidth() {
 window.viewerFitWidth = viewerFitWidth;
 
 /**
- * Bezpośrednie, natywne pobieranie pliku PDF z pamięci (Base64 / Uint8Array)
- * Wyeliminowano zależność od zewnętrznego CDN pdf-lib
+ * Obsługa kliknięcia przycisku pobierania (czerwona ikona)
+ * Pobieranie bezpośrednio z window.currentPdfBase64 / ViewerState.rawPdfBytes / window.currentPdfBytes
  */
-function downloadCurrentPdf(fileName) {
+function handlePdfDownload() {
+  const base64Data = window.currentPdfBase64 || window.lastLoadedPdfBase64 || (ViewerState && ViewerState.rawBase64);
+  const fileName = window.currentPdfFileName || (ViewerState.currentArticleId ? `${ViewerState.currentArticleId}_SKN.pdf` : 'Publikacja_SKN.pdf');
+
+  if (!base64Data && !(ViewerState && ViewerState.rawPdfBytes) && !window.currentPdfBytes) {
+    console.error("Brak danych pliku Base64 w pamięci.");
+    showToast("Brak danych pliku do pobrania.", "error");
+    return;
+  }
+
   try {
-    const rawBase64 = (ViewerState && (ViewerState.rawBase64 || ViewerState.base64)) || window.lastLoadedPdfBase64 || window.currentPdfBase64;
-    let byteArray = null;
-
+    let bytes = null;
     if (ViewerState && ViewerState.rawPdfBytes instanceof Uint8Array) {
-      byteArray = ViewerState.rawPdfBytes;
-    } else if (rawBase64) {
-      const cleanBase64 = String(rawBase64).replace(/^data:.*?;base64,/, "").replace(/[^A-Za-z0-9+/=]/g, "").trim();
-      const byteCharacters = atob(cleanBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      bytes = ViewerState.rawPdfBytes;
+    } else if (window.currentPdfBytes instanceof Uint8Array) {
+      bytes = window.currentPdfBytes;
+    } else if (base64Data) {
+      const cleanBase64 = String(base64Data).replace(/^data:.*?;base64,/, '').replace(/[^A-Za-z0-9+/=]/g, '').trim();
+      const binaryString = atob(cleanBase64);
+      bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
-      byteArray = new Uint8Array(byteNumbers);
     }
 
-    if (!byteArray || byteArray.length === 0) {
-      throw new Error("Brak danych pliku do pobrania.");
+    if (!bytes || bytes.length === 0) {
+      throw new Error("Pusty bufor dokumentu.");
     }
 
-    const blob = new Blob([byteArray], { type: "application/pdf" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName || "Dokument_SKN.pdf";
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     setTimeout(() => {
-      URL.revokeObjectURL(link.href);
+      URL.revokeObjectURL(downloadUrl);
     }, 1000);
 
-    showToast(`Pobrano dokument «${fileName || "Dokument_SKN.pdf"}»!`, "success");
+    showToast(`Pobrano dokument «${fileName}»!`, "success");
   } catch (err) {
-    console.error("Błąd pobierania pliku:", err);
-    showToast("Błąd pobierania pliku: " + (err.message || err), "error");
+    console.error("Błąd podczas konwersji do pobrania:", err);
+    showToast("Błąd podczas pobierania pliku: " + (err.message || err), "error");
   }
 }
-window.downloadCurrentPdf = downloadCurrentPdf;
-
-function viewerDownloadWatermarked() {
-  const articleId = ViewerState.currentArticleId;
-  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
-  const title = (article?.titleOriginal || article?.titlePL || article?.name || "Dokument_SKN")
-    .replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "")
-    .trim()
-    .replace(/\s+/g, "_");
-  const fileName = `${title}_SKN.pdf`;
-
-  if (ViewerState.rawPdfBytes || window.lastLoadedPdfBase64 || window.currentPdfBase64 || ViewerState.rawBase64) {
-    downloadCurrentPdf(fileName);
-  } else if (articleId) {
-    downloadWatermarkedPdf(articleId);
-  } else {
-    showToast("Brak dokumentu do pobrania.", "error");
-  }
-}
-window.viewerDownloadWatermarked = viewerDownloadWatermarked;
+window.handlePdfDownload = handlePdfDownload;
+window.viewerDownloadWatermarked = handlePdfDownload;
+window.downloadCurrentPdf = handlePdfDownload;
 
 function closeSecureViewer() {
   hideModalElement("securePdfViewerModal");

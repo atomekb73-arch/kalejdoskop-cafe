@@ -40,6 +40,43 @@ export async function renderPdfPage(pdfDoc, pageNumber, canvas, scale = 1.25) {
   await page.render(renderContext).promise;
 }
 
+export function handlePdfDownload(customFileName) {
+  const base64Data = window.currentPdfBase64 || window.lastLoadedPdfBase64;
+  const fileName = customFileName || window.currentPdfFileName || 'Publikacja_SKN.pdf';
+
+  if (!base64Data && !window.currentPdfBytes) {
+    console.error("Brak danych pliku Base64 w pamięci.");
+    return;
+  }
+
+  try {
+    let bytes = null;
+    if (window.currentPdfBytes instanceof Uint8Array) {
+      bytes = window.currentPdfBytes;
+    } else if (base64Data) {
+      const cleanBase64 = String(base64Data).replace(/^data:.*?;base64,/, '').replace(/[^A-Za-z0-9+/=]/g, '').trim();
+      const binaryString = atob(cleanBase64);
+      bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+    }
+
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+  } catch (err) {
+    console.error("Błąd podczas konwersji do pobrania:", err);
+  }
+}
+
 export default {
-  renderPdfPage
+  renderPdfPage,
+  handlePdfDownload
 };
