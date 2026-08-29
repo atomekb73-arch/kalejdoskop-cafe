@@ -799,7 +799,8 @@ async function downloadWatermarkedPdf(articleId) {
     showToast(`Pobrano dokument «${title}» z podpisem cyfrowym i stemplem audytowym!`, "success");
   } catch (err) {
     console.error("Watermark error:", err);
-    showToast("Błąd generowania znaku wodnego: " + (err.message || err), "error");
+    const errText = (err && typeof err === "object" && err.message) ? err.message : (typeof err === "string" ? err : "Wystąpił problem podczas generowania stempla PDF.");
+    showToast("Błąd generowania znaku wodnego: " + errText, "error");
   } finally {
     AppState.watermarkingIds.delete(articleId);
     filterAndRenderArticles();
@@ -814,7 +815,18 @@ async function downloadWatermarkedPdf(articleId) {
 window.downloadWatermarkedPdf = downloadWatermarkedPdf;
 
 function base64ToUint8Array(base64) {
-  const cleanBase64 = base64.replace(/\s/g, "").replace(/^data:application\/pdf;base64,/, "");
+  if (!base64) {
+    throw new Error("Pusty lub brakujący ciąg base64 pliku PDF.");
+  }
+  const cleanBase64 = String(base64)
+    .replace(/^data:.*?;base64,/, "")
+    .replace(/[^A-Za-z0-9+/=]/g, "")
+    .trim();
+  
+  if (!cleanBase64) {
+    throw new Error("Nieprawidłowy format Base64 dokumentu.");
+  }
+
   const binaryString = window.atob(cleanBase64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -837,8 +849,8 @@ async function fetchPdfBytes(fileId) {
           .withFailureHandler(reject)
           .apiGetSecurePdf({ fileId, token });
       });
-      if (res && (res.base64 || res.data || res.pdfBase64)) {
-        return base64ToUint8Array(res.base64 || res.data || res.pdfBase64);
+      if (res && (res.base64 || res.data || res.pdfBase64 || res.fileBase64)) {
+        return base64ToUint8Array(res.base64 || res.data || res.pdfBase64 || res.fileBase64);
       }
     } catch (e) {
       console.warn("GAS apiGetSecurePdf error:", e);
@@ -851,8 +863,8 @@ async function fetchPdfBytes(fileId) {
         body: JSON.stringify({ action: "getSecurePdf", fileId, token })
       });
       const data = await res.json();
-      if (data && (data.base64 || data.data || data.pdfBase64)) {
-        return base64ToUint8Array(data.base64 || data.data || data.pdfBase64);
+      if (data && (data.base64 || data.data || data.pdfBase64 || data.fileBase64)) {
+        return base64ToUint8Array(data.base64 || data.data || data.pdfBase64 || data.fileBase64);
       }
     } catch (e) {
       console.warn("Fetch action getSecurePdf error:", e);
@@ -870,6 +882,9 @@ async function fetchPdfBytes(fileId) {
   }
 
   // 3. Fallback generowania dokumentu w pamięci RAM
+  if (typeof PDFLib === "undefined" && typeof window.PDFLib === "undefined") {
+    await loadPdfLibScript();
+  }
   const pdfLibInstance = typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib;
   const doc = await pdfLibInstance.PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]);
@@ -881,12 +896,12 @@ async function fetchPdfBytes(fileId) {
 function loadPdfLibScript() {
   return new Promise((resolve, reject) => {
     if (typeof PDFLib !== "undefined" || typeof window.PDFLib !== "undefined") {
-      return resolve();
+      return resolve(typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib);
     }
     const script = document.createElement("script");
     script.src = "https://unpkg.com/pdf-lib@1.17.9/dist/pdf-lib.min.js";
-    script.onload = resolve;
-    script.onerror = reject;
+    script.onload = () => resolve(typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib);
+    script.onerror = () => reject(new Error("Nie udało się załadować biblioteki pdf-lib (błąd sieci/CDN)."));
     document.head.appendChild(script);
   });
 }
@@ -1738,13 +1753,24 @@ async function renderViewerPage(num) {
         viewport: viewport
       };
 
-      await page.render(renderContext).promise;
+      const renderTask = page.render(renderContext);
+      await renderTask.promise;
 
-      // Dynamiczne nakładanie znaku wodnego i stempla na Canvas
-      drawWatermarkOnCanvas(ctx, viewport.width, viewport.height);
+      // Nakładanie znaku wodnego z zabezpieczeniem try/catch:
+      try {
+        drawWatermarkOnCanvas(ctx, viewport.width, viewport.height);
+      } catch (wmErr) {
+        console.warn("Pominięto znak wodny:", wmErr);
+      }
 
-      if (loadingSpinner) loadingSpinner.classList.add("hidden");
-      if (canvasWrapper) canvasWrapper.classList.remove("hidden");
+      if (loadingSpinner) {
+        loadingSpinner.classList.add("hidden");
+        loadingSpinner.style.setProperty("display", "none", "important");
+      }
+      if (canvasWrapper) {
+        canvasWrapper.classList.remove("hidden");
+        canvasWrapper.style.setProperty("display", "block", "important");
+      }
     }
   } catch (err) {
     console.error("Page render error:", err);
@@ -1825,44 +1851,35 @@ window.closeSecureViewer = closeSecureViewer;
  * Rysowanie pikselowego znaku wodnego i stempla audytowego na elemencie Canvas
  */
 function drawWatermarkOnCanvas(ctx, width, height) {
-  ctx.save();
+  if (!ctx) return;
+  try {
+    ctx.save();
 
-  // 1. Diagonalny Znak Wodny (Środek, -45 deg)
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(-45 * Math.PI / 180);
-  ctx.font = "bold 20px 'Plus Jakarta Sans', sans-serif";
-  ctx.fillStyle = "rgba(99, 102, 241, 0.12)";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  
-  const canvasWatermark = AppState.currentUser
-    ? `EGZEMPLARZ: ${AppState.currentUser.name.toUpperCase()} • SKN SEKSUOLOGII`
-    : "MATERIAŁ DYDAKTYCZNY • SKN SEKSUOLOGII";
-  ctx.fillText(canvasWatermark, 0, 0);
+    // 1. Diagonalny Znak Wodny (Środek, -45 deg)
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate((-45 * Math.PI) / 180);
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillStyle = "rgba(200, 200, 200, 0.25)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    const userEmail = AppState.currentUser?.email || (AppState.currentUser?.name ? AppState.currentUser.name : (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Student WSKZ"));
+    const dateStr = new Date().toLocaleDateString("pl-PL");
+    const watermarkText = `SKN Seksuologii • ${userEmail} • ${dateStr}`;
+    ctx.fillText(watermarkText, 0, 0);
 
-  ctx.restore();
+    ctx.restore();
 
-  // 2. Dolny Stempel Audytowy
-  ctx.save();
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const formattedDate = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  
-  let userRole = "Gość (Widok Publiczny)";
-  if (AppState.currentUser) {
-    const uIndex = AppState.currentUser.indexNumber ? ` (Indeks: ${AppState.currentUser.indexNumber})` : "";
-    userRole = `${AppState.currentUser.name}${uIndex}`;
-  } else if (AppState.currentRole === "ADMIN") {
-    userRole = "Administrator SKN";
-  } else if (AppState.currentRole === "MEMBERS") {
-    userRole = "Członek SKN";
+    // 2. Dolny Stempel Audytowy
+    ctx.save();
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "rgba(71, 85, 105, 0.65)";
+    ctx.textAlign = "left";
+    ctx.fillText(`🔒 Zabezpieczony podgląd • ${userEmail} • ${dateStr} • SKN Seksuologii`, 20, height - 15);
+    ctx.restore();
+  } catch (wmErr) {
+    console.warn("Pominięto znak wodny:", wmErr);
   }
-
-  ctx.font = "11px monospace";
-  ctx.fillStyle = "rgba(71, 85, 105, 0.65)";
-  ctx.textAlign = "left";
-  ctx.fillText(`🔒 Zabezpieczony podgląd • Pobrano przez: ${userRole} • ${formattedDate} • SKN Seksuologii`, 20, height - 15);
-  ctx.restore();
 }
 
 // Blokada skrótów klawiszowych (Ctrl+S, Ctrl+P, Ctrl+U, F12, Ctrl+Shift+I/C/J) w oknie czytnika
