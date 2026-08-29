@@ -1,12 +1,12 @@
 /**
- * Kalejdoskop Café - Konfiguracja Endpointu API (Kalejdoskop_34)
+ * Kalejdoskop Café - Konfiguracja Endpointu API (Kalejdoskop_35)
  * Studenckie Koło Naukowe Seksuologii
  */
 
 export const APP_CONFIG = {
-  VERSION: "Kalejdoskop_34",
-  API_URL: "https://script.google.com/macros/s/AKfycbxWpi5BQHlsiyilsEa7GoktwKodlsgsG7LD23rbO14x44apSLgkxM1k98VhtpPzbWj6/exec",
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxWpi5BQHlsiyilsEa7GoktwKodlsgsG7LD23rbO14x44apSLgkxM1k98VhtpPzbWj6/exec",
+  VERSION: "Kalejdoskop_35",
+  API_URL: "https://script.google.com/macros/s/AKfycby28gUmVKgi8UW_ODHxrM5hiGJ5w8kQUI7O2hCpCRo8v_BN9m1JVIqUYDx3YDQQXMal/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby28gUmVKgi8UW_ODHxrM5hiGJ5w8kQUI7O2hCpCRo8v_BN9m1JVIqUYDx3YDQQXMal/exec",
   HEADERS: {
     "Content-Type": "text/plain;charset=utf-8"
   },
