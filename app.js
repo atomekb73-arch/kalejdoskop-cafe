@@ -944,7 +944,7 @@ function loadPdfLibScript() {
 }
 
 /**
- * Zlecanie tłumaczenia pełnotekstowego AI
+ * Zlecanie i obsługa tłumaczenia AI abstraktu i pełnego dokumentu
  */
 async function requestAiTranslation(articleId) {
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
@@ -979,6 +979,7 @@ async function requestAiTranslation(articleId) {
     const payload = {
       action: "translate",
       recordId: article.id,
+      articleId: article.id,
       fileId: fileId,
       adminPin: AppState.currentPin || "2026"
     };
@@ -996,17 +997,49 @@ async function requestAiTranslation(articleId) {
       result = await callGoogleScript("translate", payload);
     }
 
-    if (result && (result.status === "success" || result.success) && (result.translationUrl || result.urlTranslation || result.url)) {
-      const newTransUrl = safeUrl(result.translationUrl || result.urlTranslation || result.url);
-      article.translationUrl = newTransUrl;
-      article.urlTranslation = newTransUrl;
-      if (article.meta) {
-        article.meta.translationUrl = newTransUrl;
-        article.meta.urlTranslation = newTransUrl;
+    if (result && (result.status === "success" || result.success)) {
+      const resData = result.data || result;
+      const newTransUrl = resData.translationUrl || resData.urlTranslation || resData.url || result.translationUrl;
+      const newAbstractPL = resData.abstractPL || resData.abstract || resData.abstraktPL || result.abstractPL || result.abstract;
+      const newTitlePL = resData.titlePL || resData.polishTitle || resData.translatedTitle || result.titlePL;
+      const newFileIdTrans = resData.fileIdTranslation || resData.translationFileId || result.fileIdTranslation;
+
+      if (newTransUrl) {
+        article.translationUrl = safeUrl(newTransUrl);
+        article.urlTranslation = safeUrl(newTransUrl);
       }
-      showToast(`Dokument «${cleanDisplayText(title)}» został pomyślnie przetłumaczony na język polski!`, "success");
+      if (newFileIdTrans) {
+        article.fileIdTranslation = newFileIdTrans;
+        article.translationFileId = newFileIdTrans;
+      }
+      if (newAbstractPL) {
+        article.abstractPL = newAbstractPL;
+        article.abstract = article.abstract || newAbstractPL;
+      }
+      if (newTitlePL) {
+        article.titlePL = newTitlePL;
+      }
+      article.hasPolishTranslation = true;
+
+      if (article.meta) {
+        if (newTransUrl) {
+          article.meta.translationUrl = safeUrl(newTransUrl);
+          article.meta.urlTranslation = safeUrl(newTransUrl);
+        }
+        if (newAbstractPL) article.meta.abstractPL = newAbstractPL;
+        if (newTitlePL) article.meta.titlePL = newTitlePL;
+        article.meta.hasPolishTranslation = true;
+      }
+
+      // Aktualizacja w głównej liście
+      const mainArt = AppState.articles.find((a) => a.id === article.id);
+      if (mainArt && mainArt !== article) {
+        Object.assign(mainArt, article);
+      }
+
+      showToast("Abstrakt został pomyślnie przetłumaczony i zaktualizowany", "success");
     } else {
-      throw new Error((result && (result.message || result.error)) || "Nie udało się wygenerować tłumaczenia.");
+      throw new Error((result && (result.message || result.error)) || "Nie udało się przetłumaczyć abstraktu.");
     }
   } catch (err) {
     console.error("Translation error:", err);
@@ -1023,6 +1056,195 @@ async function requestAiTranslation(articleId) {
   }
 }
 window.requestAiTranslation = requestAiTranslation;
+
+/**
+ * Przełączanie poziomu dostępu publikacji (Dostęp Otwarty / Dostęp SKN) przez Administratora
+ */
+async function toggleArticleAccessLevel(articleId) {
+  if (AppState.currentRole !== "ADMIN") {
+    showToast("Wymagane uprawnienia Administratora.", "error");
+    return;
+  }
+
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  if (!article) return;
+
+  const currentIsPublic = Boolean(article.isPublic !== undefined ? article.isPublic : (article.accessLevel ? article.accessLevel === "PUBLIC" : true));
+  const newAccessLevel = currentIsPublic ? "RESTRICTED" : "PUBLIC";
+  const category = article.category || article.meta?.category || "Edukacja Seksualna";
+
+  showToast("Aktualizacja poziomu dostępu w toku...", "info");
+
+  try {
+    const payload = {
+      action: "updateArticleMeta",
+      recordId: article.id,
+      articleId: article.id,
+      accessLevel: newAccessLevel,
+      category: category,
+      adminPin: AppState.currentPin || "2026"
+    };
+
+    let res = null;
+    if (AppState.isGasEnvironment) {
+      res = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .apiUpdateArticleMeta(payload);
+      });
+    } else {
+      res = await callGoogleScript("updateArticleMeta", payload);
+    }
+
+    if (res && (res.status === "success" || res.success)) {
+      article.accessLevel = newAccessLevel;
+      article.isPublic = (newAccessLevel === "PUBLIC");
+      if (article.meta) {
+        article.meta.accessLevel = newAccessLevel;
+        article.meta.isPublic = (newAccessLevel === "PUBLIC");
+      }
+      const mainArt = AppState.articles.find((a) => a.id === article.id);
+      if (mainArt && mainArt !== article) {
+        mainArt.accessLevel = newAccessLevel;
+        mainArt.isPublic = (newAccessLevel === "PUBLIC");
+        if (mainArt.meta) {
+          mainArt.meta.accessLevel = newAccessLevel;
+          mainArt.meta.isPublic = (newAccessLevel === "PUBLIC");
+        }
+      }
+
+      filterAndRenderArticles();
+      showToast(`Zmieniono poziom dostępu na: ${newAccessLevel === "PUBLIC" ? "Dostęp Otwarty" : "Dostęp SKN"}`, "success");
+    } else {
+      throw new Error(res?.message || res?.error || "Nie udało się zaktualizować poziomu dostępu.");
+    }
+  } catch (err) {
+    console.error("Błąd zmiany poziomu dostępu:", err);
+    showToast("Błąd aktualizacji dostępu: " + (err.message || err), "error");
+  }
+}
+window.toggleArticleAccessLevel = toggleArticleAccessLevel;
+
+/**
+ * Otwarcie modalu zmiany kategorii publikacji dla Administratora
+ */
+function openCategoryChangeModal(articleId) {
+  if (AppState.currentRole !== "ADMIN") {
+    showToast("Wymagane uprawnienia Administratora.", "error");
+    return;
+  }
+
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  if (!article) return;
+
+  const currentCat = article.category || article.meta?.category || "Edukacja Seksualna";
+  const title = article.titlePL || article.polishTitle || article.name || "Publikacja";
+
+  const titleEl = document.getElementById("cat-modal-art-title");
+  if (titleEl) titleEl.innerText = cleanDisplayText(title);
+
+  const inputId = document.getElementById("cat-modal-article-id");
+  if (inputId) inputId.value = articleId;
+
+  const optionsContainer = document.getElementById("cat-modal-options");
+  if (optionsContainer) {
+    const availableCategories = AppState.categories.filter((c) => c !== "Wszystko");
+    optionsContainer.innerHTML = availableCategories
+      .map((cat) => {
+        const isSelected = cat === currentCat;
+        return `
+          <button type="button" onclick="changeArticleCategory('${articleId}', '${escapeHtml(cat)}')" class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition flex items-center justify-between cursor-pointer active:scale-95 ${
+            isSelected
+              ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-xs"
+              : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
+          }">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-folder text-indigo-500 text-xs"></i>
+              <span>${escapeHtml(cat)}</span>
+            </div>
+            ${isSelected ? '<i class="fas fa-check text-indigo-600"></i>' : '<i class="fas fa-chevron-right text-slate-300 text-[10px]"></i>'}
+          </button>
+        `;
+      })
+      .join("");
+  }
+
+  showModalElement("categoryChangeModal");
+}
+window.openCategoryChangeModal = openCategoryChangeModal;
+
+function closeCategoryChangeModal() {
+  hideModalElement("categoryChangeModal");
+}
+window.closeCategoryChangeModal = closeCategoryChangeModal;
+
+/**
+ * Zmiana kategorii publikacji w backendzie Google Apps Script
+ */
+async function changeArticleCategory(articleId, newCategory) {
+  if (AppState.currentRole !== "ADMIN" || !newCategory) return;
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  if (!article) return;
+
+  const currentAccessLevel = article.accessLevel || (article.isPublic ? "PUBLIC" : "RESTRICTED");
+
+  showToast(`Aktualizacja kategorii na «${newCategory}»...`, "info");
+
+  try {
+    const payload = {
+      action: "updateArticleMeta",
+      recordId: article.id,
+      articleId: article.id,
+      accessLevel: currentAccessLevel,
+      category: newCategory,
+      adminPin: AppState.currentPin || "2026"
+    };
+
+    let res = null;
+    if (AppState.isGasEnvironment) {
+      res = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .apiUpdateArticleMeta(payload);
+      });
+    } else {
+      res = await callGoogleScript("updateArticleMeta", payload);
+    }
+
+    if (res && (res.status === "success" || res.success)) {
+      article.category = newCategory;
+      if (article.meta) article.meta.category = newCategory;
+      const mainArt = AppState.articles.find((a) => a.id === article.id);
+      if (mainArt && mainArt !== article) {
+        mainArt.category = newCategory;
+        if (mainArt.meta) mainArt.meta.category = newCategory;
+      }
+
+      closeCategoryChangeModal();
+      renderCategoryPills();
+      filterAndRenderArticles();
+
+      // Zaktualizuj modal szczegółów jeśli otwarty
+      const detailModal = document.getElementById("detailModal");
+      if (detailModal && detailModal.style.display !== "none") {
+        const currentDetailId = document.getElementById("detail-id")?.innerText;
+        if (currentDetailId === articleId) {
+          openArticleDetail(articleId);
+        }
+      }
+
+      showToast(`Kategoria została pomyślnie zmieniona na: «${newCategory}»`, "success");
+    } else {
+      throw new Error(res?.message || res?.error || "Nie udało się zaktualizować kategorii.");
+    }
+  } catch (err) {
+    console.error("Błąd zmiany kategorii:", err);
+    showToast("Błąd zmiany kategorii: " + (err.message || err), "error");
+  }
+}
+window.changeArticleCategory = changeArticleCategory;
 
 /**
  * Renderowanie kart artykułów (Light Academic Theme)
@@ -1043,6 +1265,8 @@ function renderArticleCards(articles) {
   if (emptyState) emptyState.classList.add("hidden");
   grid.classList.remove("hidden");
 
+  const isAdmin = (AppState.currentRole === "ADMIN");
+
   articles.forEach((art) => {
     const meta = art.meta || art.data || art || {};
     const isInternal = isInternalArticle(art);
@@ -1052,13 +1276,19 @@ function renderArticleCards(articles) {
     let accessBadge = "";
     if (isInternal) {
       accessBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><i class="fas fa-lock text-[9px]"></i> Materiał Własny SKN</span>`;
+    } else if (isAdmin) {
+      if (isPublic) {
+        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs" title="Administrator: Kliknij, aby zmienić na: Dostęp SKN (Tylko Członkowie)"><i class="fas fa-lock-open text-[9px]"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
+      } else {
+        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs" title="Administrator: Kliknij, aby zmienić na: Dostęp Otwarty (Dla wszystkich)"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
+      }
     } else if (isPublic) {
       accessBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"><i class="fas fa-globe text-[9px]"></i> Dostęp Otwarty</span>`;
     } else {
-      accessBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1"><i class="fas fa-lock text-[9px]"></i> Tylko SKN</span>`;
+      accessBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1"><i class="fas fa-lock text-[9px]"></i> Dostęp SKN</span>`;
     }
 
-    const deleteBtnHtml = AppState.currentRole === "ADMIN"
+    const deleteBtnHtml = isAdmin
       ? `<button onclick="openDeleteModal('${art.id}', event)" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer" title="Usuń / Przenieś do kosza">
           <i class="fas fa-trash-can text-xs"></i>
         </button>`
@@ -1071,6 +1301,10 @@ function renderArticleCards(articles) {
     const displayCategory = meta.category || art.category || "Edukacja Seksualna";
     const displayAbstract = cleanAbstractText(meta.abstractPL || art.abstractPL);
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
+
+    const categoryBadgeHtml = isAdmin
+      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-xs" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(displayCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
+      : `<span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">${escapeHtml(displayCategory)}</span>`;
 
     const tagsHtml = keywordsList
       .map(
@@ -1139,9 +1373,7 @@ function renderArticleCards(articles) {
         <!-- Nagłówek Karty: Kategoria + Badge Dostępu + Kosz -->
         <div class="flex items-center justify-between gap-1.5 mb-2">
           <div class="flex flex-wrap items-center gap-1.5">
-            <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-              ${escapeHtml(displayCategory)}
-            </span>
+            ${categoryBadgeHtml}
             ${accessBadge}
           </div>
           ${deleteBtnHtml}
@@ -3314,12 +3546,20 @@ function openArticleDetail(articleId) {
 
   const catEl = document.getElementById("detail-category");
   if (catEl) {
+    const isAdmin = (AppState.currentRole === "ADMIN");
     if (isInternal) {
       catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200";
       catEl.innerHTML = `<i class="fas fa-lock mr-1"></i> Materiał Własny SKN (Strefa Wewnętrzna)`;
+      catEl.onclick = null;
+    } else if (isAdmin) {
+      catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-300 cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs";
+      catEl.innerHTML = `<span>${escapeHtml(category)}</span> <i class="fas fa-pen text-[8.5px] opacity-70"></i>`;
+      catEl.title = "Administrator: Kliknij, aby zmienić kategorię publikacji";
+      catEl.onclick = () => openCategoryChangeModal(article.id);
     } else {
       catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200";
       catEl.innerText = category;
+      catEl.onclick = null;
     }
   }
 
@@ -3936,3 +4176,7 @@ window.handleBackdropClick = handleBackdropClick;
 window.resetUploadForm = resetUploadForm;
 window.handleUploadPipeline = handleUploadPipeline;
 window.filterByTag = filterByTag;
+window.toggleArticleAccessLevel = toggleArticleAccessLevel;
+window.openCategoryChangeModal = openCategoryChangeModal;
+window.closeCategoryChangeModal = closeCategoryChangeModal;
+window.changeArticleCategory = changeArticleCategory;

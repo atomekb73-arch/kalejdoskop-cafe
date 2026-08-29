@@ -108,9 +108,25 @@ export async function uploadPdfArticle(file, metadata = {}, adminPin = "2026") {
   return await callGoogleScript("upload", payload);
 }
 
+/**
+ * Aktualizacja metadanych publikacji (poziom dostępu i kategoria)
+ */
+export async function updateArticleMeta(recordId, accessLevel, category, adminPin = "2026") {
+  const payload = {
+    action: "updateArticleMeta",
+    recordId: recordId,
+    articleId: recordId,
+    accessLevel: accessLevel,
+    category: category,
+    adminPin: adminPin
+  };
+  return await callGoogleScript("updateArticleMeta", payload);
+}
+
 export default {
   callGoogleScript,
   sendGasRequest,
   readFileAsBase64,
-  uploadPdfArticle
+  uploadPdfArticle,
+  updateArticleMeta
 };

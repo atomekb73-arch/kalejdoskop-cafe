@@ -1214,6 +1214,41 @@
     </div>
   </div>
 
+  <!-- MODAL: Zmiana Kategorii Publikacji (Dla Administratora) -->
+  <div id="categoryChangeModal" onclick="handleBackdropClick(event, 'categoryChangeModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
+            <i class="fas fa-layer-group text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Zmień Kategorię Publikacji</h3>
+            <p id="cat-modal-art-title" class="text-[11px] text-slate-500 truncate max-w-[260px]">Wybierz nową kategorię</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCategoryChangeModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="cat-modal-article-id" value="">
+
+      <div class="space-y-2 mb-5">
+        <label class="block text-xs font-semibold text-slate-700">Wybierz kategorię tematyczną:</label>
+        <div id="cat-modal-options" class="grid grid-cols-1 gap-2">
+          <!-- Opcje generowane dynamicznie -->
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeCategoryChangeModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition cursor-pointer">
+          Anuluj
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Zabezpieczony Czytnik Dokumentów PDF (Ochrona przed wyciąganiem PDF / DevTools) -->
   <div id="securePdfViewerModal" onclick="handleBackdropClick(event, 'securePdfViewerModal')" style="display: none;" class="fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md items-center justify-center p-2 sm:p-4 select-none" oncontextmenu="return false;" ondragstart="return false;">
     <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none" onclick="event.stopPropagation()">
