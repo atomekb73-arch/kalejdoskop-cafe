@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzH9ZwK7cS5wY91_KIVlA9GC-9mmy0W0mr94C3SD_5syDLHoDw44XD5jXbm0FPT6dvv/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbwPnVC6bxOK176Mu2GKFZGPNSeGFFr4SQqxliv2Pr4fDPQQEpciX2DPtzFkq0eYkmO0/exec";
 
 const AppState = {
   articles: [],
@@ -38,7 +38,7 @@ const AppState = {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzH9ZwK7cS5wY91_KIVlA9GC-9mmy0W0mr94C3SD_5syDLHoDw44XD5jXbm0FPT6dvv/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPnVC6bxOK176Mu2GKFZGPNSeGFFr4SQqxliv2Pr4fDPQQEpciX2DPtzFkq0eYkmO0/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
@@ -607,32 +607,31 @@ function loadArticles() {
   } else if (AppState.appsScriptUrl) {
     (async () => {
       try {
-        let data = await callGoogleScript("getArticles", {
-          userRole: AppState.currentRole || "PUBLIC",
-          role: AppState.currentRole || "PUBLIC",
-          pin: AppState.currentPin || ""
-        });
+        let data = null;
+        try {
+          data = await callGoogleScript("scan", {
+            action: "scan",
+            role: AppState.currentRole || "PUBLIC",
+            userRole: AppState.currentRole || "PUBLIC",
+            pin: AppState.currentPin || "2026",
+            adminPin: AppState.currentPin || "2026"
+          });
+        } catch (scanErr) {
+          console.warn("Scan nie powiódł się, próba getArticles:", scanErr);
+          data = await callGoogleScript("getArticles", {
+            action: "getArticles",
+            userRole: AppState.currentRole || "PUBLIC",
+            role: AppState.currentRole || "PUBLIC",
+            pin: AppState.currentPin || ""
+          });
+        }
 
         let list = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
 
-        if (!Array.isArray(list) || list.length === 0) {
-          try {
-            const scanData = await callGoogleScript("scan", {
-              role: AppState.currentRole,
-              pin: AppState.currentPin,
-              adminPin: AppState.currentPin || "2026"
-            });
-            const scanList = scanData.articles || scanData.files || (scanData.data && (scanData.data.articles || scanData.data.files)) || [];
-            if (Array.isArray(scanList) && scanList.length > 0) {
-              list = scanList;
-              data = scanData;
-            }
-          } catch (e) {
-            // Ignoruj błąd scanu dla użytkowników publicznych
-          }
-        }
-
         showLoadingSpinner(false);
+
+        AppState.isOffline = false;
+        window.isOffline = false;
 
         if (Array.isArray(list) && list.length > 0) {
           AppState.articles = [];
@@ -645,7 +644,7 @@ function loadArticles() {
           AppState.articles = [];
           renderCategoryPills();
           filterAndRenderArticles();
-          setSyncStatus("idle");
+          setSyncStatus("synced");
         }
       } catch (err) {
         showLoadingSpinner(false);
