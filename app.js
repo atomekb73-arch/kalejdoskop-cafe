@@ -2670,12 +2670,14 @@ async function renderViewerPage(num) {
     const page = await ViewerState.pdfDoc.getPage(num);
 
     // Automatyczne dopasowanie skali dla widoku mobilnego lub auto
-    if (ViewerState.scale === "auto" || !ViewerState.scale) {
-      const unscaledViewport = page.getViewport({ scale: 1.0 });
-      const container = document.getElementById("viewer-scroll-container");
-      const availWidth = (container ? container.clientWidth : window.innerWidth) - (window.innerWidth < 768 ? 16 : 48);
-      ViewerState.scale = Math.max(0.4, Math.min(3.0, availWidth / (unscaledViewport.width || 595)));
-    }
+    const container = document.getElementById("viewer-scroll-container");
+    const containerWidth = container ? container.clientWidth - 16 : window.innerWidth - 32;
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const targetScale = (ViewerState.scale === "auto" || !ViewerState.scale || window.innerWidth < 768)
+      ? (window.innerWidth < 768 ? (containerWidth / (unscaledViewport.width || 595)) : 1.2)
+      : (typeof ViewerState.scale === "number" ? ViewerState.scale : 1.2);
+
+    ViewerState.scale = targetScale;
 
     if (zoomLabel) zoomLabel.innerText = `${Math.round(ViewerState.scale * 100)}%`;
 
@@ -2684,7 +2686,7 @@ async function renderViewerPage(num) {
 
       // 1. Obliczenie współczynnika gęstości ekranu (HiDPI / Retina)
       const pixelRatio = window.devicePixelRatio || 1;
-      const zoom = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.0;
+      const zoom = targetScale;
 
       // 2. Viewport bazowy dla stylów CSS oraz transformacji
       const viewport = page.getViewport({ scale: zoom });
