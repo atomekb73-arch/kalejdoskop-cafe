@@ -4,6 +4,7 @@
   "description": "Kalejdoskop Café - Wirtualna Baza Wiedzy i Potok AI dla SKN Seksuologii",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'Build complete'",
     "start": "node server.js"
   },
   "keywords": [
