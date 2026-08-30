@@ -2599,6 +2599,7 @@ function initViewerTouchGestures() {
   if (isTouchPinchInitialized) return;
   const container = document.getElementById("viewer-scroll-container");
   const canvasWrapper = document.getElementById("viewer-canvas-wrapper");
+  const zoomLabel = document.getElementById("viewer-zoom-label");
   if (!container) return;
 
   let startDistance = null;
@@ -2623,8 +2624,12 @@ function initViewerTouchGestures() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       currentScaleFactor = currentDistance / startDistance;
+      const liveScale = Math.max(0.5, Math.min(3.0, startScale * currentScaleFactor));
       if (canvasWrapper) {
         canvasWrapper.style.transform = `scale(${currentScaleFactor})`;
+      }
+      if (zoomLabel) {
+        zoomLabel.innerText = `${Math.round(liveScale * 100)}%`;
       }
     }
   }, { passive: true });
@@ -2634,9 +2639,9 @@ function initViewerTouchGestures() {
       if (canvasWrapper) {
         canvasWrapper.style.transform = "none";
       }
-      const targetScale = Math.max(0.4, Math.min(3.5, startScale * currentScaleFactor));
+      const targetScale = Math.max(0.5, Math.min(3.0, startScale * currentScaleFactor));
       startDistance = null;
-      if (Math.abs(targetScale - startScale) > 0.05) {
+      if (Math.abs(targetScale - startScale) > 0.04) {
         ViewerState.scale = targetScale;
         renderViewerPage(ViewerState.pageNum);
       }
@@ -4140,13 +4145,12 @@ function switchDetailTab(tab) {
   const tabContentAbstract = document.getElementById("tab-content-abstract");
   const tabContentChat = document.getElementById("tab-content-chat");
 
+  const activeClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow-xs border border-slate-200 transition cursor-pointer";
+  const inactiveClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-white/60 transition cursor-pointer";
+
   if (tab === "chat") {
-    if (tabBtnAbstract) {
-      tabBtnAbstract.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition cursor-pointer";
-    }
-    if (tabBtnChat) {
-      tabBtnChat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 transition cursor-pointer";
-    }
+    if (tabBtnAbstract) tabBtnAbstract.className = inactiveClass;
+    if (tabBtnChat) tabBtnChat.className = activeClass;
     if (tabContentAbstract) {
       tabContentAbstract.classList.add("hidden");
       tabContentAbstract.style.display = "none";
@@ -4164,12 +4168,8 @@ function switchDetailTab(tab) {
       document.getElementById("ai-chat-input")?.focus();
     }, 50);
   } else {
-    if (tabBtnAbstract) {
-      tabBtnAbstract.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 transition cursor-pointer";
-    }
-    if (tabBtnChat) {
-      tabBtnChat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition cursor-pointer";
-    }
+    if (tabBtnAbstract) tabBtnAbstract.className = activeClass;
+    if (tabBtnChat) tabBtnChat.className = inactiveClass;
     if (tabContentAbstract) {
       tabContentAbstract.classList.remove("hidden");
       tabContentAbstract.style.display = "block";
