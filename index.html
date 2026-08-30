@@ -876,11 +876,13 @@
         <div><strong class="text-slate-700">Rok:</strong> <span id="detail-year"></span></div>
         <div><strong class="text-slate-700">Czasopismo:</strong> <span id="detail-journal" class="italic text-slate-800 font-medium"></span></div>
         <div><strong class="text-slate-700">ID publikacji:</strong> <span id="detail-id" class="font-mono text-indigo-600 font-bold"></span></div>
-        <div id="detail-doi-row" class="sm:col-span-2 flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200/60">
-          <strong class="text-slate-700 flex items-center gap-1"><i class="fas fa-link text-indigo-500 text-[10px]"></i> DOI:</strong>
-          <a id="detail-doi-link" href="#" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 hover:underline font-mono text-[11px] break-all font-semibold"></a>
-          <button type="button" id="detail-doi-copy-btn" onclick="copyDoiFromDetail()" class="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-indigo-600 border border-slate-200 hover:border-indigo-300 text-[10.5px] font-semibold transition cursor-pointer shadow-2xs" title="Kopiuj link DOI do schowka">
-            <i class="fas fa-copy text-[9.5px]"></i> <span>Kopiuj DOI</span>
+        <div id="detail-doi-row" class="sm:col-span-2 flex items-center justify-between gap-2 mt-1.5 pt-2 border-t border-slate-200">
+          <div class="flex items-center gap-1.5 text-xs text-slate-600 truncate min-w-0">
+            <span class="font-semibold text-slate-800 shrink-0"><i class="fas fa-link text-indigo-500 text-[10px] mr-1"></i>DOI:</span>
+            <a id="detail-doi-link" href="#" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline font-mono text-[11px] truncate font-semibold"></a>
+          </div>
+          <button type="button" id="detail-doi-copy-btn" onclick="copyDoiFromDetail()" class="px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1 cursor-pointer shadow-2xs" title="Kopiuj link DOI">
+            <span>📋 Kopiuj DOI</span>
           </button>
         </div>
       </div>
