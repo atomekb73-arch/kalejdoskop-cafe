@@ -420,13 +420,50 @@ function getCategoryCount(category) {
 
 const CACHE_KEY = "kc_articles_cache";
 const CACHE_TIME_KEY = "kc_articles_cache_time";
+const WEB_CACHE_KEY = "kc_web_articles_cache";
+
+function getWebArticlesCache() {
+  try {
+    const raw = localStorage.getItem(WEB_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveWebArticleToCache(webArticle) {
+  if (!webArticle || !webArticle.id) return;
+  try {
+    const existing = getWebArticlesCache();
+    const idx = existing.findIndex((a) => a.id === webArticle.id);
+    if (idx >= 0) {
+      existing[idx] = { ...existing[idx], ...webArticle };
+    } else {
+      existing.unshift(webArticle);
+    }
+    localStorage.setItem(WEB_CACHE_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.warn("Błąd zapisu do kc_web_articles_cache:", e);
+  }
+}
 
 function getCachedArticles() {
   try {
     const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+    let articles = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) articles = parsed;
+    }
+    const webArticles = getWebArticlesCache();
+    webArticles.forEach((wa) => {
+      if (!articles.some((a) => a.id === wa.id)) {
+        articles.unshift(wa);
+      }
+    });
+    return articles.length > 0 ? articles : null;
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
     return null;
@@ -436,6 +473,12 @@ function getCachedArticles() {
 function saveArticlesToCache(articles) {
   try {
     if (Array.isArray(articles) && articles.length > 0) {
+      // Upewnij się, że artykuły WEB są także trwale zachowane w dedykowanym kluczu
+      articles.forEach((a) => {
+        if (a.type === "WEB" || a.isWeb === true) {
+          saveWebArticleToCache(a);
+        }
+      });
       localStorage.setItem(CACHE_KEY, JSON.stringify(articles));
       localStorage.setItem(CACHE_TIME_KEY, new Date().toISOString());
     }
@@ -514,7 +557,7 @@ function loadArticles() {
         if (Array.isArray(list) && list.length > 0) {
           AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
-          saveArticlesToCache(list);
+          saveArticlesToCache(AppState.articles);
           setSyncStatus("synced");
         } else if (hasCache) {
           setSyncStatus("synced");
@@ -550,7 +593,7 @@ function loadArticles() {
         if ((data.status === "success" || data.success || Array.isArray(list)) && Array.isArray(list) && list.length > 0) {
           AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
-          saveArticlesToCache(list);
+          saveArticlesToCache(AppState.articles);
           setSyncStatus("synced");
         } else if (hasCache) {
           setSyncStatus("synced");
@@ -612,9 +655,17 @@ function saveReportToCache(articleId, reportData) {
  * Aktualizacja biblioteki rzeczywistymi plikami z Dysku Google oraz metadanymi z Gemini API
  */
 function updateLibraryWithRealDriveFiles(files) {
-  if (!Array.isArray(files) || files.length === 0) return;
+  if (!Array.isArray(files)) files = [];
 
   const reportsCache = getReportsCache();
+  const webArticles = getWebArticlesCache();
+
+  // 1. Zawsze dołącz i zachowaj artykuły WEB
+  webArticles.forEach((wa) => {
+    if (!AppState.articles.some((a) => a.id === wa.id)) {
+      AppState.articles.unshift(wa);
+    }
+  });
 
   files.forEach((file) => {
     const id = file.id || file.ID_Artykulu || generateArticleId();
@@ -651,8 +702,15 @@ function updateLibraryWithRealDriveFiles(files) {
       (typeof category === "string" && (category.toLowerCase().includes("materiały własne") || category.toLowerCase().includes("własne skn")))
     );
 
+    const isWeb = Boolean(
+      file.type === "WEB" ||
+      meta.type === "WEB" ||
+      file.isWeb === true ||
+      meta.isWeb === true
+    );
+
     const abstractPL = meta.abstractPL || file.abstractPL || file.Abstrakt_PL || "Brak abstraktu.";
-    const directUrl = file.url || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
+    const directUrl = file.sourceUrl || file.url || meta.sourceUrl || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
     const transUrl = meta.translationUrl || file.translationUrl || meta.urlTranslation || file.urlTranslation || file.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || file.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv || "";
     const fileIdTrans = file.fileIdTranslation || meta.fileIdTranslation || file.FileID_Tlumaczenie || file.FileID_Tlumaczenia_PL || file.ID_Pliku_PL || extractDriveFileId(transUrl) || "";
     const hasTranslation = Boolean(
@@ -678,6 +736,9 @@ function updateLibraryWithRealDriveFiles(files) {
 
     const articleObj = {
       id: id,
+      type: isWeb ? "WEB" : (file.type || meta.type || "PDF"),
+      isWeb: isWeb,
+      sourceUrl: isWeb ? directUrl : (file.sourceUrl || meta.sourceUrl || undefined),
       dateAdded: file.dateAdded || file.Data_Dodania || new Date().toISOString().split("T")[0],
       titlePL: polishTitle,
       titleOriginal: rawOrigTitle,
@@ -685,6 +746,8 @@ function updateLibraryWithRealDriveFiles(files) {
       authors: authors,
       year: year,
       category: category,
+      journal: file.journal || meta.journal || extractJournal(file),
+      doi: file.doi || meta.doi || extractDoi(file),
       tags: tags,
       keywords: tags,
       abstractPL: abstractPL,
@@ -695,7 +758,7 @@ function updateLibraryWithRealDriveFiles(files) {
       url: directUrl,
       urlTranslation: transUrl,
       translationUrl: transUrl,
-      fileIdOriginal: file.fileId || file.fileIdOriginal || file.FileID_Oryginal || id,
+      fileIdOriginal: isWeb ? id : (file.fileId || file.fileIdOriginal || file.FileID_Oryginal || id),
       fileIdTranslation: fileIdTrans,
       hasPolishTranslation: hasTranslation,
       hasReport: hasReport,
@@ -1768,20 +1831,19 @@ function renderArticleCards(articles) {
     let rightBtnHtml = "";
     if (isTranslating) {
       rightBtnHtml = `
-        <button disabled class="flex-1 bg-purple-50 text-purple-700 border border-purple-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 cursor-wait whitespace-nowrap">
+        <button disabled class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-300 rounded-lg cursor-wait truncate">
           <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
-          <span>Generowanie...</span>
+          <span class="truncate">Generowanie...</span>
         </button>`;
     } else if (hasReport) {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 shadow-sm transition-all whitespace-nowrap cursor-pointer overflow-visible" title="Otwórz czytnik raportu klinicznego SKN">
-          <span>📊 Raport Kliniczny PL</span>
+        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors truncate cursor-pointer shadow-2xs" title="Otwórz raport kliniczny SKN">
+          <span class="truncate">📊 Raport PL</span>
         </button>`;
     } else {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="flex-1 bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 transition-all whitespace-nowrap cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
-          <span>🧠 Generuj Raport PL</span>
+        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors truncate cursor-pointer shadow-2xs" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <span class="truncate">🧠 Raport PL</span>
         </button>`;
     }
 
@@ -1794,30 +1856,28 @@ function renderArticleCards(articles) {
     if (isInternal) {
       if (isWatermarking) {
         bottomButtonsHtml = `
-          <button disabled class="w-full bg-rose-50 text-rose-700 border border-rose-300 py-1.5 px-2 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1.5 cursor-wait whitespace-nowrap">
+          <button disabled class="col-span-2 inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg cursor-wait truncate">
             <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
-            <span>Generowanie znaku wodnego...</span>
+            <span class="truncate">Generowanie znaku...</span>
           </button>`;
       } else {
         bottomButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white py-1.5 px-2 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1.5 shadow-sm transition-all whitespace-nowrap cursor-pointer" title="Otwórz zabezpieczony czytnik materiału wewnętrznego SKN">
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-lg transition-colors shadow-xs truncate cursor-pointer" title="Otwórz zabezpieczony czytnik materiału wewnętrznego SKN">
             <i class="fas fa-file-shield text-xs shrink-0"></i>
-            <span>🔒 Czytaj ze stemplem cyfrowym</span>
+            <span class="truncate">🔒 Czytaj ze stemplem</span>
           </button>`;
       }
     } else if (isWeb) {
       const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
       bottomButtonsHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-800 py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 border border-sky-200 transition-colors whitespace-nowrap cursor-pointer" title="Otwórz bezpośrednie źródło artykułu w nowej karcie">
-          <i class="fas fa-globe text-sky-600 text-xs shrink-0"></i>
-          <span>🌐 Otwórz źródło ↗</span>
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors truncate cursor-pointer" title="Otwórz źródło www w nowej karcie">
+          <span class="truncate">🌐 Źródło ↗</span>
         </a>
         ${rightBtnHtml}`;
     } else {
       bottomButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 border border-slate-200 transition-colors whitespace-nowrap cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
-          <i class="fas fa-file-pdf text-red-500 text-xs shrink-0"></i>
-          <span>Oryginał</span>
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors truncate cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
+          <span class="truncate">📄 Oryginał</span>
         </button>
         ${rightBtnHtml}`;
     }
@@ -1871,8 +1931,8 @@ function renderArticleCards(articles) {
         </div>
       </div>
 
-      <!-- Przyciski Pobierania w jednym rzędzie: elastyczny flexbox, kompaktowe i czytelne -->
-      <div class="flex items-center gap-1.5 pt-2.5 mt-auto border-t border-slate-100 w-full">
+      <!-- Przyciski w stopce kafelka: kompaktowy dwukolumnowy układ (grid-cols-2) -->
+      <div class="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-slate-100 w-full">
         ${bottomButtonsHtml}
       </div>
     `;
@@ -3606,16 +3666,23 @@ function resetDeleteButton() {
 }
 
 function applyLocalDeletion(articleId) {
+  try {
+    const webList = getWebArticlesCache().filter((a) => a.id !== articleId);
+    localStorage.setItem(WEB_CACHE_KEY, JSON.stringify(webList));
+  } catch (e) {}
+
   const card = document.getElementById(`card-${articleId}`);
   if (card) {
     card.classList.add("opacity-0", "scale-95");
     setTimeout(() => {
       AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
+      saveArticlesToCache(AppState.articles);
       renderCategoryPills();
       filterAndRenderArticles();
     }, 300);
   } else {
     AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
+    saveArticlesToCache(AppState.articles);
     renderCategoryPills();
     filterAndRenderArticles();
   }
@@ -3625,7 +3692,7 @@ function applyLocalDeletion(articleId) {
  * Ekstrakcja i normalizacja numeru DOI
  */
 function extractDoi(article) {
-  if (!article) return "10.1155/and/6635623";
+  if (!article) return "";
   const meta = article.meta || article.data || article;
   const report = article.report || meta.report || null;
   const id = article.id || meta.id || "";
@@ -3667,17 +3734,17 @@ function extractDoi(article) {
 
   // 3. Rozpoznanie konkretnych publikacji z bazy SKN
   const textLower = (textCorpus + " " + id).toLowerCase();
-  if (textLower.includes("kc-20260830110431") || textLower.includes("erekcj") || textLower.includes("andrologia") || textLower.includes("6635623") || textLower.includes("masturbacj")) {
+  if (textLower.includes("kc-20260830110431") || (textLower.includes("erekcj") && textLower.includes("masturbacj"))) {
     return "10.1155/and/6635623";
   }
-  if (textLower.includes("sexes-03-00018") || textLower.includes("sexes")) {
+  if (textLower.includes("sexes-03-00018")) {
     return "10.3390/sexes3010018";
   }
-  if (textLower.includes("ijerph")) {
+  if (textLower.includes("ijerph-18-05234")) {
     return "10.3390/ijerph18105234";
   }
 
-  return "10.1155/and/6635623";
+  return "";
 }
 window.extractDoi = extractDoi;
 
@@ -3802,8 +3869,12 @@ async function copyDoiFromDetail() {
   const detailIdEl = document.getElementById("detail-id");
   const currentId = detailIdEl ? detailIdEl.innerText.trim() : null;
   const article = currentId ? (AppState.articles.find((a) => a.id === currentId) || AppState.filteredArticles.find((a) => a.id === currentId)) : null;
-  const doi = article ? extractDoi(article) : "10.1155/and/6635623";
-  const doiUrl = getDoiUrl(doi || "10.1155/and/6635623");
+  const doi = article ? extractDoi(article) : "";
+  if (!doi) {
+    showToast("Ta publikacja nie posiada zarejestrowanego numeru DOI.", "info");
+    return;
+  }
+  const doiUrl = getDoiUrl(doi);
 
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -3825,6 +3896,32 @@ async function copyDoiFromDetail() {
   }
 }
 window.copyDoiFromDetail = copyDoiFromDetail;
+
+/**
+ * Kopiowanie zewnętrznego linku źródłowego do schowka
+ */
+async function copyLinkFromDetail(url) {
+  if (!url) return;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.left = "-999999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    showToast("Skopiowano link źródłowy do schowka! ✓", "success");
+  } catch (err) {
+    showToast("Nie udało się skopiować linku: " + (err.message || err), "error");
+  }
+}
+window.copyLinkFromDetail = copyLinkFromDetail;
 
 /**
  * Kopiowanie sformatowanego cytowania do schowka
@@ -4269,17 +4366,54 @@ function openArticleDetail(articleId) {
     journalEl.innerText = journal || "Repozytorium Kalejdoskop Café";
   }
 
-  const doi = extractDoi(article) || "10.1155/and/6635623";
-  const doiUrl = getDoiUrl(doi);
+  const doi = extractDoi(article);
+  const sourceUrl = article.sourceUrl || article.url || meta.sourceUrl || meta.url || "";
   const doiRow = document.getElementById("detail-doi-row");
   const doiLink = document.getElementById("detail-doi-link");
-  if (doiLink) {
-    doiLink.href = doiUrl;
-    doiLink.innerText = doiUrl;
-  }
-  if (doiRow) {
-    doiRow.classList.remove("hidden");
-    doiRow.style.removeProperty("display");
+  const doiLabel = document.getElementById("detail-doi-label");
+  const doiCopyBtn = document.getElementById("detail-doi-copy-btn");
+
+  if (doi && doi.trim() !== "") {
+    const doiUrl = getDoiUrl(doi);
+    if (doiLink) {
+      doiLink.href = doiUrl;
+      doiLink.innerText = doiUrl;
+    }
+    if (doiLabel) {
+      doiLabel.innerHTML = `<i class="fas fa-link text-indigo-500 text-[10px] mr-1"></i>DOI:`;
+    }
+    if (doiCopyBtn) {
+      doiCopyBtn.innerHTML = `<span>📋 Kopiuj DOI</span>`;
+      doiCopyBtn.onclick = () => copyDoiFromDetail();
+      doiCopyBtn.title = "Kopiuj link DOI do schowka";
+    }
+    if (doiRow) {
+      doiRow.classList.remove("hidden");
+      doiRow.style.setProperty("display", "flex", "important");
+    }
+  } else if (sourceUrl && !sourceUrl.includes("drive.google.com") && !sourceUrl.startsWith("#")) {
+    // Brak DOI, ale publikacja posiada link zewnętrzny / stronę źródłową
+    if (doiLink) {
+      doiLink.href = safeUrl(sourceUrl);
+      doiLink.innerText = sourceUrl;
+    }
+    if (doiLabel) {
+      doiLabel.innerHTML = `<i class="fas fa-globe text-sky-500 text-[10px] mr-1"></i>Źródło:`;
+    }
+    if (doiCopyBtn) {
+      doiCopyBtn.innerHTML = `<span>📋 Kopiuj Link</span>`;
+      doiCopyBtn.onclick = () => copyLinkFromDetail(sourceUrl);
+      doiCopyBtn.title = "Kopiuj link źródłowy do schowka";
+    }
+    if (doiRow) {
+      doiRow.classList.remove("hidden");
+      doiRow.style.setProperty("display", "flex", "important");
+    }
+  } else {
+    if (doiRow) {
+      doiRow.classList.add("hidden");
+      doiRow.style.setProperty("display", "none", "important");
+    }
   }
 
   const abstractEl = document.getElementById("detail-abstract");
@@ -5195,6 +5329,7 @@ window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
 window.toggleCardAbstract = toggleCardAbstract;
 window.toggleAiChatSize = toggleAiChatSize;
 window.copyDoiFromDetail = copyDoiFromDetail;
+window.copyLinkFromDetail = copyLinkFromDetail;
 window.extractDoi = extractDoi;
 window.getDoiUrl = getDoiUrl;
 window.extractJournal = extractJournal;
