@@ -6,53 +6,58 @@
 
 import { APP_CONFIG } from './config.js';
 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEsEWvs8tPk2hVbErW2f4iVQv9blCYpiCPhU_QxsaknVAdG5nfMMGDlT9EIm3R1qrX/exec";
+
 /**
- * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS:
- * @param {string} action - Nazwa akcji backendu (np. 'getArticles', 'upload', 'getSecurePdf')
- * @param {Object} payload - Obiekt danych
- * @returns {Promise<Object>}
+ * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
+ */
+export const fetchFromAppsScript = async (payload = { action: "scan" }) => {
+  try {
+    const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || APP_CONFIG?.API_URL || SCRIPT_URL;
+    const response = await fetch(scriptUrl, {
+      method: "POST",
+      // Użycie text/plain zapobiega wysyłaniu zapytania wstępnego OPTIONS (preflight CORS):
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+      // Google Apps Script zawsze zwraca kod 302 przekierowujący na właściwe dane:
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej
+    if (typeof window !== "undefined") {
+      window.isOffline = false;
+      if (window.AppState) window.AppState.isOffline = false;
+      if (typeof window.setSyncStatus === "function") {
+        window.setSyncStatus("synced");
+      }
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Błąd połączenia z Google Apps Script:", error);
+    throw error;
+  }
+};
+
+/**
+ * Bezpieczna funkcja wywołania akcji Google Apps Script
  */
 export async function callGoogleScript(action, payload = {}) {
-  const scriptUrl = localStorage.getItem('APPS_SCRIPT_WEBAPP_URL') || localStorage.getItem('gas_api_url') || APP_CONFIG.API_URL;
-  
-  // Dołączamy akcję również do query params dla 100% pewności routingu
-  const urlWithAction = `${scriptUrl}?action=${encodeURIComponent(action)}`;
-
-  const bodyData = JSON.stringify({
+  return await fetchFromAppsScript({
     action: action,
     ...payload
   });
-
-  const response = await fetch(urlWithAction, {
-    method: 'POST',
-    // Użycie text/plain zapobiega wysyłaniu zapytania preflight OPTIONS, które blokuje Apps Script
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-    body: bodyData,
-    redirect: 'follow'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
-  }
-
-  // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej ze statusem 200
-  if (typeof window !== "undefined") {
-    window.isOffline = false;
-    if (window.AppState) window.AppState.isOffline = false;
-    if (typeof window.setSyncStatus === "function") {
-      window.setSyncStatus("synced");
-    }
-  }
-
-  const result = await response.json();
-  return result;
 }
 
 export async function sendGasRequest(payload) {
-  const action = payload.action || 'getArticles';
-  return await callGoogleScript(action, payload);
+  return await fetchFromAppsScript(payload);
 }
 
 /**
@@ -186,6 +191,7 @@ export async function saveWebArticle(articleData, adminPin = "2026") {
 }
 
 export default {
+  fetchFromAppsScript,
   callGoogleScript,
   sendGasRequest,
   readFileAsBase64,

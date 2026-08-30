@@ -38,34 +38,51 @@ const AppState = {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-async function callGoogleScript(action, payload = {}) {
-  const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-  const urlWithAction = `${scriptUrl}?action=${encodeURIComponent(action)}`;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEsEWvs8tPk2hVbErW2f4iVQv9blCYpiCPhU_QxsaknVAdG5nfMMGDlT9EIm3R1qrX/exec";
 
-  const bodyData = JSON.stringify({
+/**
+ * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
+ */
+async function fetchFromAppsScript(payload = { action: "scan" }) {
+  try {
+    const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || SCRIPT_URL;
+    const response = await fetch(scriptUrl, {
+      method: "POST",
+      // Użycie text/plain zapobiega wysyłaniu zapytania wstępnego OPTIONS (preflight CORS):
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+      // Google Apps Script zawsze zwraca kod 302 przekierowujący na właściwe dane:
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej
+    AppState.isOffline = false;
+    window.isOffline = false;
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Błąd połączenia z Google Apps Script:", error);
+    throw error;
+  }
+}
+
+/**
+ * Bezpieczna funkcja wywołania Google Apps Script
+ */
+async function callGoogleScript(action, payload = {}) {
+  return await fetchFromAppsScript({
     action: action,
     ...payload
   });
-
-  const response = await fetch(urlWithAction, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: bodyData,
-    redirect: "follow"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
-  }
-
-  // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej
-  AppState.isOffline = false;
-  window.isOffline = false;
-
-  return await response.json();
 }
+window.fetchFromAppsScript = fetchFromAppsScript;
 window.callGoogleScript = callGoogleScript;
 
 // Start aplikacji po załadowaniu drzewa DOM
