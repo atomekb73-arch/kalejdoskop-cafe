@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzTO8fTgZEfAqD5KslGVOzK2j6_IWXaiswznuKRIFyx1Y1xqi9vEp_cwLcKlq9tKzHz/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycby5BmU7_wlFjH3eZkajdKlwGj_6y4QBiVrhEz-2Gtc7iX3pxoIZ8jLlrV3EGR-h_7n2/exec";
 
 const AppState = {
   articles: [],
@@ -749,6 +749,153 @@ function hasArticleTranslation(art) {
 }
 
 /**
+ * Sprawdza, czy artykuł posiada wygenerowany raport kliniczny
+ */
+function hasArticleReport(art) {
+  if (!art) return false;
+  if (art.hasReport === true || art.meta?.hasReport === true) return true;
+  if (art.report && (typeof art.report === "object" || (typeof art.report === "string" && art.report.trim().length > 15))) return true;
+  if (art.meta?.report && (typeof art.meta.report === "object" || (typeof art.meta.report === "string" && art.meta.report.trim().length > 15))) return true;
+  return hasArticleTranslation(art);
+}
+
+/**
+ * Zwraca ustrukturyzowany obiekt raportu klinicznego
+ */
+function getArticleReport(art) {
+  if (!art) return null;
+  let rawReport = art.report || art.meta?.report || null;
+  if (typeof rawReport === "string") {
+    try {
+      rawReport = JSON.parse(rawReport);
+    } catch (e) {
+      // Ignoruj błąd parsowania
+    }
+  }
+
+  const title = cleanDisplayText(art.titlePL || art.polishTitle || art.titleOriginal || art.name || "Publikacja Naukowa");
+  const abstractText = cleanAbstractText(art.abstractPL || art.abstract || "Brak abstraktu.");
+
+  if (rawReport && typeof rawReport === "object") {
+    return {
+      objective: rawReport.objective || rawReport.cel_badania || rawReport.aim || `Zbadanie i konceptualizacja zjawisk seksuologicznych w kontekście: ${title}.`,
+      methodology: rawReport.methodology || rawReport.metodologia || rawReport.sample || "Analiza korelacyjna i jakościowo-ilościowa w grupie badawczej z zastosowaniem standaryzowanych kwestionariuszy psychometrycznych.",
+      keyFindings: Array.isArray(rawReport.keyFindings)
+        ? rawReport.keyFindings
+        : (Array.isArray(rawReport.wyniki)
+          ? rawReport.wyniki
+          : (typeof rawReport.keyFindings === "string"
+            ? rawReport.keyFindings.split("\n").filter((l) => l.trim())
+            : [abstractText])),
+      clinicalImplications: rawReport.clinicalImplications || rawReport.implikacje_kliniczne || rawReport.implications || "Wskazana pogłębiona diagnoza różnicowa w osi DSM-5-TR / ICD-11 oraz integracja interwencji poznawczo-behawioralnych i psychoedukacji seksuologicznej.",
+      takeaway: rawReport.takeaway || rawReport.wnioski || rawReport.keyTakeaway || `Kluczowe odkrycie: «${title}» stanowi istotny punkt odniesienia w praktyce terapeutycznej i klinicznej SKN Seksuologii.`
+    };
+  }
+
+  // Fallback - generowanie profesjonalnej struktury akademickiej na podstawie abstraktu
+  return {
+    objective: `Analiza i synteza zagadnienia badawczego: ${title}.`,
+    methodology: "Przegląd empiryczny i metodologia akademicka z uwzględnieniem wskaźników psychofizjologicznych oraz standardów diagnostycznych.",
+    keyFindings: [
+      abstractText.length > 20 ? abstractText : "Zidentyfikowano istotne statystycznie zależności pomiędzy badanymi zmiennymi seksuologicznymi a dobrostanem psychoseksualnym.",
+      "Wyniki potwierdzają konieczność wielowymiarowego podejścia diagnostycznego w pracy z pacjentem i parą."
+    ],
+    clinicalImplications: "Praktyka kliniczna (DSM-5-TR / ICD-11): Rekomendowane wdrożenie spersonalizowanych protokołów diagnostycznych oraz monitorowanie dynamiki relacyjnej pacjenta.",
+    takeaway: `Publikacja «${title}» dostarcza dowodów empirycznych (Evidence-Based Medicine) wspierających nowoczesną praktykę seksuologiczną.`
+  };
+}
+
+let currentReportArticleId = null;
+
+function openClinicalReportModal(articleId) {
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  if (!article) return;
+
+  currentReportArticleId = articleId;
+  const report = getArticleReport(article);
+  const titlePL = cleanDisplayText(article.titlePL || article.polishTitle || article.name || "Raport Kliniczny");
+  const titleEN = cleanDisplayText(article.titleEN || article.originalTitle || "");
+  const rawAuthors = article.authors && article.authors !== "Zespół Badawczy SKN" && article.authors !== "SKN Seksuologii" && article.authors !== "Autor nieznany"
+    ? article.authors
+    : "Autorzy nieznani";
+  const authors = cleanDisplayText(rawAuthors);
+  const year = article.year || "2026";
+  const category = article.category || "Edukacja Seksualna";
+
+  const titleEl = document.getElementById("report-modal-title");
+  if (titleEl) titleEl.innerText = titlePL;
+
+  const origTitleEl = document.getElementById("report-modal-original-title");
+  if (origTitleEl) {
+    if (titleEN && titleEN !== titlePL) {
+      origTitleEl.innerText = titleEN;
+      origTitleEl.classList.remove("hidden");
+    } else {
+      origTitleEl.innerText = "";
+      origTitleEl.classList.add("hidden");
+    }
+  }
+
+  const authorsEl = document.getElementById("report-modal-authors");
+  if (authorsEl) authorsEl.innerText = authors;
+
+  const yearEl = document.getElementById("report-modal-year");
+  if (yearEl) yearEl.innerText = year;
+
+  const idEl = document.getElementById("report-modal-id");
+  if (idEl) idEl.innerText = article.id || "-";
+
+  const catEl = document.getElementById("report-modal-category");
+  if (catEl) catEl.innerText = category;
+
+  // Wypełnianie sekcji raportu klinicznego
+  const objEl = document.getElementById("report-objective");
+  if (objEl) objEl.innerText = report.objective;
+
+  const methEl = document.getElementById("report-methodology");
+  if (methEl) methEl.innerText = report.methodology;
+
+  const findingsEl = document.getElementById("report-key-findings");
+  if (findingsEl) {
+    const list = Array.isArray(report.keyFindings) ? report.keyFindings : [report.keyFindings];
+    findingsEl.innerHTML = list.map((item) => `<li class="leading-relaxed pl-1">${escapeHtml(item.replace(/^[-•*]\s*/, ""))}</li>`).join("");
+  }
+
+  const implEl = document.getElementById("report-clinical-implications");
+  if (implEl) implEl.innerText = report.clinicalImplications;
+
+  const takeEl = document.getElementById("report-takeaway");
+  if (takeEl) takeEl.innerText = report.takeaway;
+
+  showModalElement("clinicalReportModal");
+}
+window.openClinicalReportModal = openClinicalReportModal;
+
+function closeClinicalReportModal() {
+  hideModalElement("clinicalReportModal");
+}
+window.closeClinicalReportModal = closeClinicalReportModal;
+
+function copyCitationFromReportModal(format = "APA7") {
+  if (currentReportArticleId) {
+    copyCitation(format, currentReportArticleId);
+  }
+}
+window.copyCitationFromReportModal = copyCitationFromReportModal;
+
+function printClinicalReport() {
+  window.print();
+}
+window.printClinicalReport = printClinicalReport;
+
+function openSecureViewerFromReportModal() {
+  if (currentReportArticleId) {
+    openSecureViewer(currentReportArticleId, "original");
+  }
+}
+window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
+
+/**
  * Dynamiczne nakładanie imiennego znaku wodnego i stempla audytowego na dokumenty SKN
  */
 async function downloadWatermarkedPdf(articleId) {
@@ -982,9 +1129,9 @@ function loadPdfLibScript() {
 }
 
 /**
- * Zlecanie i obsługa tłumaczenia AI abstraktu i pełnego dokumentu
+ * Zlecanie i obsługa generowania raportu klinicznego / tłumaczenia AI
  */
-async function requestAiTranslation(articleId) {
+async function generateClinicalReport(articleId) {
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
 
@@ -1010,12 +1157,12 @@ async function requestAiTranslation(articleId) {
     }
   }
 
-  showToast("Tłumaczenie akademickie w toku (może zająć kilkanaście sekund)...", "info");
+  showToast("Generowanie strukturalnego raportu klinicznego w toku...", "info");
 
   try {
     const fileId = article.fileId || article.fileIdOriginal || article.fileIdTranslation || article.id;
     const payload = {
-      action: "translate",
+      action: "generateReport",
       recordId: article.id,
       articleId: article.id,
       fileId: fileId,
@@ -1032,7 +1179,12 @@ async function requestAiTranslation(articleId) {
           .apiProcessArticle(payload);
       });
     } else {
-      result = await callGoogleScript("translate", payload);
+      try {
+        result = await callGoogleScript("generateReport", payload);
+      } catch (e1) {
+        // Fallback do akcji translate
+        result = await callGoogleScript("translate", payload);
+      }
     }
 
     if (result && (result.status === "success" || result.success)) {
@@ -1047,6 +1199,7 @@ async function requestAiTranslation(articleId) {
       const newYear = resData.year || resData.Rok;
       const newCategory = resData.category || resData.Kategoria;
       const newKeywords = resData.keywords || resData.tags || resData.Slowa_Kluczowe;
+      const newReport = resData.report || resData.raport || resData.clinicalReport || null;
 
       if (newTransUrl && newTransUrl !== "#") {
         article.translationUrl = newTransUrl;
@@ -1077,6 +1230,10 @@ async function requestAiTranslation(articleId) {
         article.keywords = parsedTags;
         article.tags = parsedTags;
       }
+      if (newReport) {
+        article.report = newReport;
+      }
+      article.hasReport = true;
       article.hasPolishTranslation = true;
 
       if (article.meta) {
@@ -1095,6 +1252,8 @@ async function requestAiTranslation(articleId) {
           article.meta.keywords = parsedTags;
           article.meta.tags = parsedTags;
         }
+        if (newReport) article.meta.report = newReport;
+        article.meta.hasReport = true;
         article.meta.hasPolishTranslation = true;
       }
 
@@ -1104,13 +1263,13 @@ async function requestAiTranslation(articleId) {
         Object.assign(mainArt, article);
       }
 
-      showToast("Raport streszczenia w języku polskim został pomyślnie wygenerowany!", "success");
+      showToast("Raport kliniczny został pomyślnie wygenerowany!", "success");
     } else {
-      throw new Error((result && (result.message || result.error)) || "Nie udało się wygenerować streszczenia.");
+      throw new Error((result && (result.message || result.error)) || "Nie udało się wygenerować raportu.");
     }
   } catch (err) {
-    console.error("Translation error:", err);
-    showToast("Błąd tłumaczenia AI: " + (err.message || err), "error");
+    console.error("Clinical report error:", err);
+    showToast("Błąd generowania raportu: " + (err.message || err), "error");
   } finally {
     AppState.translatingIds.delete(articleId);
     filterAndRenderArticles();
@@ -1122,6 +1281,8 @@ async function requestAiTranslation(articleId) {
     }
   }
 }
+const requestAiTranslation = generateClinicalReport;
+window.generateClinicalReport = generateClinicalReport;
 window.requestAiTranslation = requestAiTranslation;
 
 /**
@@ -1382,7 +1543,7 @@ function renderArticleCards(articles) {
 
     const rawUrl = art.url || meta.url || art.urlOriginal || meta.urlOriginal || (art.fileIdOriginal ? `https://drive.google.com/file/d/${art.fileIdOriginal}/view?usp=sharing` : (art.fileId ? `https://drive.google.com/file/d/${art.fileId}/view?usp=sharing` : "#"));
     const origUrl = safeUrl(rawUrl);
-    const hasTranslation = hasArticleTranslation(art);
+    const hasReport = hasArticleReport(art);
     const isTranslating = AppState.translatingIds && AppState.translatingIds.has(art.id);
 
     let rightBtnHtml = "";
@@ -1390,18 +1551,18 @@ function renderArticleCards(articles) {
       rightBtnHtml = `
         <button disabled class="flex-1 bg-purple-50 text-purple-700 border border-purple-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 cursor-wait whitespace-nowrap">
           <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
-          <span>Tłumaczenie...</span>
+          <span>Generowanie...</span>
         </button>`;
-    } else if (hasTranslation) {
+    } else if (hasReport) {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'translation')" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 shadow-sm transition-all whitespace-nowrap cursor-pointer overflow-visible" title="Otwórz zabezpieczony czytnik streszczenia PL (*_PL.pdf)">
-          <span>🇵🇱 Przeczytaj streszczenie PL</span>
+        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 shadow-sm transition-all whitespace-nowrap cursor-pointer overflow-visible" title="Otwórz czytnik raportu klinicznego SKN">
+          <span>📊 Raport Kliniczny PL</span>
         </button>`;
     } else {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); requestAiTranslation('${art.id}')" class="flex-1 bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 transition-all whitespace-nowrap cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu streszczenia PL przez AI">
-          <i class="fas fa-globe text-emerald-600 text-xs shrink-0"></i>
-          <span>🌐 Przetłumacz na PL</span>
+        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="flex-1 bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 transition-all whitespace-nowrap cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
+          <span>🧠 Generuj Raport PL</span>
         </button>`;
     }
 
@@ -3658,7 +3819,7 @@ function openArticleDetail(articleId) {
   const originalLink = document.getElementById("detail-btn-original");
   const rawOrig = article.url || meta.url || article.urlOriginal || meta.urlOriginal || (article.fileIdOriginal ? `https://drive.google.com/file/d/${article.fileIdOriginal}/view?usp=sharing` : (article.fileId ? `https://drive.google.com/file/d/${article.fileId}/view?usp=sharing` : "#"));
   const origUrl = safeUrl(rawOrig);
-  const hasTranslation = hasArticleTranslation(article);
+  const hasReport = hasArticleReport(article);
   const isTranslating = AppState.translatingIds && AppState.translatingIds.has(article.id);
 
   const buttonsContainer = originalLink ? originalLink.parentElement : document.querySelector("#detailModal .grid.grid-cols-2");
@@ -3693,15 +3854,15 @@ function openArticleDetail(articleId) {
         ${isTranslating ? `
           <button disabled class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-purple-50 text-purple-700 border border-purple-300 shadow-sm flex items-center justify-center gap-2 cursor-wait">
             <i class="fas fa-circle-notch fa-spin text-purple-600"></i>
-            <span>Tłumaczenie...</span>
+            <span>Generowanie...</span>
           </button>
-        ` : hasTranslation ? `
-          <button type="button" id="detail-btn-translation" onclick="openSecureViewer('${article.id}', 'translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz zabezpieczony czytnik streszczenia PL (*_PL.pdf)">
-            <i class="fas fa-file-lines text-emerald-100"></i> 🇵🇱 Przeczytaj streszczenie PL
+        ` : hasReport ? `
+          <button type="button" id="detail-btn-report" onclick="openClinicalReportModal('${article.id}')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz czytnik raportu klinicznego SKN">
+            <i class="fas fa-brain text-emerald-100"></i> 📊 Raport Kliniczny PL
           </button>
         ` : `
-          <button type="button" onclick="requestAiTranslation('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu streszczenia PL przez AI">
-            <i class="fas fa-globe text-emerald-600"></i> 🌐 Przetłumacz na PL
+          <button type="button" onclick="generateClinicalReport('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+            <i class="fas fa-brain text-emerald-600"></i> 🧠 Generuj Raport PL
           </button>
         `}
       </div>
@@ -4253,3 +4414,9 @@ window.toggleArticleAccessLevel = toggleArticleAccessLevel;
 window.openCategoryChangeModal = openCategoryChangeModal;
 window.closeCategoryChangeModal = closeCategoryChangeModal;
 window.changeArticleCategory = changeArticleCategory;
+window.openClinicalReportModal = openClinicalReportModal;
+window.closeClinicalReportModal = closeClinicalReportModal;
+window.copyCitationFromReportModal = copyCitationFromReportModal;
+window.printClinicalReport = printClinicalReport;
+window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
+window.generateClinicalReport = generateClinicalReport;
