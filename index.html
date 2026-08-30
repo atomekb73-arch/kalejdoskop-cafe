@@ -936,13 +936,13 @@
       </div>
 
       <!-- Przełącznik Zakładek: [ 📄 Streszczenie & Dane ] | [ 🤖 Dyskutuj z AI ] -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4 w-full">
-        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-[11px] sm:text-xs font-semibold rounded-lg whitespace-nowrap truncate transition-all bg-white text-indigo-700 shadow-xs border border-slate-200 cursor-pointer">
-          <span class="truncate">📄 Streszczenie & Dane</span>
+      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-4 w-full">
+        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap truncate transition-all bg-white text-indigo-700 shadow-xs border border-slate-200 cursor-pointer">
+          <span class="truncate text-xs font-semibold">📄 Streszczenie & Dane</span>
         </button>
-        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-[11px] sm:text-xs font-semibold rounded-lg whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-white/60 cursor-pointer">
-          <span class="truncate">🤖 Dyskutuj z AI</span>
-          <span class="shrink-0 text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 font-bold px-1.5 py-0.5 rounded-full">JC</span>
+        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-white/60 cursor-pointer">
+          <span class="truncate text-xs font-semibold">🤖 Dyskutuj z AI</span>
+          <span class="shrink-0 text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-full">JC</span>
         </button>
       </div>
 
@@ -1057,9 +1057,9 @@
 
   <!-- MODAL: In-App Czytnik Raportu Klinicznego SKN -->
   <div id="clinicalReportModal" onclick="handleBackdropClick(event, 'clinicalReportModal')" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm">
-    <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 pb-24 shadow-2xl relative text-left border border-slate-200 dark:border-slate-800" onclick="event.stopPropagation()">
+    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 pb-20 shadow-2xl relative text-left border border-slate-200" onclick="event.stopPropagation()">
       <!-- Górny pasek modalu -->
-      <div class="flex items-start justify-between gap-4 pb-3 border-b border-slate-200/90 dark:border-slate-800 shrink-0">
+      <div class="flex items-start justify-between gap-4 pb-3 border-b border-slate-200/90 shrink-0">
         <div>
           <div class="flex flex-wrap items-center gap-2">
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-50 text-emerald-700 border border-emerald-300 flex items-center gap-1.5">
@@ -1067,30 +1067,30 @@
             </span>
             <span id="report-modal-category" class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200"></span>
           </div>
-          <h2 id="report-modal-title" class="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 mt-2 leading-snug"></h2>
+          <h2 id="report-modal-title" class="text-base sm:text-xl font-bold text-slate-900 mt-2 leading-snug"></h2>
           <p id="report-modal-original-title" class="text-xs text-slate-500 italic mt-0.5 hidden"></p>
         </div>
-        <button type="button" onclick="closeClinicalReportModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-lg p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Zamknij raport">
+        <button type="button" onclick="closeClinicalReportModal()" class="text-slate-400 hover:text-slate-700 text-lg p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer" title="Zamknij raport">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
       <!-- Metadane -->
-      <div class="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/40 -mx-4 sm:-mx-6 px-4 sm:px-6 my-2 shrink-0">
+      <div class="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-slate-200 text-xs text-slate-600 bg-slate-50/70 -mx-4 sm:-mx-6 px-4 sm:px-6 my-2 shrink-0">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <div><strong class="text-slate-700 dark:text-slate-300">Autorzy:</strong> <span id="report-modal-authors" class="text-slate-800 dark:text-slate-200"></span></div>
-          <div><strong class="text-slate-700 dark:text-slate-300">Rok:</strong> <span id="report-modal-year" class="font-medium text-slate-800 dark:text-slate-200"></span></div>
-          <div><strong class="text-slate-700 dark:text-slate-300">ID:</strong> <span id="report-modal-id" class="font-mono text-indigo-600 dark:text-indigo-400 font-bold"></span></div>
+          <div><strong class="text-slate-700">Autorzy:</strong> <span id="report-modal-authors" class="text-slate-800"></span></div>
+          <div><strong class="text-slate-700">Rok:</strong> <span id="report-modal-year" class="font-medium text-slate-800"></span></div>
+          <div><strong class="text-slate-700">ID:</strong> <span id="report-modal-id" class="font-mono text-indigo-600 font-bold"></span></div>
         </div>
       </div>
 
       <!-- Pasek akcji (Kopiuj APA, Drukuj PDF itp.) -->
-      <div class="flex flex-wrap items-center gap-2 my-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-        <button type="button" id="report-btn-copy-apa" onclick="copyCitationFromReportModal('APA7')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-emerald-50 text-slate-700 dark:text-slate-200 hover:text-emerald-700 border border-slate-300 dark:border-slate-700 hover:border-emerald-300 transition shadow-2xs cursor-pointer" title="Kopiuj cytowanie w standardzie APA 7th">
+      <div class="flex flex-wrap items-center gap-2 my-3 pt-2 border-t border-slate-100">
+        <button type="button" id="report-btn-copy-apa" onclick="copyCitationFromReportModal('APA7')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 hover:border-emerald-300 transition shadow-2xs cursor-pointer" title="Kopiuj cytowanie w standardzie APA 7th">
           <i class="fas fa-clipboard text-emerald-600"></i>
           <span>📋 Kopiuj cytowanie APA 7</span>
         </button>
-        <button type="button" onclick="printClinicalReport()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-indigo-50 text-slate-700 dark:text-slate-200 hover:text-indigo-700 border border-slate-300 dark:border-slate-700 hover:border-indigo-300 transition shadow-2xs cursor-pointer" title="Drukuj lub zapisz jako PDF">
+        <button type="button" onclick="printClinicalReport()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-2xs cursor-pointer" title="Drukuj lub zapisz jako PDF">
           <i class="fas fa-print text-indigo-600"></i>
           <span>🖨️ Drukuj / PDF</span>
         </button>
