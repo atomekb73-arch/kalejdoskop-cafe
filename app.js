@@ -2523,7 +2523,7 @@ async function openSecureViewer(articleId, mode = "original") {
   ViewerState.currentArticleId = articleId;
   ViewerState.currentMode = mode;
   ViewerState.pageNum = 1;
-  ViewerState.scale = 1.25;
+  ViewerState.scale = window.innerWidth < 768 ? "auto" : 1.2;
   ViewerState.pdfDoc = null;
   ViewerState.rawPdfBytes = null;
 
@@ -2532,28 +2532,16 @@ async function openSecureViewer(articleId, mode = "original") {
   window.currentPdfFileName = `${title.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "_").trim().replace(/\s+/g, "_")}${suffix}.pdf`;
 
   const docTitleEl = document.getElementById("viewer-doc-title");
-  const docBadgeEl = document.getElementById("viewer-doc-badge");
   const canvasWrapper = document.getElementById("viewer-canvas-wrapper");
   const loadingSpinner = document.getElementById("viewer-loading-spinner");
 
   if (docTitleEl) docTitleEl.innerText = title;
-  if (docBadgeEl) {
-    if (isInternal) {
-      docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-900 text-rose-200 border border-rose-700";
-      docBadgeEl.innerText = "🔒 Materiał Własny SKN";
-    } else if (mode === "translation") {
-      docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900 text-emerald-200 border border-emerald-700";
-      docBadgeEl.innerText = "🇵🇱 Streszczenie PL";
-    } else {
-      docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-700";
-      docBadgeEl.innerText = "📄 Oryginał PDF";
-    }
-  }
 
   if (canvasWrapper) canvasWrapper.classList.add("hidden");
   if (loadingSpinner) loadingSpinner.classList.remove("hidden");
 
   showModalElement("securePdfViewerModal");
+  initViewerTouchGestures();
 
   try {
     let fileId = "";
@@ -2606,6 +2594,61 @@ function openSecureViewerFromDetail(mode = "original") {
 }
 window.openSecureViewerFromDetail = openSecureViewerFromDetail;
 
+let isTouchPinchInitialized = false;
+function initViewerTouchGestures() {
+  if (isTouchPinchInitialized) return;
+  const container = document.getElementById("viewer-scroll-container");
+  const canvasWrapper = document.getElementById("viewer-canvas-wrapper");
+  if (!container) return;
+
+  let startDistance = null;
+  let startScale = 1.0;
+  let currentScaleFactor = 1.0;
+
+  container.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      startDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      startScale = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.0;
+      currentScaleFactor = 1.0;
+    }
+  }, { passive: true });
+
+  container.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 2 && startDistance) {
+      const currentDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      currentScaleFactor = currentDistance / startDistance;
+      if (canvasWrapper) {
+        canvasWrapper.style.transform = `scale(${currentScaleFactor})`;
+      }
+    }
+  }, { passive: true });
+
+  const endPinch = () => {
+    if (startDistance !== null) {
+      if (canvasWrapper) {
+        canvasWrapper.style.transform = "none";
+      }
+      const targetScale = Math.max(0.4, Math.min(3.5, startScale * currentScaleFactor));
+      startDistance = null;
+      if (Math.abs(targetScale - startScale) > 0.05) {
+        ViewerState.scale = targetScale;
+        renderViewerPage(ViewerState.pageNum);
+      }
+    }
+  };
+
+  container.addEventListener("touchend", endPinch, { passive: true });
+  container.addEventListener("touchcancel", endPinch, { passive: true });
+
+  isTouchPinchInitialized = true;
+}
+
 async function renderViewerPage(num) {
   if (!ViewerState.pdfDoc) return;
   ViewerState.pageRendering = true;
@@ -2617,17 +2660,26 @@ async function renderViewerPage(num) {
   const zoomLabel = document.getElementById("viewer-zoom-label");
 
   if (pageNumEl) pageNumEl.innerText = num;
-  if (zoomLabel) zoomLabel.innerText = `${Math.round(ViewerState.scale * 100)}%`;
 
   try {
     const page = await ViewerState.pdfDoc.getPage(num);
+
+    // Automatyczne dopasowanie skali dla widoku mobilnego lub auto
+    if (ViewerState.scale === "auto" || !ViewerState.scale) {
+      const unscaledViewport = page.getViewport({ scale: 1.0 });
+      const container = document.getElementById("viewer-scroll-container");
+      const availWidth = (container ? container.clientWidth : window.innerWidth) - (window.innerWidth < 768 ? 16 : 48);
+      ViewerState.scale = Math.max(0.4, Math.min(3.0, availWidth / (unscaledViewport.width || 595)));
+    }
+
+    if (zoomLabel) zoomLabel.innerText = `${Math.round(ViewerState.scale * 100)}%`;
 
     if (canvas) {
       const ctx = canvas.getContext("2d", { alpha: false });
 
       // 1. Obliczenie współczynnika gęstości ekranu (HiDPI / Retina)
       const pixelRatio = window.devicePixelRatio || 1;
-      const zoom = ViewerState.scale || 1.25;
+      const zoom = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.0;
 
       // 2. Viewport bazowy dla stylów CSS oraz transformacji
       const viewport = page.getViewport({ scale: zoom });
@@ -2709,25 +2761,33 @@ function viewerNextPage() {
 window.viewerNextPage = viewerNextPage;
 
 function viewerZoomIn() {
-  if (ViewerState.scale >= 3.0) return;
-  ViewerState.scale += 0.2;
+  const current = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.0;
+  if (current >= 3.5) return;
+  ViewerState.scale = Math.min(3.5, current + 0.2);
   queueRenderPage(ViewerState.pageNum);
 }
 window.viewerZoomIn = viewerZoomIn;
 
 function viewerZoomOut() {
-  if (ViewerState.scale <= 0.6) return;
-  ViewerState.scale -= 0.2;
+  const current = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.0;
+  if (current <= 0.4) return;
+  ViewerState.scale = Math.max(0.4, current - 0.2);
   queueRenderPage(ViewerState.pageNum);
 }
 window.viewerZoomOut = viewerZoomOut;
 
-function viewerFitWidth() {
-  const container = document.getElementById("viewer-scroll-container");
-  if (!container || !ViewerState.pdfDoc) return;
-  const availWidth = container.clientWidth - 48;
-  ViewerState.scale = Math.max(0.6, Math.min(2.5, availWidth / 620));
-  queueRenderPage(ViewerState.pageNum);
+async function viewerFitWidth() {
+  if (!ViewerState.pdfDoc) return;
+  try {
+    const page = await ViewerState.pdfDoc.getPage(ViewerState.pageNum);
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const container = document.getElementById("viewer-scroll-container");
+    const availWidth = (container ? container.clientWidth : window.innerWidth) - (window.innerWidth < 768 ? 16 : 48);
+    ViewerState.scale = Math.max(0.4, Math.min(3.0, availWidth / (unscaledViewport.width || 595)));
+    queueRenderPage(ViewerState.pageNum);
+  } catch (e) {
+    console.error("Fit width error:", e);
+  }
 }
 window.viewerFitWidth = viewerFitWidth;
 

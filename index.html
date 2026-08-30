@@ -1468,74 +1468,74 @@
   <div id="securePdfViewerModal" onclick="handleBackdropClick(event, 'securePdfViewerModal')" style="display: none;" class="fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md items-center justify-center p-2 sm:p-4 select-none" oncontextmenu="return false;" ondragstart="return false;">
     <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none" onclick="event.stopPropagation()">
       
-      <!-- Pasek Narzędzi Czytnika (Header & Controls - Mobile Responsive) -->
-      <div class="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-4 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
-        <!-- Tytuł i Wersja -->
-        <div class="flex items-center gap-2 min-w-0 max-w-[50%] sm:max-w-none">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-900/60 border border-indigo-700/60 text-indigo-300 flex items-center justify-center text-xs sm:text-sm shrink-0">
-            <i class="fas fa-file-shield"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span id="viewer-doc-badge" class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-700">Oryginał PDF</span>
-              <h3 id="viewer-doc-title" class="text-xs sm:text-sm font-bold text-slate-100 truncate max-w-[120px] sm:max-w-xs md:max-w-md">Dokument Naukowy</h3>
+      <!-- Pasek Narzędzi Czytnika (Mobile 2-Row / Desktop 1-Row Layout) -->
+      <div class="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-4 py-2 sm:py-2.5 flex flex-col gap-2 shrink-0">
+        <!-- Wiersz 1: Pełny tytuł artykułu (Górny) -->
+        <div class="w-full flex items-center justify-center text-center px-2">
+          <h3 id="viewer-doc-title" class="text-xs sm:text-sm font-semibold text-slate-100 leading-tight line-clamp-2 text-center select-text">Dokument Naukowy</h3>
+        </div>
+
+        <!-- Wiersz 2: Pasek Narzędzi ze spójnymi symetrycznymi przyciskami -->
+        <div class="flex items-center justify-between gap-1 sm:gap-2 w-full">
+          <!-- Lewa strona: Jednolity okrągły badge/ikona pliku PDF -->
+          <div class="flex items-center shrink-0">
+            <div id="viewer-doc-badge-icon" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-indigo-950/80 border border-indigo-700/60 text-indigo-400 flex items-center justify-center text-xs shadow-2xs shrink-0" title="Dokument PDF (SKN Seksuologii)">
+              <i class="fas fa-file-pdf text-xs sm:text-sm text-indigo-300"></i>
             </div>
-            <p class="text-[9px] sm:text-[10px] text-slate-400 truncate">Bezpieczny Czytnik PDF • SKN Seksuologii</p>
           </div>
-        </div>
 
-        <!-- Kontrolki Stron i Zoomu -->
-        <div class="flex items-center gap-1 sm:gap-1.5 bg-slate-800/90 border border-slate-700/70 rounded-xl px-2 py-1 text-slate-200 text-xs shrink-0 order-3 sm:order-2">
-          <!-- Poprzednia / Następna -->
-          <button type="button" onclick="viewerPrevPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Poprzednia strona (←)">
-            <i class="fas fa-chevron-left text-xs"></i>
-          </button>
-          
-          <span class="font-mono text-[11px] sm:text-xs text-slate-300 px-0.5">
-            <span id="viewer-page-num" class="font-bold text-white">1</span>/<span id="viewer-page-count" class="text-slate-400">1</span>
-          </span>
+          <!-- Środek: Kompaktowy pasek stron i powiększenia (< 1/10 > oraz - 100% +) w zwartej kapsułce -->
+          <div class="flex items-center gap-1 sm:gap-1.5 bg-slate-800/90 border border-slate-700/70 rounded-full px-2 sm:px-2.5 py-1 text-slate-200 text-xs shrink-0 shadow-2xs">
+            <!-- Poprzednia / Następna -->
+            <button type="button" onclick="viewerPrevPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-full transition cursor-pointer" title="Poprzednia strona (←)">
+              <i class="fas fa-chevron-left text-[10px] sm:text-xs"></i>
+            </button>
+            
+            <span class="font-mono text-[10.5px] sm:text-xs text-slate-300 px-0.5 whitespace-nowrap">
+              <span id="viewer-page-num" class="font-bold text-white">1</span>/<span id="viewer-page-count" class="text-slate-400">1</span>
+            </span>
 
-          <button type="button" onclick="viewerNextPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Następna strona (→)">
-            <i class="fas fa-chevron-right text-xs"></i>
-          </button>
+            <button type="button" onclick="viewerNextPage()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-full transition cursor-pointer" title="Następna strona (→)">
+              <i class="fas fa-chevron-right text-[10px] sm:text-xs"></i>
+            </button>
 
-          <div class="w-px h-3.5 bg-slate-700 mx-0.5"></div>
+            <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
 
-          <!-- Zoom Out / Zoom In / Fit Width -->
-          <button type="button" onclick="viewerZoomOut()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Pomniejsz (-)">
-            <i class="fas fa-magnifying-glass-minus text-xs"></i>
-          </button>
+            <!-- Zoom Out / Zoom In / Fit Width -->
+            <button type="button" onclick="viewerZoomOut()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-full transition cursor-pointer" title="Pomniejsz (-)">
+              <i class="fas fa-minus text-[10px] sm:text-xs"></i>
+            </button>
 
-          <span id="viewer-zoom-label" class="font-mono text-[10px] sm:text-[11px] text-slate-300 w-8 sm:w-9 text-center">100%</span>
+            <span id="viewer-zoom-label" class="font-mono text-[10px] sm:text-[11px] text-slate-300 w-8 sm:w-9 text-center">100%</span>
 
-          <button type="button" onclick="viewerZoomIn()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Powiększ (+)">
-            <i class="fas fa-magnifying-glass-plus text-xs"></i>
-          </button>
+            <button type="button" onclick="viewerZoomIn()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-full transition cursor-pointer" title="Powiększ (+)">
+              <i class="fas fa-plus text-[10px] sm:text-xs"></i>
+            </button>
 
-          <button type="button" onclick="viewerFitWidth()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition cursor-pointer" title="Dopasuj do szerokości ekranu">
-            <i class="fas fa-arrows-left-right text-xs"></i>
-          </button>
-        </div>
+            <button type="button" onclick="viewerFitWidth()" class="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-slate-700 rounded-full transition cursor-pointer" title="Dopasuj do szerokości ekranu">
+              <i class="fas fa-arrows-left-right text-[10px] sm:text-xs"></i>
+            </button>
+          </div>
 
-        <!-- Akcje i Zamknięcie -->
-        <div class="flex items-center gap-1.5 shrink-0 order-2 sm:order-3">
-          <button type="button" id="viewer-download-btn" onclick="viewerDownloadWatermarked()" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white rounded-xl text-[11px] sm:text-xs font-semibold shadow-sm transition cursor-pointer" title="Pobierz podpisany i ostemplowany plik PDF">
-            <i class="fas fa-download text-xs"></i>
-            <span class="hidden xs:inline">Pobierz</span>
-          </button>
+          <!-- Prawa strona: Przycisk pobierania oraz przycisk zamknięcia X o identycznym okrągłym rozmiarze -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" id="viewer-download-btn" onclick="viewerDownloadWatermarked()" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white flex items-center justify-center text-xs shadow-sm transition active:scale-95 cursor-pointer" title="Pobierz podpisany i ostemplowany plik PDF">
+              <i class="fas fa-download text-xs"></i>
+            </button>
 
-          <button type="button" onclick="closeSecureViewer()" class="text-slate-400 hover:text-white p-1.5 text-base rounded-lg hover:bg-slate-800 transition cursor-pointer" title="Zamknij czytnik (Esc)">
-            <i class="fas fa-times"></i>
-          </button>
+            <button type="button" onclick="closeSecureViewer()" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer" title="Zamknij czytnik (Esc)">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch Optimized & 2D Zoom Scroll) -->
-      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-auto p-2 sm:p-6 flex flex-col items-center justify-start relative select-none touch-pan-y" style="-webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
+      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch & Gestures Optimized) -->
+      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-auto p-1 sm:p-4 flex flex-col items-center justify-start relative select-none" style="touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
         <!-- Pływający pasek bezpieczeństwa / stempel -->
-        <div class="sticky top-1 sm:top-2 z-10 bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md flex items-center gap-1.5 mb-2 sm:mb-3 select-none pointer-events-none text-center">
+        <div class="sticky top-1 z-10 bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1.5 mb-1.5 select-none pointer-events-none text-center">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>🔒 Zabezpieczony podgląd akademicki • Baza Wiedzy SKN Seksuologii</span>
+          <span>🔒 Zabezpieczony podgląd akademicki • SKN Seksuologii</span>
         </div>
 
         <!-- Spinner Ładowania PDF -->
@@ -1544,8 +1544,8 @@
           <span class="text-xs font-medium text-slate-300">Wczytywanie i renderowanie dokumentu...</span>
         </div>
 
-        <!-- Canvas Wyświetlający Stronę (Brak ograniczenia max-width przy powiększeniu) -->
-        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg border border-slate-800 select-none bg-white max-w-none" style="display: none;">
+        <!-- Canvas Wyświetlający Stronę -->
+        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg border border-slate-800 select-none bg-white max-w-none transition-transform duration-75 origin-top" style="display: none;">
           <canvas id="pdf-render-canvas" class="block mx-auto" style="display: block; margin: 0 auto;"></canvas>
         </div>
       </div>
