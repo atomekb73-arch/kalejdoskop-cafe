@@ -362,6 +362,47 @@ window.closeCategoryDrawer = closeCategoryDrawer;
   }, { passive: true });
 })();
 
+const normalizeCategories = (categoryStr) => {
+  if (!categoryStr) return [];
+  if (Array.isArray(categoryStr)) {
+    return categoryStr
+      .flatMap(c => String(c).split(/[|,/]/))
+      .map(c => c.trim())
+      .filter(Boolean);
+  }
+  return String(categoryStr)
+    .split(/[|,/]/)
+    .map(c => c.trim())
+    .filter(Boolean);
+};
+window.normalizeCategories = normalizeCategories;
+
+/**
+ * Sprawdza czy artykuł należy do danej kategorii (obsługa wielu kategorii)
+ */
+function articleHasCategory(article, targetCategory) {
+  if (!article || !targetCategory) return false;
+  if (targetCategory === "Wszystko") return true;
+  const meta = article.meta || article.data || article;
+  const rawCats = [
+    article.category,
+    meta.category,
+    article.categories,
+    meta.categories,
+    article.Kategoria,
+    meta.Kategoria
+  ].filter(Boolean);
+
+  const normalized = rawCats.flatMap(c => normalizeCategories(c));
+  const targetLower = targetCategory.toLowerCase().trim();
+
+  return normalized.some(cat => {
+    const catLower = cat.toLowerCase().trim();
+    return catLower === targetLower || catLower.includes(targetLower) || targetLower.includes(catLower);
+  });
+}
+window.articleHasCategory = articleHasCategory;
+
 function getCategoryCount(category) {
   if (category === "Wszystko") {
     if (AppState.currentRole === "PUBLIC") {
@@ -369,7 +410,12 @@ function getCategoryCount(category) {
     }
     return AppState.articles.length;
   }
-  return AppState.articles.filter((a) => a.category === category).length;
+  return AppState.articles.filter((a) => {
+    if (AppState.currentRole === "PUBLIC" && isInternalArticle(a) && category !== "Materiały Własne SKN") {
+      return false;
+    }
+    return articleHasCategory(a, category);
+  }).length;
 }
 
 const CACHE_KEY = "kc_articles_cache";
@@ -676,15 +722,17 @@ function updateLibraryWithRealDriveFiles(files) {
 }
 
 function isInternalArticle(article) {
-  return article.isInternal === true || article.SKN_INTERNAL === true || article.category === "Materiały Własne SKN";
+  if (!article) return false;
+  if (article.isInternal === true || article.SKN_INTERNAL === true) return true;
+  return articleHasCategory(article, "Materiały Własne SKN");
 }
 
 function filterAndRenderArticles() {
   let list = [...AppState.articles];
 
-  // 1. Kategoria
+  // 1. Kategoria (obsługa wielu kategorii rozdzielonych |, ,, /)
   if (AppState.activeCategory !== "Wszystko") {
-    list = list.filter((a) => a.category === AppState.activeCategory);
+    list = list.filter((a) => articleHasCategory(a, AppState.activeCategory));
   } else {
     if (AppState.currentRole === "PUBLIC") {
       list = list.filter((a) => !isInternalArticle(a));
@@ -1698,9 +1746,12 @@ function renderArticleCards(articles) {
     const displayAbstract = cleanAbstractText(meta.abstractPL || art.abstractPL);
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
-    const categoryBadgeHtml = isAdmin
-      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-xs" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(displayCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
-      : `<span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">${escapeHtml(displayCategory)}</span>`;
+    const catList = normalizeCategories(displayCategory);
+    const categoryBadgeHtml = (catList.length > 0 ? catList : ["Edukacja Seksualna"]).map(cat => {
+      return isAdmin
+        ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-xs" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(cat)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
+        : `<span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">${escapeHtml(cat)}</span>`;
+    }).join(" ");
 
     const tagsHtml = keywordsList
       .map(
@@ -4171,6 +4222,8 @@ function openArticleDetail(articleId) {
   const isInternal = isInternalArticle(article);
   const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(article.id);
 
+  const catList = normalizeCategories(category);
+  const displayCatText = catList.length > 0 ? catList.join(" • ") : "Edukacja Seksualna";
   const catEl = document.getElementById("detail-category");
   if (catEl) {
     const isAdmin = (AppState.currentRole === "ADMIN");
@@ -4180,12 +4233,12 @@ function openArticleDetail(articleId) {
       catEl.onclick = null;
     } else if (isAdmin) {
       catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-300 cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs";
-      catEl.innerHTML = `<span>${escapeHtml(category)}</span> <i class="fas fa-pen text-[8.5px] opacity-70"></i>`;
+      catEl.innerHTML = `<span>${escapeHtml(displayCatText)}</span> <i class="fas fa-pen text-[8.5px] opacity-70"></i>`;
       catEl.title = "Administrator: Kliknij, aby zmienić kategorię publikacji";
       catEl.onclick = () => openCategoryChangeModal(article.id);
     } else {
       catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200";
-      catEl.innerText = category;
+      catEl.innerText = displayCatText;
       catEl.onclick = null;
     }
   }
