@@ -82,13 +82,17 @@ async function callGoogleScript(action, payload = {}) {
     ...payload
   });
 }
-window.fetchFromAppsScript = fetchFromAppsScript;
-window.callGoogleScript = callGoogleScript;
+if (typeof window !== "undefined") {
+  window.fetchFromAppsScript = fetchFromAppsScript;
+  window.callGoogleScript = callGoogleScript;
+}
 
 // Start aplikacji po załadowaniu drzewa DOM
-document.addEventListener("DOMContentLoaded", () => {
-  initApp();
-});
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initApp();
+  });
+}
 
 function initApp() {
   localStorage.setItem("APPS_SCRIPT_WEBAPP_URL", DEFAULT_EXEC_URL);
