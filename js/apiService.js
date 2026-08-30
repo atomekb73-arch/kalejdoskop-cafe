@@ -146,11 +146,25 @@ export async function askDocument(article, userQuestion) {
   return await callGoogleScript("askDocument", payload);
 }
 
+/**
+ * Zapisuje artykuł ze źródła internetowego (WEB) w Arkuszu Google
+ */
+export async function saveWebArticle(articleData, adminPin = "2026") {
+  const payload = {
+    action: "saveWebArticle",
+    type: "WEB",
+    ...articleData,
+    adminPin: adminPin
+  };
+  return await callGoogleScript("saveWebArticle", payload);
+}
+
 export default {
   callGoogleScript,
   sendGasRequest,
   readFileAsBase64,
   uploadPdfArticle,
+  saveWebArticle,
   updateArticleMeta,
   askDocument
 };

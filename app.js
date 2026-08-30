@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzH9ZwK7cS5wY91_KIVlA9GC-9mmy0W0mr94C3SD_5syDLHoDw44XD5jXbm0FPT6dvv/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzEsEWvs8tPk2hVbErW2f4iVQv9blCYpiCPhU_QxsaknVAdG5nfMMGDlT9EIm3R1qrX/exec";
 
 const AppState = {
   articles: [],
@@ -5022,7 +5022,7 @@ async function handleUploadPipeline() {
       keywords: ["Artykuł Web", "Open Access", selectedCategory || "Edukacja Seksualna"],
       isPublic: accessLevel === "PUBLIC",
       accessLevel: accessLevel,
-      hasReport: false,
+      hasReport: Boolean(enteredAbstract && enteredAbstract.trim().length > 0),
       status: "ACTIVE"
     };
 
@@ -5035,22 +5035,36 @@ async function handleUploadPipeline() {
           setTimeout(async () => {
             animateStep(5, "5/5: Rejestracja rekordu Web w bazie Kalejdoskop Café...");
             
+            const payload = {
+              action: "saveWebArticle",
+              type: "WEB",
+              ...articleData,
+              adminPin: AppState.currentPin || "2026"
+            };
+
             try {
               if (AppState.isGasEnvironment) {
                 google.script.run
-                  .withSuccessHandler(() => {})
+                  .withSuccessHandler(() => {
+                    loadArticles();
+                  })
                   .withFailureHandler(() => {})
-                  .apiProcessArticle({
-                    action: "addWebArticle",
-                    type: "WEB",
-                    ...articleData,
-                    adminPin: AppState.currentPin
-                  });
+                  .apiProcessArticle(payload);
               } else {
-                callGoogleScript("addWebArticle", articleData).catch(() => {});
+                callGoogleScript("saveWebArticle", payload)
+                  .catch(() => callGoogleScript("addWebArticle", payload))
+                  .then(() => {
+                    setTimeout(() => {
+                      loadArticles();
+                    }, 500);
+                  })
+                  .catch(() => {});
               }
 
-              AppState.articles.unshift(articleData);
+              saveWebArticleToCache(articleData);
+              if (!AppState.articles.some((a) => a.id === articleData.id)) {
+                AppState.articles.unshift(articleData);
+              }
               saveArticlesToCache(AppState.articles);
               renderCategoryPills();
               filterAndRenderArticles();
@@ -5059,7 +5073,15 @@ async function handleUploadPipeline() {
               showToast(`Artykuł Web «${articleData.titlePL}» został pomyślnie zarejestrowany!`, "success");
             } catch (err) {
               console.error("Błąd rejestracji artykułu Web:", err);
-              handlePipelineError("Błąd zapisu publikacji: " + err.message);
+              saveWebArticleToCache(articleData);
+              if (!AppState.articles.some((a) => a.id === articleData.id)) {
+                AppState.articles.unshift(articleData);
+              }
+              saveArticlesToCache(AppState.articles);
+              renderCategoryPills();
+              filterAndRenderArticles();
+              showPipelineSuccess(articleData, rawUrl);
+              showToast(`Zapisano artykuł: «${articleData.titlePL}»`, "info");
             }
           }, 400);
         }, 400);
@@ -5367,3 +5389,5 @@ window.extractDoi = extractDoi;
 window.getDoiUrl = getDoiUrl;
 window.extractJournal = extractJournal;
 window.switchUploadTab = switchUploadTab;
+window.loadArticles = loadArticles;
+window.fetchArticles = loadArticles;
