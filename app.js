@@ -60,6 +60,10 @@ async function callGoogleScript(action, payload = {}) {
     throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
   }
 
+  // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej
+  AppState.isOffline = false;
+  window.isOffline = false;
+
   return await response.json();
 }
 window.callGoogleScript = callGoogleScript;
@@ -506,18 +510,20 @@ function setSyncStatus(status, customText) {
     indicator.style.display = "inline-flex";
     indicator.style.opacity = "1";
   } else if (status === "synced") {
+    AppState.isOffline = false;
+    window.isOffline = false;
     indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all duration-300";
     if (icon) icon.className = "fas fa-check-circle text-emerald-600 text-[11px]";
-    if (text) text.innerText = customText || "✓ Zsynchronizowano";
+    if (text) text.innerText = customText || "✓ Baza aktualna";
     indicator.style.display = "inline-flex";
     indicator.style.opacity = "1";
 
     syncTimeout = setTimeout(() => {
-      indicator.style.opacity = "0.7";
-      indicator.className = "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100/80 text-slate-600 border border-slate-200 shadow-2xs transition-all duration-500";
-      if (icon) icon.className = "fas fa-cloud text-indigo-400 text-[10px]";
-      if (text) text.innerText = "Baza aktualna";
-    }, 3000);
+      indicator.style.opacity = "0.85";
+      indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all duration-500";
+      if (icon) icon.className = "fas fa-check-circle text-emerald-600 text-[10px]";
+      if (text) text.innerText = "✓ Baza aktualna";
+    }, 2500);
   } else if (status === "offline") {
     indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs transition-all duration-300";
     if (icon) icon.className = "fas fa-cloud text-amber-600 text-[11px]";

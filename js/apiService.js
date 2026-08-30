@@ -37,6 +37,15 @@ export async function callGoogleScript(action, payload = {}) {
     throw new Error(`Błąd HTTP: ${response.status} ${response.statusText}`);
   }
 
+  // Zdjęcie flagi offline po pomyślnej komunikacji sieciowej ze statusem 200
+  if (typeof window !== "undefined") {
+    window.isOffline = false;
+    if (window.AppState) window.AppState.isOffline = false;
+    if (typeof window.setSyncStatus === "function") {
+      window.setSyncStatus("synced");
+    }
+  }
+
   const result = await response.json();
   return result;
 }
