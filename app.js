@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbwsSZux5zv9q7wQIBu0gLazghYYcHDEYxklNijNdiBtjYdRneMgOzUICUdgdJENxj4Y/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbw5M9hSRXCIPXUey3gyrl12qWM6eSJXyzIgvMTcVGZugqnUAoIYIdsWhTnkhA0DFdSZ/exec";
 
 const AppState = {
   articles: [],
@@ -1043,6 +1043,11 @@ async function requestAiTranslation(articleId) {
       const newTitlePL = resData.titlePL || resData.polishTitle || resData.translatedTitle || result.titlePL;
       const newFileIdTrans = resData.fileIdTranslation || resData.translationFileId || resData.FileID_Tlumaczenie || resData.ID_Pliku_PL || result.fileIdTranslation || extractDriveFileId(newTransUrl);
 
+      const newAuthors = resData.authors || resData.Autorzy;
+      const newYear = resData.year || resData.Rok;
+      const newCategory = resData.category || resData.Kategoria;
+      const newKeywords = resData.keywords || resData.tags || resData.Slowa_Kluczowe;
+
       if (newTransUrl && newTransUrl !== "#") {
         article.translationUrl = newTransUrl;
         article.urlTranslation = newTransUrl;
@@ -1058,6 +1063,20 @@ async function requestAiTranslation(articleId) {
       if (newTitlePL) {
         article.titlePL = newTitlePL;
       }
+      if (newAuthors) {
+        article.authors = newAuthors;
+      }
+      if (newYear) {
+        article.year = String(newYear);
+      }
+      if (newCategory) {
+        article.category = newCategory;
+      }
+      if (newKeywords) {
+        const parsedTags = Array.isArray(newKeywords) ? newKeywords : String(newKeywords).split(",").map((t) => t.trim());
+        article.keywords = parsedTags;
+        article.tags = parsedTags;
+      }
       article.hasPolishTranslation = true;
 
       if (article.meta) {
@@ -1068,6 +1087,14 @@ async function requestAiTranslation(articleId) {
         if (newFileIdTrans) article.meta.fileIdTranslation = newFileIdTrans;
         if (newAbstractPL) article.meta.abstractPL = newAbstractPL;
         if (newTitlePL) article.meta.titlePL = newTitlePL;
+        if (newAuthors) article.meta.authors = newAuthors;
+        if (newYear) article.meta.year = String(newYear);
+        if (newCategory) article.meta.category = newCategory;
+        if (newKeywords) {
+          const parsedTags = Array.isArray(newKeywords) ? newKeywords : String(newKeywords).split(",").map((t) => t.trim());
+          article.meta.keywords = parsedTags;
+          article.meta.tags = parsedTags;
+        }
         article.meta.hasPolishTranslation = true;
       }
 
