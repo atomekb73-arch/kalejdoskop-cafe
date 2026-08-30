@@ -123,10 +123,34 @@ export async function updateArticleMeta(recordId, accessLevel, category, adminPi
   return await callGoogleScript("updateArticleMeta", payload);
 }
 
+/**
+ * Pytanie do artykułu Journal Club (AI Assistant) z pełnym wstrzyknięciem kontekstu
+ */
+export async function askDocument(article, userQuestion) {
+  const meta = article.meta || article.data || article;
+  const payload = {
+    action: "askDocument",
+    question: userQuestion,
+    query: userQuestion,
+    recordId: article.id,
+    articleId: article.id,
+    fileId: article.fileIdOriginal || article.fileId || article.id,
+    title: meta.titlePL || article.titlePL || article.title || "Publikacja",
+    authors: meta.authors || article.authors || "Autor nieznany",
+    year: meta.year || article.year || "2026",
+    category: meta.category || article.category || "Edukacja Seksualna",
+    abstract: meta.abstractPL || article.abstractPL || article.abstract || "",
+    abstractPL: meta.abstractPL || article.abstractPL || article.abstract || "",
+    reportContext: article.report ? (typeof article.report === "object" ? JSON.stringify(article.report) : String(article.report)) : ""
+  };
+  return await callGoogleScript("askDocument", payload);
+}
+
 export default {
   callGoogleScript,
   sendGasRequest,
   readFileAsBase64,
   uploadPdfArticle,
-  updateArticleMeta
+  updateArticleMeta,
+  askDocument
 };

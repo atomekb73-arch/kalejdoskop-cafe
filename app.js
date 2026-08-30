@@ -3696,19 +3696,41 @@ async function handleAiChatSubmit(e) {
 
   try {
     const meta = article.meta || article.data || article;
+    const titlePL = cleanDisplayText(meta.titlePL || article.titlePL || article.polishTitle || article.name || "Brak tytułu");
+    const titleOrig = cleanDisplayText(meta.titleEN || meta.originalTitle || article.titleEN || article.titleOriginal || "");
+    const authors = cleanDisplayText(meta.authors || article.authors || "Autorzy nieznani");
+    const year = String(meta.year || article.year || "2026");
+    const category = meta.category || article.category || "Edukacja Seksualna";
+    const abstractText = cleanAbstractText(meta.abstractPL || article.abstractPL || meta.abstract || article.abstract || "");
+    const reportObj = article.report || meta.report || null;
+    const reportContext = reportObj ? (typeof reportObj === "object" ? JSON.stringify(reportObj) : String(reportObj)) : "";
+
     const payload = {
       action: "askDocument",
       recordId: article.id,
+      articleId: article.id,
       fileId: article.fileIdOriginal || article.fileId || article.id,
       question: question,
+      query: question,
+      title: titlePL || titleOrig,
+      titlePL: titlePL,
+      titleOriginal: titleOrig,
+      authors: authors,
+      year: year,
+      category: category,
+      abstract: abstractText,
+      abstractPL: abstractText,
+      reportContext: reportContext,
       context: {
-        titlePL: meta.titlePL || article.titlePL,
-        titleOriginal: meta.titleEN || meta.originalTitle || article.titleOriginal,
-        authors: meta.authors || article.authors,
-        year: meta.year || article.year,
-        category: meta.category || article.category,
-        abstractPL: meta.abstractPL || article.abstractPL
-      }
+        titlePL: titlePL,
+        titleOriginal: titleOrig,
+        authors: authors,
+        year: year,
+        category: category,
+        abstractPL: abstractText,
+        reportContext: reportContext
+      },
+      adminPin: AppState.currentPin || "2026"
     };
 
     let aiReply = "";
@@ -3754,28 +3776,62 @@ function sendAiQuickQuestion(questionText) {
 window.sendAiQuickQuestion = sendAiQuickQuestion;
 
 /**
+ * Przełączanie 4-krotnego rozmiaru okna czatu AI w modalu
+ */
+function toggleAiChatSize() {
+  const messagesContainer = document.getElementById("ai-chat-messages");
+  const sizeBtnText = document.getElementById("ai-chat-size-text");
+  const sizeBtnIcon = document.getElementById("ai-chat-size-icon");
+  if (!messagesContainer) return;
+
+  const isExpanded = messagesContainer.classList.contains("chat-expanded");
+  if (isExpanded) {
+    messagesContainer.classList.remove("chat-expanded", "h-[480px]", "max-h-[55vh]");
+    messagesContainer.classList.add("h-32");
+    if (sizeBtnText) sizeBtnText.innerText = "⤢ Powiększ widok";
+    if (sizeBtnIcon) sizeBtnIcon.className = "fas fa-up-right-and-down-left-from-center text-[10px]";
+  } else {
+    messagesContainer.classList.remove("h-32");
+    messagesContainer.classList.add("chat-expanded", "h-[480px]", "max-h-[55vh]");
+    if (sizeBtnText) sizeBtnText.innerText = "⤡ Zmniejsz widok";
+    if (sizeBtnIcon) sizeBtnIcon.className = "fas fa-down-left-and-up-right-to-center text-[10px]";
+  }
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+window.toggleAiChatSize = toggleAiChatSize;
+
+/**
  * Inteligentny generator syntezy naukowej (Fallback dla pytań o metodologię i wnioski)
  */
 function generateClientSideAcademicAnswer(question, article) {
   const meta = article.meta || article.data || article;
-  const title = cleanDisplayText(meta.titlePL || article.titlePL || "Badanie");
+  const title = cleanDisplayText(meta.titlePL || article.titlePL || article.name || "Badanie");
   const authors = cleanDisplayText(meta.authors || article.authors || "Autorzy");
   const year = meta.year || article.year || "2026";
   const abstract = cleanAbstractText(meta.abstractPL || article.abstractPL || "");
   const category = meta.category || article.category || "Seksuologia";
+  const report = getArticleReport(article);
 
   const qLower = question.toLowerCase();
 
   if (qLower.includes("metodolog") || qLower.includes("próba") || qLower.includes("proba")) {
-    return `**Metodologia i Próba Badawcza publikacji:**\n\n- **Praca naukowa:** *${title}* (${authors}, ${year}).\n- **Obszar badawczy:** ${category}.\n- **Streszczenie metodyczne:** Na podstawie abstraktu merytorycznego badanie opiera się na analizie: ${abstract.slice(0, 300)}...\n\n*Wskazówka Journal Club:* Aby przeanalizować szczegółowe kryteria włączenia i wyłączenia oraz narzędzia psychometryczne, pobierz pełny tekst oryginalny lub tłumaczenie PL.`;
+    const meth = report?.methodology || abstract.slice(0, 300);
+    return `**Metodologia i Próba Badawcza publikacji:**\n\n- **Praca naukowa:** *${title}* (${authors}, ${year}).\n- **Obszar badawczy:** ${category}.\n- **Streszczenie metodyczne:** ${meth}\n\n*Wskazówka Journal Club:* Publikacja opiera się na analizie empirycznej; pełny protokół badawczy dostępny jest w pliku oryginalnym lub raporcie klinicznym SKN.`;
   }
 
   if (qLower.includes("wnioski") || qLower.includes("kliniczn") || qLower.includes("praktyk")) {
-    return `**Kluczowe Implikacje Kliniczne:**\n\n1. **Znaczenie dla diagnozy:** Wyniki badania wskazują na istotną rolę standaryzowanej oceny w obszarze *${category}*.\n2. **Praktyka terapeutyczna:** Zgodnie z tezami autorów (${authors}), kluczowe jest uwzględnienie wieloczynnikowej perspektywy biopsychospołecznej.\n3. **Rekomendacje:** Zastosowanie wniosków może wspierać trafność diagnostyczną w standardach DSM-5-TR oraz ICD-11.`;
+    const impl = report?.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
+    const take = report?.takeaway || `Badanie «${title}» dostarcza istotnych dowodów w praktyce seksuologicznej.`;
+    return `**Kluczowe Implikacje Kliniczne & Diagnostyczne:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Esencja dla praktyka:** ${take}\n3. **Standardy diagnostyczne:** Rekomendowane uwzględnienie osi nozologicznych DSM-5-TR oraz ICD-11.`;
   }
 
   if (qLower.includes("ograniczen") || qLower.includes("limitations")) {
     return `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Specyfika doboru próby:** Wymaga ostrożności przy ekstrapolacji wyników na populację ogólną.\n- **Projekt badania:** Należy uwzględnić ewentualne ograniczenia badań korelacyjnych lub samoopisowych kwestionariuszy.\n- **Potrzeba replikacji:** Wskazane są dalsze badania podłużne w polskim kontekście kulturowo-klinicznym.`;
+  }
+
+  if (qLower.includes("tezy") || qLower.includes("odkrycia") || qLower.includes("podsumuj")) {
+    const findings = report?.keyFindings ? (Array.isArray(report.keyFindings) ? report.keyFindings.join("\n- ") : report.keyFindings) : abstract.slice(0, 350);
+    return `**Główne Tezy & Odkrycia Badania (*${title}*):**\n\n- ${findings}\n\n*Podsumowanie:* Badanie stanowi istotny wkład w obszar *${category}* (EBM).`;
   }
 
   return `Na podstawie dostarczonego materiału źródłowego (*${title}*, ${authors}, ${year}):\n\n${abstract}\n\n**Podsumowanie eksperckie:** Badanie wnosi istotny wkład do wiedzy z zakresu *${category}*, kładąc nacisk na interdyscyplinarne i rzetelne podejście oparte na dowodach naukowych (EBM).`;
@@ -4549,3 +4605,4 @@ window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
 window.generateClinicalReport = generateClinicalReport;
 window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
 window.toggleCardAbstract = toggleCardAbstract;
+window.toggleAiChatSize = toggleAiChatSize;

@@ -853,7 +853,7 @@
 
   <!-- MODAL: Szczegóły Artykułu / Pełny Abstrakt -->
   <div id="detailModal" onclick="handleBackdropClick(event, 'detailModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[92vh] h-auto flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-y-auto transition-all duration-300" onclick="event.stopPropagation()">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[95vh] h-auto flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-y-auto transition-all duration-300" onclick="event.stopPropagation()">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div>
           <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
@@ -932,9 +932,22 @@
       </div>
 
       <!-- ZAKŁADKA 2: Interaktywny Asystent AI Q&A (Journal Club Assistant) -->
-      <div id="tab-content-chat" class="hidden overflow-y-auto pr-2 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col min-h-[300px]" style="display: none;">
-        <!-- Kontener Wiadomości Czatu -->
-        <div id="ai-chat-messages" class="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/90 max-h-[280px]">
+      <div id="tab-content-chat" class="hidden pr-1 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col transition-all duration-300" style="display: none;">
+        <!-- Pasek Narzędzi Czatu z Przełącznikiem Rozmiaru 4x -->
+        <div class="flex items-center justify-between gap-2 pb-0.5 select-none">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-purple-800">
+            <i class="fas fa-robot text-purple-600"></i>
+            <span>Asystent Journal Club AI</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 ml-1">EBM Assistant</span>
+          </div>
+          <button type="button" id="btn-toggle-chat-size" onclick="toggleAiChatSize()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-900 border border-purple-200 transition cursor-pointer shadow-2xs" title="Przełącz rozmiar okna czatu (kompaktowy / 4x powiększony)">
+            <i id="ai-chat-size-icon" class="fas fa-up-right-and-down-left-from-center text-[10px]"></i>
+            <span id="ai-chat-size-text">⤢ Powiększ widok</span>
+          </button>
+        </div>
+
+        <!-- Kontener Wiadomości Czatu (domyślnie h-32, po powiększeniu h-[480px]) -->
+        <div id="ai-chat-messages" class="h-32 overflow-y-auto space-y-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 transition-all duration-300 shadow-inner">
           <!-- Wiadomość Powitalna Asystenta -->
           <div class="flex items-start gap-2.5">
             <div class="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 mt-0.5 font-bold">
@@ -948,7 +961,7 @@
         </div>
 
         <!-- Szybkie Szablony Pytań (Quick Chips) -->
-        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span class="text-[11px] font-semibold text-slate-500 mr-1"><i class="fas fa-sparkles text-amber-500"></i> Szybkie pytania:</span>
           <button type="button" onclick="sendAiQuickQuestion('Jaka była próba badawcza, kryteria doboru i metodologia badania?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer font-medium">
             🔬 Próba i metodologia
@@ -965,7 +978,7 @@
         </div>
 
         <!-- Formularz wprowadzania pytania -->
-        <form id="ai-chat-form" onsubmit="handleAiChatSubmit(event)" class="flex items-center gap-2 mt-auto pt-2">
+        <form id="ai-chat-form" onsubmit="handleAiChatSubmit(event)" class="flex items-center gap-2 mt-auto pt-1">
           <div class="relative flex-1">
             <input 
               type="text" 
