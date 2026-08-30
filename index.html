@@ -11,9 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Kalejdoskop" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/logo192.png" />
+  <link rel="icon" type="image/png" href="/logo192.png" />
+  <link rel="apple-touch-icon" href="/logo192.png" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   
   <!-- Tailwind CSS CDN -->
@@ -151,8 +150,12 @@
   <!-- Sticky Glassmorphic Light Navbar -->
   <header class="sticky top-0 z-40 light-header px-3 sm:px-8 py-2 sm:py-3.5 flex items-center justify-between transition-all gap-1.5 sm:gap-2">
     <div class="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink-0 overflow-visible">
-      <div class="w-8 h-8 rounded-lg overflow-hidden shadow-md shadow-indigo-500/20 shrink-0 border border-purple-200/50 bg-white flex items-center justify-center">
-        <img src="/logo192.png" alt="Kalejdoskop Café" class="w-8 h-8 rounded-lg object-contain" />
+      <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-sm shrink-0 border border-purple-200/50 bg-white/80 p-0.5 flex items-center justify-center">
+        <img 
+          src="/logo.png" 
+          alt="Kalejdoskop Café Logo" 
+          class="w-9 h-9 md:w-10 md:h-10 rounded-xl object-contain shadow-sm bg-white/80 p-0.5"
+        />
       </div>
       <div class="overflow-visible whitespace-nowrap">
         <h1 class="text-sm sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-1 sm:gap-2 overflow-visible whitespace-nowrap">
