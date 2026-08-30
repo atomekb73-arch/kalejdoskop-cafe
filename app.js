@@ -1842,7 +1842,7 @@ async function changeArticleCategory(articleId, newCategory) {
 window.changeArticleCategory = changeArticleCategory;
 
 /**
- * Renderowanie kart artykułów (Light Academic Theme - Mobile-First Compact & Expandable)
+ * Renderowanie kart artykułów (Light Academic Theme - Kompaktowy 2-stopniowy widok)
  */
 function renderArticleCards(articles) {
   const grid = document.getElementById("articles-grid") || document.getElementById("articlesGrid");
@@ -1873,17 +1873,17 @@ function renderArticleCards(articles) {
 
     let accessBadge = "";
     if (isInternal) {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Materiał SKN</span></span>`;
+      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Materiał SKN</span></span>`;
     } else if (isAdmin) {
       if (isPublic) {
-        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp SKN (Tylko Członkowie)"><i class="fas fa-lock-open text-[9px]"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
+        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp SKN (Tylko Członkowie)"><i class="fas fa-lock-open text-[9px]"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
       } else {
-        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp Otwarty (Dla wszystkich)"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
+        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp Otwarty (Dla wszystkich)"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
       }
     } else if (isPublic) {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-[9px]"></i> <span>Dostęp Otwarty</span></span>`;
+      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-[9px]"></i> <span>Dostęp Otwarty</span></span>`;
     } else {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span></span>`;
+      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span></span>`;
     }
 
     const deleteBtnHtml = isAdmin
@@ -1903,90 +1903,53 @@ function renderArticleCards(articles) {
     const catList = normalizeCategories(displayCategory);
     const categoryBadgeHtml = (catList.length > 0 ? catList : ["Edukacja Seksualna"]).map(cat => {
       return isAdmin
-        ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(cat)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
-        : `<span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0">${escapeHtml(cat)}</span>`;
+        ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(cat)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
+        : `<span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0">${escapeHtml(cat)}</span>`;
     }).join(" ");
 
     const tagsHtml = keywordsList
       .map(
         (tag) =>
-          `<button type="button" onclick="event.stopPropagation(); filterByTag('${escapeHtml(tag)}')" class="text-[10px] px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-900 border border-purple-200 transition-colors cursor-pointer font-medium" title="Filtruj po słowie kluczowym #${escapeHtml(cleanDisplayText(tag))}">#${escapeHtml(cleanDisplayText(tag))}</button>`
+          `<button type="button" onclick="event.stopPropagation(); filterByTag('${escapeHtml(tag)}')" class="tag-btn text-[10.5px] px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-900 border border-purple-200 transition-colors cursor-pointer font-medium" title="Filtruj po słowie kluczowym #${escapeHtml(cleanDisplayText(tag))}">#${escapeHtml(cleanDisplayText(tag))}</button>`
       )
       .join(" ");
 
     const webSourceBadge = isWeb
-      ? `<span class="text-[10px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
+      ? `<span class="text-[11px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
       : "";
 
-    // Mini przyciski akcji (Oryginał i Raport PL) w górnym rzędzie
+    // Mikro-pastylki akcji (Oryginał i Raport PL) WYŁĄCZNIE w górnym wierszu
     let miniOriginalBtn = "";
     if (isInternal) {
       if (isWatermarking) {
-        miniOriginalBtn = `<button disabled class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-300 flex items-center gap-1 cursor-wait shadow-2xs shrink-0"><i class="fas fa-circle-notch fa-spin text-[9px] text-rose-600"></i> <span>Znak...</span></button>`;
+        miniOriginalBtn = `<button disabled class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-rose-700 bg-rose-50 border border-rose-200 flex items-center gap-1 cursor-wait shadow-2xs shrink-0"><i class="fas fa-circle-notch fa-spin text-[9px] text-rose-600"></i> <span>Znak...</span></button>`;
       } else {
-        miniOriginalBtn = `<button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Czytaj ze stemplem SKN"><i class="fas fa-file-shield text-[9px]"></i> <span>Stempel</span></button>`;
+        miniOriginalBtn = `<button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Czytaj ze stemplem SKN"><i class="fas fa-file-shield text-[9px]"></i> <span>Stempel</span></button>`;
       }
     } else if (isWeb) {
       const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
-      miniOriginalBtn = `<a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz źródło www"><span>🌐</span> <span>Źródło ↗</span></a>`;
+      miniOriginalBtn = `<a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz źródło www"><span>🌐</span> <span>Źródło ↗</span></a>`;
     } else {
-      miniOriginalBtn = `<button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz zabezpieczony czytnik oryginału"><span>📄</span> <span>Oryginał</span></button>`;
+      miniOriginalBtn = `<button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz zabezpieczony czytnik oryginału"><span>📄</span> <span>Oryginał</span></button>`;
     }
 
     let miniReportBtn = "";
     if (isTranslating) {
-      miniReportBtn = `<button disabled class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-300 flex items-center gap-1 cursor-wait shadow-2xs shrink-0"><i class="fas fa-circle-notch fa-spin text-[9px] text-purple-600"></i> <span>Raport...</span></button>`;
+      miniReportBtn = `<button disabled class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-purple-700 bg-purple-50 border border-purple-200 flex items-center gap-1 cursor-wait shadow-2xs shrink-0"><i class="fas fa-circle-notch fa-spin text-[9px] text-purple-600"></i> <span>Raport...</span></button>`;
     } else if (hasReport) {
-      miniReportBtn = `<button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz raport kliniczny SKN"><span>📊</span> <span>Raport PL</span></button>`;
+      miniReportBtn = `<button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Otwórz raport kliniczny SKN"><span>📊</span> <span>Raport PL</span></button>`;
     } else {
-      miniReportBtn = `<button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Zleć wygenerowanie raportu klinicznego SKN przez AI"><span>🧠</span> <span>Raport PL</span></button>`;
-    }
-
-    // Pełne przyciski dolne (widoczne dla widoku desktopowego)
-    let bottomButtonsHtml = "";
-    if (isInternal) {
-      if (isWatermarking) {
-        bottomButtonsHtml = `
-          <button disabled class="col-span-2 inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-300 rounded-md cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
-            <span class="truncate">Generowanie znaku...</span>
-          </button>`;
-      } else {
-        bottomButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-medium text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-md transition-colors shadow-xs truncate cursor-pointer" title="Otwórz zabezpieczony czytnik materiału wewnętrznego SKN">
-            <i class="fas fa-file-shield text-xs shrink-0"></i>
-            <span class="truncate">🔒 Czytaj ze stemplem</span>
-          </button>`;
-      }
-    } else if (isWeb) {
-      const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
-      bottomButtonsHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-md transition-colors truncate cursor-pointer" title="Otwórz źródło www">
-          <span class="text-xs">🌐</span> <span class="truncate">Źródło ↗</span>
-        </a>
-        ${hasReport
-          ? `<button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300" title="Otwórz raport kliniczny SKN"><span class="text-xs">📊</span><span class="truncate">Raport PL</span></button>`
-          : `<button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200" title="Zleć wygenerowanie raportu klinicznego SKN przez AI"><span class="text-xs">🧠</span><span class="truncate">Raport PL</span></button>`
-        }`;
-    } else {
-      bottomButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors truncate cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
-          <span class="text-xs">📄</span> <span class="truncate">Oryginał</span>
-        </button>
-        ${hasReport
-          ? `<button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300" title="Otwórz raport kliniczny SKN"><span class="text-xs">📊</span><span class="truncate">Raport PL</span></button>`
-          : `<button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200" title="Zleć wygenerowanie raportu klinicznego SKN przez AI"><span class="text-xs">🧠</span><span class="truncate">Raport PL</span></button>`
-        }`;
+      miniReportBtn = `<button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="text-[11px] px-2 py-0.5 rounded-md font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Zleć wygenerowanie raportu klinicznego SKN przez AI"><span>🧠</span> <span>Raport PL</span></button>`;
     }
 
     const card = document.createElement("div");
     card.id = `card-${art.id}`;
-    card.className = "academic-card w-full h-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer md:cursor-default";
-    card.setAttribute("onclick", `toggleMobileCard('${art.id}', event)`);
+    card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-3.5 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer select-text";
+    card.setAttribute("onclick", `toggleCardExpansion('${art.id}', event)`);
 
     card.innerHTML = `
-      <div class="w-full">
-        <!-- 1. Górny pasek: Kategoria + Badge Dostęp Otwarty + Mini-przyciski Oryginał & Raport PL -->
+      <div class="w-full flex-1">
+        <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła + Mikro-pastylki akcji + Kosz -->
         <div class="flex items-center justify-between gap-1.5 mb-1.5">
           <div class="flex flex-wrap items-center gap-1 sm:gap-1.5">
             ${categoryBadgeHtml}
@@ -1998,28 +1961,28 @@ function renderArticleCards(articles) {
           ${deleteBtnHtml}
         </div>
 
-        <!-- 2. Tytuł polski (pogrubiony) -->
-        <h3 class="text-[13.5px] sm:text-[15px] font-bold text-slate-900 break-words leading-[1.35] hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-2" onclick="event.stopPropagation(); openArticleDetail('${art.id}')">
+        <!-- 2. Tytuł polski (pogrubiony, line-clamp-2) -->
+        <h3 class="text-[13.5px] sm:text-[14.5px] font-bold text-slate-900 break-words leading-[1.35] hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-2" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
           ${escapeHtml(displayTitlePL)}
         </h3>
 
-        <!-- 3. Tytuł oryginalny (kursywa) oraz 4. Autorzy i Rok -->
-        <div class="text-[11px] text-slate-500 mb-1">
-          ${displayTitleEN ? `<p class="italic line-clamp-1 break-all text-slate-600 mb-0.5"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
-          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-slate-500">
-            <span><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
-            ${displayYear ? `<span><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
-          </div>
+        <!-- 3. Tytuł oryginalny (kursywa, line-clamp-1) -->
+        ${displayTitleEN ? `<p class="text-xs text-slate-500 italic line-clamp-1 break-all mb-0.5" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
+
+        <!-- 4. Autorzy i rok (text-xs text-slate-500 line-clamp-1) -->
+        <div class="flex items-center gap-x-2 text-xs text-slate-500 line-clamp-1 mb-1">
+          <span class="truncate"><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
+          ${displayYear ? `<span class="shrink-0"><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
         </div>
 
-        <!-- Sekcja Rozwijana (Domyślnie ukryta na mobile, zawsze widoczna na md: (>= 768px)) -->
-        <div id="card-expandable-${art.id}" class="card-expandable-content hidden md:block transition-all duration-300">
-          <!-- Boks Abstraktu: elastyczne rozwijanie i skrót -->
-          <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/90 hover:border-indigo-300 rounded-xl p-2.5 text-[11.5px] text-slate-600 leading-[1.4] max-h-[96px] overflow-y-auto abstract-scrollbar my-2 transition-all duration-200 cursor-pointer shadow-2xs" onclick="toggleCardAbstract('${art.id}', event)">
+        <!-- Sekcja Rozwijana (Stan 2: domyślnie ukryta, rozwijana po kliknięciu) -->
+        <div id="card-expandable-${art.id}" class="card-expandable-content hidden transition-all duration-300 pt-1">
+          <!-- Boks Abstraktu -->
+          <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/90 hover:border-indigo-300 rounded-xl p-2.5 text-[11.5px] text-slate-600 leading-[1.4] max-h-[96px] overflow-y-auto abstract-scrollbar my-2 transition-all duration-200 cursor-pointer shadow-2xs" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)">
             <p id="card-abstract-text-${art.id}" class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
             <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-200/60 text-[10.5px]">
               <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
-                <span id="card-abstract-btn-${art.id}">Rozwiń ▼</span>
+                <span id="card-abstract-btn-${art.id}">Rozwiń pełny abstrakt ▾</span>
               </button>
               <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-slate-400 hover:text-slate-700 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer">
                 <span>Szczegóły →</span>
@@ -2029,21 +1992,16 @@ function renderArticleCards(articles) {
 
           <!-- Tagi i słowa kluczowe -->
           ${tagsHtml ? `<div class="flex flex-wrap gap-1 my-1.5">${tagsHtml}</div>` : ""}
-
-          <!-- Przyciski w stopce kafelka: dla widoku desktopowego -->
-          <div class="hidden md:grid grid-cols-2 gap-2 mt-auto pt-2.5 border-t border-slate-100 w-full">
-            ${bottomButtonsHtml}
-          </div>
         </div>
+      </div>
 
-        <!-- Mobilny pasek rozwijania / Tap to Expand Hint -->
-        <div class="md:hidden flex items-center justify-between pt-1.5 mt-1 border-t border-slate-100/80 text-[10.5px] text-slate-400 select-none">
-          <span class="text-indigo-600 font-semibold flex items-center gap-1">
-            <i id="card-expand-icon-${art.id}" class="fas fa-chevron-down text-[9px] transition-transform duration-200"></i>
-            <span id="card-expand-label-${art.id}">Dotknij, aby rozwinąć</span>
-          </span>
-          <span class="text-slate-400 font-medium hover:text-indigo-600 cursor-pointer" onclick="event.stopPropagation(); openArticleDetail('${art.id}')">Szczegóły →</span>
+      <!-- Dyskretny pasek zwijania / rozwijania na dole kafelka -->
+      <div class="w-full flex items-center justify-between pt-1.5 mt-1 border-t border-slate-100/90 text-[11px] select-none">
+        <div class="text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-1 transition-colors">
+          <span id="card-expand-label-${art.id}">Kliknij, aby rozwinąć</span>
+          <i id="card-expand-icon-${art.id}" class="fas fa-chevron-down text-[9px] transition-transform duration-200 text-indigo-500"></i>
         </div>
+        <span class="text-slate-400 text-[10.5px] hover:text-indigo-600 font-medium cursor-pointer" onclick="event.stopPropagation(); openArticleDetail('${art.id}')">Szczegóły →</span>
       </div>
     `;
 
@@ -2052,13 +2010,11 @@ function renderArticleCards(articles) {
 }
 
 /**
- * Rozwijanie / zwijanie kompaktowej karty na ekranach mobilnych (Tap to Expand)
+ * Rozwijanie / zwijanie 2-stopniowej karty (Desktop & Mobile)
  */
-function toggleMobileCard(articleId, event) {
-  if (window.innerWidth >= 768) return;
-
+function toggleCardExpansion(articleId, event) {
   if (event && event.target) {
-    if (event.target.closest("button") || event.target.closest("a") || event.target.closest("input") || event.target.closest("select") || event.target.closest("textarea")) {
+    if (event.target.closest("button") || event.target.closest("a") || event.target.closest("input") || event.target.closest("select") || event.target.closest("textarea") || event.target.closest(".tag-btn")) {
       return;
     }
   }
@@ -2066,23 +2022,24 @@ function toggleMobileCard(articleId, event) {
   const expandable = document.getElementById(`card-expandable-${articleId}`);
   if (!expandable) return;
 
-  const icon = document.getElementById(`card-expand-icon-${articleId}`);
-  const label = document.getElementById(`card-expand-label-${articleId}`);
+  const toggleBtnText = document.getElementById(`card-expand-label-${articleId}`);
+  const toggleBtnIcon = document.getElementById(`card-expand-icon-${articleId}`);
 
   const isHidden = expandable.classList.contains("hidden");
   if (isHidden) {
     expandable.classList.remove("hidden");
     expandable.classList.add("block");
-    if (icon) icon.className = "fas fa-chevron-up text-[9px] transition-transform duration-200 text-indigo-600";
-    if (label) label.innerText = "Zwiń widok";
+    if (toggleBtnText) toggleBtnText.innerText = "Zwiń kartę";
+    if (toggleBtnIcon) toggleBtnIcon.className = "fas fa-chevron-up text-[9px] transition-transform duration-200 text-indigo-600";
   } else {
     expandable.classList.add("hidden");
     expandable.classList.remove("block");
-    if (icon) icon.className = "fas fa-chevron-down text-[9px] transition-transform duration-200";
-    if (label) label.innerText = "Dotknij, aby rozwinąć";
+    if (toggleBtnText) toggleBtnText.innerText = "Kliknij, aby rozwinąć";
+    if (toggleBtnIcon) toggleBtnIcon.className = "fas fa-chevron-down text-[9px] transition-transform duration-200 text-indigo-500";
   }
 }
-window.toggleMobileCard = toggleMobileCard;
+window.toggleCardExpansion = toggleCardExpansion;
+window.toggleMobileCard = toggleCardExpansion;
 
 function filterByTag(tag) {
   if (!tag) return;
@@ -4693,12 +4650,12 @@ function toggleCardAbstract(articleId, event) {
     textEl.classList.remove("line-clamp-none");
     textEl.classList.add("line-clamp-3");
     cardAbstract.style.maxHeight = "96px";
-    if (btnEl) btnEl.innerText = "Rozwiń ▼";
+    if (btnEl) btnEl.innerText = "Rozwiń pełny abstrakt ▾";
   } else {
     textEl.classList.remove("line-clamp-3");
     textEl.classList.add("line-clamp-none");
     cardAbstract.style.maxHeight = "360px";
-    if (btnEl) btnEl.innerText = "Zwiń ▲";
+    if (btnEl) btnEl.innerText = "Zwiń abstrakt ▴";
   }
 }
 window.toggleCardAbstract = toggleCardAbstract;
