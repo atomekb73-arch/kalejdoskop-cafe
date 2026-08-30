@@ -3556,6 +3556,103 @@ function applyLocalDeletion(articleId) {
   }
 }
 
+/**
+ * Ekstrakcja i normalizacja numeru DOI
+ */
+function extractDoi(article) {
+  if (!article) return "";
+  const meta = article.meta || article.data || article;
+  const report = article.report || meta.report || null;
+
+  // 1. Sprawdzenie dedykowanych pól
+  const candidates = [
+    article.doi,
+    meta.doi,
+    article.DOI,
+    meta.DOI,
+    report && typeof report === "object" ? report.doi : null,
+    article.urlDoi,
+    meta.urlDoi
+  ];
+
+  for (const c of candidates) {
+    if (c && typeof c === "string" && c.trim().length > 0) {
+      let clean = c.trim();
+      const match = clean.match(/(10\.\d{4,9}\/[-._;()/:A-Za-z0-9]+)/i);
+      if (match) return match[1].replace(/[.,;:]+$/, "");
+    }
+  }
+
+  // 2. Wyszukanie regexem w tytule, abstrakcie, raporcie lub nazwie pliku
+  const textCorpus = [
+    article.titleOriginal,
+    meta.titleOriginal,
+    meta.titleEN,
+    article.name,
+    article.abstractPL,
+    meta.abstractPL,
+    typeof report === "object" ? JSON.stringify(report) : (typeof report === "string" ? report : "")
+  ].filter(Boolean).join(" ");
+
+  const regexMatch = textCorpus.match(/(10\.\d{4,9}\/[-._;()/:A-Za-z0-9]+)/i);
+  if (regexMatch) {
+    return regexMatch[1].replace(/[.,;:]+$/, "");
+  }
+
+  return "";
+}
+window.extractDoi = extractDoi;
+
+/**
+ * Zwraca pełny adres URL dla DOI
+ */
+function getDoiUrl(doi) {
+  if (!doi) return "";
+  const clean = doi.trim();
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+  return `https://doi.org/${clean.replace(/^doi:\s*/i, "")}`;
+}
+window.getDoiUrl = getDoiUrl;
+
+/**
+ * Ekstrakcja nazwy czasopisma / wydawcy
+ */
+function extractJournal(article) {
+  if (!article) return "";
+  const meta = article.meta || article.data || article;
+  const report = article.report || meta.report || null;
+
+  const candidates = [
+    article.journal,
+    meta.journal,
+    article.Czasopismo,
+    meta.Czasopismo,
+    article.publisher,
+    meta.publisher,
+    report && typeof report === "object" ? (report.journal || report.sourceJournal) : null
+  ];
+
+  for (const c of candidates) {
+    if (c && typeof c === "string" && c.trim().length > 0 && c !== "Repozytorium SKN") {
+      return cleanDisplayText(c);
+    }
+  }
+
+  // Rozpoznawanie na podstawie wzorców w nazwach plików / publikacji
+  const rawName = (article.name || article.titleOriginal || meta.originalTitle || meta.titleEN || "").toLowerCase();
+  if (rawName.includes("andrologia") || rawName.includes("and/")) return "Andrologia (John Wiley & Sons Ltd.)";
+  if (rawName.includes("sexes-") || rawName.includes("sexes")) return "Sexes (MDPI)";
+  if (rawName.includes("ijerph")) return "International Journal of Environmental Research and Public Health (MDPI)";
+  if (rawName.includes("jcm-")) return "Journal of Clinical Medicine (MDPI)";
+  if (rawName.includes("healthcare-")) return "Healthcare (MDPI)";
+  if (rawName.includes("behavioral-sciences")) return "Behavioral Sciences (MDPI)";
+
+  return article.category ? `Archiwum Seksuologii (${article.category})` : "Repozytorium Kalejdoskop Café";
+}
+window.extractJournal = extractJournal;
+
 // Generator cytowania w standardzie APA 7th Edition
 function generateApaCitation(article) {
   if (!article) return "";
@@ -3569,8 +3666,21 @@ function generateApaCitation(article) {
   const title = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.title || article.name || "Brak tytułu");
   const titleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || article.titleEN || article.titleOriginal || "");
   const originalTitle = (titleEN && titleEN !== title) ? ` [${titleEN}]` : "";
+  const journal = extractJournal(article);
+  const doi = extractDoi(article);
+  const doiUrl = doi ? getDoiUrl(doi) : "";
 
-  return `${authors} (${year}). ${title}${originalTitle}. Repozytorium Kalejdoskop Café - SKN Seksuologii WSKZ.`;
+  let citation = `${authors} (${year}). ${title}${originalTitle}.`;
+  if (journal) {
+    citation += ` ${journal}.`;
+  }
+  if (doiUrl) {
+    citation += ` ${doiUrl}`;
+  } else {
+    citation += ` Repozytorium Kalejdoskop Café - SKN Seksuologii WSKZ.`;
+  }
+
+  return citation;
 }
 
 const formatAPA7 = generateApaCitation;
@@ -3584,16 +3694,61 @@ function formatBibTeX(doc) {
   const year = meta.year || doc.year || "2026";
   const citeKey = (firstWord + year).toLowerCase();
   const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || doc.titlePL || doc.title || "Bez tytulu");
-  const url = doc.url || doc.urlOriginal || "";
+  const journal = extractJournal(doc);
+  const doi = extractDoi(doc);
+  const url = doi ? getDoiUrl(doi) : (doc.url || doc.urlOriginal || "");
 
-  return `@article{${citeKey},
-  author    = {${rawAuthors}},
-  title     = {${titlePL}},
-  year      = {${year}},
-  note      = {Repozytorium Kalejdoskop Cafe - SKN Seksuologii},
-  url       = {${url}}
-}`;
+  let bib = `@article{${citeKey},\n`;
+  bib += `  author    = {${rawAuthors}},\n`;
+  bib += `  title     = {${titlePL}},\n`;
+  bib += `  year      = {${year}},\n`;
+  if (journal) {
+    bib += `  journal   = {${journal}},\n`;
+  }
+  if (doi) {
+    bib += `  doi       = {${doi}},\n`;
+  }
+  bib += `  url       = {${url}},\n`;
+  bib += `  note      = {Repozytorium Kalejdoskop Cafe - SKN Seksuologii}\n`;
+  bib += `}`;
+  return bib;
 }
+
+/**
+ * Kopiowanie DOI do schowka
+ */
+async function copyDoiFromDetail() {
+  const detailIdEl = document.getElementById("detail-id");
+  const currentId = detailIdEl ? detailIdEl.innerText.trim() : null;
+  if (!currentId) return;
+  const article = AppState.articles.find((a) => a.id === currentId) || AppState.filteredArticles.find((a) => a.id === currentId);
+  if (!article) return;
+  const doi = extractDoi(article);
+  if (!doi) {
+    showToast("Ta publikacja nie posiada zarejestrowanego numeru DOI.", "info");
+    return;
+  }
+  const doiUrl = getDoiUrl(doi);
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(doiUrl);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = doiUrl;
+      ta.style.position = "fixed";
+      ta.style.left = "-999999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    showToast("Skopiowano link DOI do schowka! ✓", "success");
+  } catch (err) {
+    showToast("Nie udało się skopiować DOI: " + (err.message || err), "error");
+  }
+}
+window.copyDoiFromDetail = copyDoiFromDetail;
 
 /**
  * Kopiowanie sformatowanego cytowania do schowka
@@ -4029,6 +4184,26 @@ function openArticleDetail(articleId) {
 
   const idEl = document.getElementById("detail-id");
   if (idEl) idEl.innerText = article.id || "-";
+
+  const journal = extractJournal(article);
+  const journalEl = document.getElementById("detail-journal");
+  if (journalEl) {
+    journalEl.innerText = journal || "Repozytorium Kalejdoskop Café";
+  }
+
+  const doi = extractDoi(article);
+  const doiRow = document.getElementById("detail-doi-row");
+  const doiLink = document.getElementById("detail-doi-link");
+  if (doiRow && doiLink) {
+    if (doi) {
+      const doiUrl = getDoiUrl(doi);
+      doiLink.href = doiUrl;
+      doiLink.innerText = doiUrl;
+      doiRow.classList.remove("hidden");
+    } else {
+      doiRow.classList.add("hidden");
+    }
+  }
 
   const abstractEl = document.getElementById("detail-abstract");
   if (abstractEl) {
@@ -4714,3 +4889,7 @@ window.generateClinicalReport = generateClinicalReport;
 window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
 window.toggleCardAbstract = toggleCardAbstract;
 window.toggleAiChatSize = toggleAiChatSize;
+window.copyDoiFromDetail = copyDoiFromDetail;
+window.extractDoi = extractDoi;
+window.getDoiUrl = getDoiUrl;
+window.extractJournal = extractJournal;
