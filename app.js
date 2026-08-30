@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycby5BmU7_wlFjH3eZkajdKlwGj_6y4QBiVrhEz-2Gtc7iX3pxoIZ8jLlrV3EGR-h_7n2/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzH9ZwK7cS5wY91_KIVlA9GC-9mmy0W0mr94C3SD_5syDLHoDw44XD5jXbm0FPT6dvv/exec";
 
 const AppState = {
   articles: [],
@@ -431,10 +431,36 @@ function loadArticles() {
 }
 
 /**
+ * Pobiera pamięć podręczną raportów klinicznych z localStorage
+ */
+function getReportsCache() {
+  try {
+    return JSON.parse(localStorage.getItem("skn_reports_cache") || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+/**
+ * Zapisuje raport kliniczny w pamięci podręcznej localStorage
+ */
+function saveReportToCache(articleId, reportData) {
+  try {
+    const cache = getReportsCache();
+    cache[articleId] = reportData;
+    localStorage.setItem("skn_reports_cache", JSON.stringify(cache));
+  } catch (e) {
+    // Ignoruj błąd limitu pamięci
+  }
+}
+
+/**
  * Aktualizacja biblioteki rzeczywistymi plikami z Dysku Google oraz metadanymi z Gemini API
  */
 function updateLibraryWithRealDriveFiles(files) {
   if (!Array.isArray(files) || files.length === 0) return;
+
+  const reportsCache = getReportsCache();
 
   files.forEach((file) => {
     const id = file.id || file.ID_Artykulu || generateArticleId();
@@ -483,6 +509,17 @@ function updateLibraryWithRealDriveFiles(files) {
       (fileIdTrans && fileIdTrans.trim().length > 0)
     );
 
+    const cachedData = reportsCache[id] || (file.fileId && reportsCache[file.fileId]) || null;
+    const rawReport = file.report || meta.report || file.Raport_Kliniczny || meta.Raport_Kliniczny || file.reportJson || (cachedData && cachedData.report) || null;
+    const hasReport = Boolean(
+      file.hasReport === true ||
+      meta.hasReport === true ||
+      file.HasReport === true ||
+      rawReport != null ||
+      cachedData != null ||
+      hasTranslation
+    );
+
     const existingIdx = AppState.articles.findIndex((a) => a.id === id || (file.fileId && a.fileIdOriginal === file.fileId));
 
     const articleObj = {
@@ -507,11 +544,20 @@ function updateLibraryWithRealDriveFiles(files) {
       fileIdOriginal: file.fileId || file.fileIdOriginal || file.FileID_Oryginal || id,
       fileIdTranslation: fileIdTrans,
       hasPolishTranslation: hasTranslation,
+      hasReport: hasReport,
+      report: rawReport,
       status: "ACTIVE"
     };
 
     if (existingIdx >= 0) {
-      AppState.articles[existingIdx] = { ...AppState.articles[existingIdx], ...articleObj };
+      const prev = AppState.articles[existingIdx];
+      AppState.articles[existingIdx] = {
+        ...prev,
+        ...articleObj,
+        hasReport: articleObj.hasReport || prev.hasReport,
+        report: articleObj.report || prev.report,
+        hasPolishTranslation: articleObj.hasPolishTranslation || prev.hasPolishTranslation
+      };
     } else {
       AppState.articles.unshift(articleObj);
     }
@@ -1262,6 +1308,20 @@ async function generateClinicalReport(articleId) {
       if (mainArt && mainArt !== article) {
         Object.assign(mainArt, article);
       }
+
+      // Trwałe zachowanie w pamięci podręcznej przeglądarki (przetrwa odświeżenie F5)
+      saveReportToCache(article.id, {
+        report: newReport,
+        abstractPL: newAbstractPL,
+        titlePL: newTitlePL,
+        hasReport: true,
+        hasPolishTranslation: true,
+        translationUrl: newTransUrl,
+        authors: newAuthors,
+        year: newYear,
+        category: newCategory,
+        keywords: newKeywords
+      });
 
       showToast("Raport kliniczny został pomyślnie wygenerowany!", "success");
     } else {
