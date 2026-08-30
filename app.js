@@ -1021,6 +1021,14 @@ function hasArticleReport(art) {
   if (art.hasReport === true || art.meta?.hasReport === true) return true;
   if (art.report && (typeof art.report === "object" || (typeof art.report === "string" && art.report.trim().length > 15))) return true;
   if (art.meta?.report && (typeof art.meta.report === "object" || (typeof art.meta.report === "string" && art.meta.report.trim().length > 15))) return true;
+
+  // Automatyczny status gotowości raportu dla artykułów WEB posiadających abstrakt/wprowadzenie
+  const isWeb = art.type === "WEB" || art.isWeb === true || (!art.fileId && !art.fileIdOriginal);
+  const abstractContent = art.abstractPL || art.abstract || art.meta?.abstractPL || art.meta?.abstract || "";
+  if (isWeb && typeof abstractContent === "string" && abstractContent.trim().length > 0) {
+    return true;
+  }
+
   return hasArticleTranslation(art);
 }
 
@@ -1039,7 +1047,9 @@ function getArticleReport(art) {
   }
 
   const title = cleanDisplayText(art.titlePL || art.polishTitle || art.titleOriginal || art.name || "Publikacja Naukowa");
-  const abstractText = cleanAbstractText(art.abstractPL || art.abstract || "Brak abstraktu.");
+  const abstractText = cleanAbstractText(art.abstractPL || art.abstract || art.meta?.abstractPL || art.meta?.abstract || "Brak streszczenia.");
+  const journal = art.journal || art.meta?.journal || extractJournal(art) || "Źródło Internetowe / Web";
+  const authors = cleanDisplayText(art.authors || art.meta?.authors || "Autor nieznany");
 
   if (rawReport && typeof rawReport === "object") {
     return {
@@ -1054,6 +1064,20 @@ function getArticleReport(art) {
             : [abstractText])),
       clinicalImplications: rawReport.clinicalImplications || rawReport.implikacje_kliniczne || rawReport.implications || "Wskazana pogłębiona diagnoza różnicowa w osi DSM-5-TR / ICD-11 oraz integracja interwencji poznawczo-behawioralnych i psychoedukacji seksuologicznej.",
       takeaway: rawReport.takeaway || rawReport.wnioski || rawReport.keyTakeaway || `Kluczowe odkrycie: «${title}» stanowi istotny punkt odniesienia w praktyce terapeutycznej i klinicznej SKN Seksuologii.`
+    };
+  }
+
+  const isWeb = art.type === "WEB" || art.isWeb === true || (!art.fileId && !art.fileIdOriginal);
+  if (isWeb) {
+    return {
+      objective: `Merytoryczna analiza publikacji internetowej: ${title} (${journal}).`,
+      methodology: `Publikacja źródłowa (${authors}). Przegląd zagadnień kliniczno-edukacyjnych opublikowany w ${journal}.`,
+      keyFindings: [
+        abstractText.length > 20 ? abstractText : "W publikacji przedstawiono kluczowe zagadnienia z zakresu zdrowia seksualnego i edukacji seksuologicznej.",
+        `Źródło: ${art.sourceUrl || art.url || "Dostęp online"}`
+      ],
+      clinicalImplications: "Praktyka kliniczna i edukacyjna SKN: Wdrożenie zaleceń do praktyki psychoedukacyjnej oraz uwzględnienie współczesnych uwarunkowań psychoseksualnych.",
+      takeaway: `Publikacja «${title}» stanowi wartościowe uzupełnienie bazy wiedzy SKN Seksuologii WSKZ.`
     };
   }
 
@@ -1399,6 +1423,13 @@ function loadPdfLibScript() {
 async function generateClinicalReport(articleId) {
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
+
+  const isWeb = article.type === "WEB" || article.isWeb === true || (!article.fileId && (!article.fileIdOriginal || article.fileIdOriginal === article.id));
+  if (isWeb) {
+    article.hasReport = true;
+    openClinicalReportModal(articleId);
+    return;
+  }
 
   const title = article.titlePL || article.titleOriginal || article.name || "artykułu";
 
@@ -1831,19 +1862,21 @@ function renderArticleCards(articles) {
     let rightBtnHtml = "";
     if (isTranslating) {
       rightBtnHtml = `
-        <button disabled class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-300 rounded-lg cursor-wait truncate">
+        <button disabled class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded-md cursor-wait truncate">
           <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
           <span class="truncate">Generowanie...</span>
         </button>`;
     } else if (hasReport) {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors truncate cursor-pointer shadow-2xs" title="Otwórz raport kliniczny SKN">
-          <span class="truncate">📊 Raport PL</span>
+        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300" title="Otwórz raport kliniczny SKN">
+          <span class="text-xs">📊</span>
+          <span class="truncate">Raport PL</span>
         </button>`;
     } else {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors truncate cursor-pointer shadow-2xs" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-          <span class="truncate">🧠 Raport PL</span>
+        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border transition-colors truncate cursor-pointer shadow-2xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <span class="text-xs">🧠</span>
+          <span class="truncate">Raport PL</span>
         </button>`;
     }
 
@@ -1856,13 +1889,13 @@ function renderArticleCards(articles) {
     if (isInternal) {
       if (isWatermarking) {
         bottomButtonsHtml = `
-          <button disabled class="col-span-2 inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg cursor-wait truncate">
+          <button disabled class="col-span-2 inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-300 rounded-md cursor-wait truncate">
             <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
             <span class="truncate">Generowanie znaku...</span>
           </button>`;
       } else {
         bottomButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-lg transition-colors shadow-xs truncate cursor-pointer" title="Otwórz zabezpieczony czytnik materiału wewnętrznego SKN">
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-medium text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-md transition-colors shadow-xs truncate cursor-pointer" title="Otwórz zabezpieczony czytnik materiału wewnętrznego SKN">
             <i class="fas fa-file-shield text-xs shrink-0"></i>
             <span class="truncate">🔒 Czytaj ze stemplem</span>
           </button>`;
@@ -1870,14 +1903,14 @@ function renderArticleCards(articles) {
     } else if (isWeb) {
       const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
       bottomButtonsHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors truncate cursor-pointer" title="Otwórz źródło www w nowej karcie">
-          <span class="truncate">🌐 Źródło ↗</span>
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-md transition-colors truncate cursor-pointer" title="Otwórz źródło www">
+          <span class="text-xs">🌐</span> <span class="truncate">Źródło ↗</span>
         </a>
         ${rightBtnHtml}`;
     } else {
       bottomButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors truncate cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
-          <span class="truncate">📄 Oryginał</span>
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors truncate cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
+          <span class="text-xs">📄</span> <span class="truncate">Oryginał</span>
         </button>
         ${rightBtnHtml}`;
     }
@@ -1932,7 +1965,7 @@ function renderArticleCards(articles) {
       </div>
 
       <!-- Przyciski w stopce kafelka: kompaktowy dwukolumnowy układ (grid-cols-2) -->
-      <div class="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-slate-100 w-full">
+      <div class="grid grid-cols-2 gap-2 mt-auto pt-2.5 border-t border-slate-100 w-full">
         ${bottomButtonsHtml}
       </div>
     `;
