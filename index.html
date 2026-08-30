@@ -853,7 +853,7 @@
 
   <!-- MODAL: Szczegóły Artykułu / Pełny Abstrakt -->
   <div id="detailModal" onclick="handleBackdropClick(event, 'detailModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-hidden" onclick="event.stopPropagation()">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[92vh] h-auto flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-y-auto transition-all duration-300" onclick="event.stopPropagation()">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div>
           <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
@@ -903,7 +903,7 @@
       </div>
 
       <!-- ZAKŁADKA 1: Streszczenie i Tagi -->
-      <div id="tab-content-abstract" class="overflow-y-auto pr-2 space-y-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed flex-1">
+      <div id="tab-content-abstract" class="space-y-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
         <!-- Nagłówek -->
         <div class="flex items-center justify-between gap-2 py-0.5 select-none">
           <h4 class="font-bold text-indigo-700 text-xs uppercase tracking-wider flex items-center gap-2">
@@ -912,9 +912,9 @@
           </h4>
         </div>
 
-        <!-- Boks Abstraktu: kompaktowy domyślnie, z przyciskiem Rozwiń/Zwiń -->
-        <div id="detail-abstract-container" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-250 hover:border-indigo-300 shadow-2xs">
-          <div id="detail-abstract" class="text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm max-h-[110px] overflow-hidden transition-[max-height] duration-250 cursor-pointer" onclick="toggleDetailAbstractExpand()" title="Kliknij, aby rozwinąć lub zwinąć"></div>
+        <!-- Boks Abstraktu: kompaktowy domyślnie, z pełnym rozszerzaniem w dół -->
+        <div id="detail-abstract-container" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-indigo-300 shadow-2xs">
+          <div id="detail-abstract" class="text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm max-h-24 overflow-hidden transition-all duration-300 cursor-pointer" onclick="toggleDetailAbstractExpand()" title="Kliknij, aby rozwinąć lub zwinąć cały tekst"></div>
           <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-200/70 text-xs">
             <button type="button" id="detail-abstract-expand-btn" onclick="toggleDetailAbstractExpand()" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1.5 hover:underline cursor-pointer">
               <span id="detail-abstract-expand-text">Rozwiń ▼</span>

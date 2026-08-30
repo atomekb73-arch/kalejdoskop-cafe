@@ -3869,9 +3869,11 @@ function openArticleDetail(articleId) {
   const abstractEl = document.getElementById("detail-abstract");
   if (abstractEl) {
     abstractEl.innerText = abstractText;
-    abstractEl.style.maxHeight = "110px";
-    abstractEl.style.overflow = "hidden";
-    abstractEl.classList.remove("expanded-abstract");
+    abstractEl.classList.remove("expanded-abstract", "max-h-none", "h-auto", "overflow-visible");
+    abstractEl.classList.add("max-h-24", "overflow-hidden");
+    abstractEl.style.maxHeight = "";
+    abstractEl.style.height = "";
+    abstractEl.style.overflow = "";
   }
   const expandTextEl = document.getElementById("detail-abstract-expand-text");
   if (expandTextEl) expandTextEl.innerText = "Rozwiń ▼";
@@ -3959,13 +3961,17 @@ function toggleDetailAbstractExpand() {
   const isExpanded = abstractEl.classList.contains("expanded-abstract");
 
   if (isExpanded) {
-    abstractEl.classList.remove("expanded-abstract");
-    abstractEl.style.maxHeight = "110px";
+    abstractEl.classList.remove("expanded-abstract", "max-h-none", "h-auto", "overflow-visible");
+    abstractEl.classList.add("max-h-24", "overflow-hidden");
+    abstractEl.style.maxHeight = "";
+    abstractEl.style.height = "";
     abstractEl.style.overflow = "hidden";
     if (expandTextEl) expandTextEl.innerText = "Rozwiń ▼";
   } else {
-    abstractEl.classList.add("expanded-abstract");
-    abstractEl.style.maxHeight = "1000px";
+    abstractEl.classList.remove("max-h-24", "overflow-hidden");
+    abstractEl.classList.add("expanded-abstract", "max-h-none", "h-auto", "overflow-visible");
+    abstractEl.style.maxHeight = "none";
+    abstractEl.style.height = "auto";
     abstractEl.style.overflow = "visible";
     if (expandTextEl) expandTextEl.innerText = "Zwiń ▲";
   }
