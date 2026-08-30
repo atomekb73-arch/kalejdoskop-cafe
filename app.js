@@ -473,7 +473,15 @@ function updateLibraryWithRealDriveFiles(files) {
 
     const abstractPL = meta.abstractPL || file.abstractPL || file.Abstrakt_PL || "Brak abstraktu.";
     const directUrl = file.url || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
-    const transUrl = meta.translationUrl || file.translationUrl || meta.urlTranslation || file.urlTranslation || file.URL_Tlumacz_Priv || "";
+    const transUrl = meta.translationUrl || file.translationUrl || meta.urlTranslation || file.urlTranslation || file.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || file.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv || "";
+    const fileIdTrans = file.fileIdTranslation || meta.fileIdTranslation || file.FileID_Tlumaczenie || file.FileID_Tlumaczenia_PL || file.ID_Pliku_PL || extractDriveFileId(transUrl) || "";
+    const hasTranslation = Boolean(
+      file.hasPolishTranslation === true ||
+      meta.hasPolishTranslation === true ||
+      file.HasPolishTranslation === true ||
+      (transUrl && transUrl.trim().length > 0 && transUrl !== "#") ||
+      (fileIdTrans && fileIdTrans.trim().length > 0)
+    );
 
     const existingIdx = AppState.articles.findIndex((a) => a.id === id || (file.fileId && a.fileIdOriginal === file.fileId));
 
@@ -497,7 +505,8 @@ function updateLibraryWithRealDriveFiles(files) {
       urlTranslation: transUrl,
       translationUrl: transUrl,
       fileIdOriginal: file.fileId || file.fileIdOriginal || file.FileID_Oryginal || id,
-      fileIdTranslation: file.fileIdTranslation || file.FileID_Tlumaczenie || "",
+      fileIdTranslation: fileIdTrans,
+      hasPolishTranslation: hasTranslation,
       status: "ACTIVE"
     };
 
@@ -685,13 +694,29 @@ function safeUrl(url) {
 }
 
 /**
+ * Wyodrębnia unikalny identyfikator pliku Dysku Google z adresu URL lub ciągu znaków
+ */
+function extractDriveFileId(urlOrId) {
+  if (!urlOrId || typeof urlOrId !== "string") return "";
+  const trimmed = urlOrId.trim();
+  const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) return match[1];
+  if (!trimmed.includes("/") && !trimmed.includes(".")) return trimmed;
+  return trimmed;
+}
+
+/**
  * Sprawdza i zwraca poprawny URL tłumaczenia lub null gdy brak
  */
 function getArticleTranslationUrl(art) {
   if (!art) return null;
   const meta = art.meta || art.data || art;
-  const rawTrans = art.translationUrl || meta.translationUrl || art.urlTranslation || meta.urlTranslation || art.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv;
+  const rawTrans = art.translationUrl || meta.translationUrl || art.urlTranslation || meta.urlTranslation || art.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || art.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv;
   if (!rawTrans || typeof rawTrans !== "string" || !rawTrans.trim()) {
+    if (art.fileIdTranslation || meta.fileIdTranslation) {
+      const fId = art.fileIdTranslation || meta.fileIdTranslation;
+      return `https://drive.google.com/file/d/${fId}/view?usp=sharing`;
+    }
     return null;
   }
   const trimmed = rawTrans.trim();
@@ -708,6 +733,19 @@ function getArticleTranslationUrl(art) {
     return null;
   }
   return safe;
+}
+
+/**
+ * Sprawdza, czy artykuł posiada gotowy raport streszczenia w języku polskim (*_PL.pdf)
+ */
+function hasArticleTranslation(art) {
+  if (!art) return false;
+  if (art.hasPolishTranslation === true || art.meta?.hasPolishTranslation === true) return true;
+  const transUrl = getArticleTranslationUrl(art);
+  if (transUrl && transUrl.trim().length > 0 && transUrl !== "#") return true;
+  const fileIdTrans = art.fileIdTranslation || art.translationFileId || art.ID_Pliku_PL || art.FileID_Tlumaczenie || art.meta?.fileIdTranslation;
+  if (fileIdTrans && String(fileIdTrans).trim().length > 0) return true;
+  return false;
 }
 
 /**
@@ -999,14 +1037,15 @@ async function requestAiTranslation(articleId) {
 
     if (result && (result.status === "success" || result.success)) {
       const resData = result.data || result;
-      const newTransUrl = resData.translationUrl || resData.urlTranslation || resData.url || result.translationUrl;
+      const rawTransUrl = resData.translationUrl || resData.urlTranslation || resData.URL_Tlumaczenia_PL || resData.url || result.translationUrl || "";
+      const newTransUrl = rawTransUrl ? safeUrl(rawTransUrl) : "";
       const newAbstractPL = resData.abstractPL || resData.abstract || resData.abstraktPL || result.abstractPL || result.abstract;
       const newTitlePL = resData.titlePL || resData.polishTitle || resData.translatedTitle || result.titlePL;
-      const newFileIdTrans = resData.fileIdTranslation || resData.translationFileId || result.fileIdTranslation;
+      const newFileIdTrans = resData.fileIdTranslation || resData.translationFileId || resData.FileID_Tlumaczenie || resData.ID_Pliku_PL || result.fileIdTranslation || extractDriveFileId(newTransUrl);
 
-      if (newTransUrl) {
-        article.translationUrl = safeUrl(newTransUrl);
-        article.urlTranslation = safeUrl(newTransUrl);
+      if (newTransUrl && newTransUrl !== "#") {
+        article.translationUrl = newTransUrl;
+        article.urlTranslation = newTransUrl;
       }
       if (newFileIdTrans) {
         article.fileIdTranslation = newFileIdTrans;
@@ -1022,10 +1061,11 @@ async function requestAiTranslation(articleId) {
       article.hasPolishTranslation = true;
 
       if (article.meta) {
-        if (newTransUrl) {
-          article.meta.translationUrl = safeUrl(newTransUrl);
-          article.meta.urlTranslation = safeUrl(newTransUrl);
+        if (newTransUrl && newTransUrl !== "#") {
+          article.meta.translationUrl = newTransUrl;
+          article.meta.urlTranslation = newTransUrl;
         }
+        if (newFileIdTrans) article.meta.fileIdTranslation = newFileIdTrans;
         if (newAbstractPL) article.meta.abstractPL = newAbstractPL;
         if (newTitlePL) article.meta.titlePL = newTitlePL;
         article.meta.hasPolishTranslation = true;
@@ -1037,9 +1077,9 @@ async function requestAiTranslation(articleId) {
         Object.assign(mainArt, article);
       }
 
-      showToast("Abstrakt został pomyślnie przetłumaczony i zaktualizowany", "success");
+      showToast("Raport streszczenia w języku polskim został pomyślnie wygenerowany!", "success");
     } else {
-      throw new Error((result && (result.message || result.error)) || "Nie udało się przetłumaczyć abstraktu.");
+      throw new Error((result && (result.message || result.error)) || "Nie udało się wygenerować streszczenia.");
     }
   } catch (err) {
     console.error("Translation error:", err);
@@ -1315,8 +1355,7 @@ function renderArticleCards(articles) {
 
     const rawUrl = art.url || meta.url || art.urlOriginal || meta.urlOriginal || (art.fileIdOriginal ? `https://drive.google.com/file/d/${art.fileIdOriginal}/view?usp=sharing` : (art.fileId ? `https://drive.google.com/file/d/${art.fileId}/view?usp=sharing` : "#"));
     const origUrl = safeUrl(rawUrl);
-    const transUrl = getArticleTranslationUrl(art);
-    const hasTranslation = Boolean(transUrl && transUrl.trim().length > 0 && transUrl !== "#");
+    const hasTranslation = hasArticleTranslation(art);
     const isTranslating = AppState.translatingIds && AppState.translatingIds.has(art.id);
 
     let rightBtnHtml = "";
@@ -1328,15 +1367,14 @@ function renderArticleCards(articles) {
         </button>`;
     } else if (hasTranslation) {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'translation')" class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 shadow-sm transition-all whitespace-nowrap cursor-pointer overflow-visible" title="Otwórz zabezpieczony czytnik tłumaczenia PL">
-          <i class="fas fa-language text-indigo-100 text-xs shrink-0"></i>
-          <span>Tłumaczenie PL</span>
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'translation')" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 shadow-sm transition-all whitespace-nowrap cursor-pointer overflow-visible" title="Otwórz zabezpieczony czytnik streszczenia PL (*_PL.pdf)">
+          <span>🇵🇱 Przeczytaj streszczenie PL</span>
         </button>`;
     } else {
       rightBtnHtml = `
-        <button type="button" onclick="event.stopPropagation(); requestAiTranslation('${art.id}')" class="flex-1 bg-white text-slate-700 border border-slate-300 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 transition-all whitespace-nowrap cursor-pointer shadow-sm" title="Zleć tłumaczenie pełnotekstowe AI">
-          <i class="fas fa-globe text-indigo-600 text-xs shrink-0"></i>
-          <span>Przetłumacz na PL</span>
+        <button type="button" onclick="event.stopPropagation(); requestAiTranslation('${art.id}')" class="flex-1 bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 transition-all whitespace-nowrap cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu streszczenia PL przez AI">
+          <i class="fas fa-globe text-emerald-600 text-xs shrink-0"></i>
+          <span>🌐 Przetłumacz na PL</span>
         </button>`;
     }
 
@@ -1907,7 +1945,8 @@ async function openSecureViewer(articleId, mode = "original") {
   ViewerState.rawPdfBytes = null;
 
   const title = cleanDisplayText(article.titlePL || article.titleOriginal || article.name || "Dokument");
-  window.currentPdfFileName = `${title.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "_").trim().replace(/\s+/g, "_")}_SKN.pdf`;
+  const suffix = mode === "translation" ? "_Streszczenie_PL" : "_SKN";
+  window.currentPdfFileName = `${title.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "_").trim().replace(/\s+/g, "_")}${suffix}.pdf`;
 
   const docTitleEl = document.getElementById("viewer-doc-title");
   const docBadgeEl = document.getElementById("viewer-doc-badge");
@@ -1920,8 +1959,8 @@ async function openSecureViewer(articleId, mode = "original") {
       docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-900 text-rose-200 border border-rose-700";
       docBadgeEl.innerText = "🔒 Materiał Własny SKN";
     } else if (mode === "translation") {
-      docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-purple-900 text-purple-200 border border-purple-700";
-      docBadgeEl.innerText = "🇵🇱 Tłumaczenie PL";
+      docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900 text-emerald-200 border border-emerald-700";
+      docBadgeEl.innerText = "🇵🇱 Streszczenie PL";
     } else {
       docBadgeEl.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-700";
       docBadgeEl.innerText = "📄 Oryginał PDF";
@@ -1936,9 +1975,9 @@ async function openSecureViewer(articleId, mode = "original") {
   try {
     let fileId = "";
     if (mode === "translation") {
-      fileId = article.fileIdTranslation || article.fileIdOriginal;
+      fileId = article.fileIdTranslation || extractDriveFileId(article.translationUrl || article.urlTranslation) || article.fileIdOriginal;
     } else {
-      fileId = article.fileIdOriginal || article.fileId || article.id;
+      fileId = article.fileIdOriginal || article.fileId || extractDriveFileId(article.url || article.urlOriginal) || article.id;
     }
 
     const pdfBytes = await fetchPdfBytes(fileId);
@@ -3592,8 +3631,7 @@ function openArticleDetail(articleId) {
   const originalLink = document.getElementById("detail-btn-original");
   const rawOrig = article.url || meta.url || article.urlOriginal || meta.urlOriginal || (article.fileIdOriginal ? `https://drive.google.com/file/d/${article.fileIdOriginal}/view?usp=sharing` : (article.fileId ? `https://drive.google.com/file/d/${article.fileId}/view?usp=sharing` : "#"));
   const origUrl = safeUrl(rawOrig);
-  const transUrl = getArticleTranslationUrl(article);
-  const hasTranslation = Boolean(transUrl && transUrl.trim().length > 0 && transUrl !== "#");
+  const hasTranslation = hasArticleTranslation(article);
   const isTranslating = AppState.translatingIds && AppState.translatingIds.has(article.id);
 
   const buttonsContainer = originalLink ? originalLink.parentElement : document.querySelector("#detailModal .grid.grid-cols-2");
@@ -3631,12 +3669,12 @@ function openArticleDetail(articleId) {
             <span>Tłumaczenie...</span>
           </button>
         ` : hasTranslation ? `
-          <button type="button" id="detail-btn-translation" onclick="openSecureViewer('${article.id}', 'translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz zabezpieczony czytnik tłumaczenia PL">
-            <i class="fas fa-language text-indigo-100"></i> 🇵🇱 Czytaj Tłumaczenie PL
+          <button type="button" id="detail-btn-translation" onclick="openSecureViewer('${article.id}', 'translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz zabezpieczony czytnik streszczenia PL (*_PL.pdf)">
+            <i class="fas fa-file-lines text-emerald-100"></i> 🇵🇱 Przeczytaj streszczenie PL
           </button>
         ` : `
-          <button type="button" onclick="requestAiTranslation('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć tłumaczenie pełnotekstowe AI">
-            <i class="fas fa-globe text-indigo-600"></i> Przetłumacz na PL
+          <button type="button" onclick="requestAiTranslation('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu streszczenia PL przez AI">
+            <i class="fas fa-globe text-emerald-600"></i> 🌐 Przetłumacz na PL
           </button>
         `}
       </div>
