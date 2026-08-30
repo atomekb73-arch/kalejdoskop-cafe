@@ -152,8 +152,14 @@
       </div>
     </div>
 
-    <!-- Right Controls: Role Badge & Action Buttons -->
+    <!-- Right Controls: Sync Indicator, Role Badge & Action Buttons -->
     <div class="flex items-center gap-2">
+      <!-- Pulsujący Wskaźnik Synchronizacji w Tle (Stale-While-Revalidate) -->
+      <div id="bg-sync-indicator" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300">
+        <i id="bg-sync-icon" class="fas fa-arrows-rotate text-indigo-600 animate-spin text-[11px]"></i>
+        <span id="bg-sync-text">Synchronizuję z bazą...</span>
+      </div>
+
       <!-- Badge Roli / Status Sesji -->
       <div id="auth-role-badge">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">

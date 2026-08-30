@@ -372,61 +372,169 @@ function getCategoryCount(category) {
   return AppState.articles.filter((a) => a.category === category).length;
 }
 
+const CACHE_KEY = "kc_articles_cache";
+const CACHE_TIME_KEY = "kc_articles_cache_time";
+
+function getCachedArticles() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch (e) {
+    console.warn("Błąd odczytu kc_articles_cache:", e);
+    return null;
+  }
+}
+
+function saveArticlesToCache(articles) {
+  try {
+    if (Array.isArray(articles) && articles.length > 0) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(articles));
+      localStorage.setItem(CACHE_TIME_KEY, new Date().toISOString());
+    }
+  } catch (e) {
+    console.warn("Błąd zapisu kc_articles_cache:", e);
+  }
+}
+
+let syncTimeout = null;
+function setSyncStatus(status, customText) {
+  const indicator = document.getElementById("bg-sync-indicator");
+  const icon = document.getElementById("bg-sync-icon");
+  const text = document.getElementById("bg-sync-text");
+  if (!indicator) return;
+
+  if (syncTimeout) {
+    clearTimeout(syncTimeout);
+    syncTimeout = null;
+  }
+
+  if (status === "syncing") {
+    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300";
+    if (icon) icon.className = "fas fa-arrows-rotate text-indigo-600 animate-spin text-[11px]";
+    if (text) text.innerText = customText || "Synchronizuję z bazą...";
+    indicator.style.display = "inline-flex";
+    indicator.style.opacity = "1";
+  } else if (status === "synced") {
+    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all duration-300";
+    if (icon) icon.className = "fas fa-check-circle text-emerald-600 text-[11px]";
+    if (text) text.innerText = customText || "✓ Zsynchronizowano";
+    indicator.style.display = "inline-flex";
+    indicator.style.opacity = "1";
+
+    syncTimeout = setTimeout(() => {
+      indicator.style.opacity = "0.7";
+      indicator.className = "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100/80 text-slate-600 border border-slate-200 shadow-2xs transition-all duration-500";
+      if (icon) icon.className = "fas fa-cloud text-indigo-400 text-[10px]";
+      if (text) text.innerText = "Baza aktualna";
+    }, 3000);
+  } else if (status === "offline") {
+    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs transition-all duration-300";
+    if (icon) icon.className = "fas fa-cloud text-amber-600 text-[11px]";
+    if (text) text.innerText = customText || "Tryb offline (cache)";
+    indicator.style.display = "inline-flex";
+    indicator.style.opacity = "1";
+  } else {
+    indicator.style.display = "none";
+  }
+}
+window.setSyncStatus = setSyncStatus;
+
 /**
- * Ładowanie artykułów z backendu Google Apps Script
+ * Ładowanie artykułów z natychmiastowym odczytem z pamięci podręcznej (Stale-While-Revalidate) oraz cichą synchronizacją w tle
  */
 function loadArticles() {
-  showLoadingSpinner(true);
+  const cachedList = getCachedArticles();
+  const hasCache = Array.isArray(cachedList) && cachedList.length > 0;
 
+  if (hasCache) {
+    // 0 ms: Natychmiastowe załadowanie danych z pamięci podręcznej
+    AppState.articles = [];
+    updateLibraryWithRealDriveFiles(cachedList);
+    showLoadingSpinner(false);
+    setSyncStatus("syncing", "Synchronizuję z bazą...");
+  } else {
+    showLoadingSpinner(true);
+    setSyncStatus("syncing", "Pobieram bazę publikacji...");
+  }
+
+  // Cicha synchronizacja z backendem Google Apps Script (Background Fetch)
   if (AppState.isGasEnvironment) {
     google.script.run
       .withSuccessHandler((response) => {
         showLoadingSpinner(false);
         const list = response.articles || response.files || (response.data && (response.data.articles || response.data.files)) || [];
-        AppState.articles = [];
         if (Array.isArray(list) && list.length > 0) {
+          AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
+          saveArticlesToCache(list);
+          setSyncStatus("synced");
+        } else if (hasCache) {
+          setSyncStatus("synced");
         } else {
+          AppState.articles = [];
           renderCategoryPills();
           filterAndRenderArticles();
+          setSyncStatus("idle");
         }
       })
       .withFailureHandler((err) => {
         showLoadingSpinner(false);
-        console.warn("Błąd pobierania artykułów z GAS:", err);
-        AppState.articles = [];
-        renderCategoryPills();
-        filterAndRenderArticles();
+        console.warn("Błąd synchronizacji w tle z GAS:", err);
+        if (hasCache) {
+          setSyncStatus("offline");
+        } else {
+          AppState.articles = [];
+          renderCategoryPills();
+          filterAndRenderArticles();
+          setSyncStatus("offline");
+        }
       })
       .apiGetArticles(AppState.currentRole, AppState.currentPin);
   } else if (AppState.appsScriptUrl) {
-    callGoogleScript("getArticles", {
+    callGoogleScript("scan", {
       role: AppState.currentRole,
-      pin: AppState.currentPin
+      pin: AppState.currentPin,
+      adminPin: AppState.currentPin || "2026"
     })
       .then((data) => {
         showLoadingSpinner(false);
         const list = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
-        AppState.articles = [];
-        if ((data.status === "success" || data.success) && Array.isArray(list) && list.length > 0) {
+        if ((data.status === "success" || data.success || Array.isArray(list)) && Array.isArray(list) && list.length > 0) {
+          AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
+          saveArticlesToCache(list);
+          setSyncStatus("synced");
+        } else if (hasCache) {
+          setSyncStatus("synced");
         } else {
+          AppState.articles = [];
           renderCategoryPills();
           filterAndRenderArticles();
+          setSyncStatus("idle");
         }
       })
       .catch((err) => {
         showLoadingSpinner(false);
-        console.warn("Błąd pobierania artykułów:", err);
-        AppState.articles = [];
-        renderCategoryPills();
-        filterAndRenderArticles();
+        console.warn("Błąd synchronizacji artykułów w tle:", err);
+        if (hasCache) {
+          setSyncStatus("offline");
+        } else {
+          AppState.articles = [];
+          renderCategoryPills();
+          filterAndRenderArticles();
+          setSyncStatus("offline");
+        }
       });
   } else {
     showLoadingSpinner(false);
-    AppState.articles = [];
-    renderCategoryPills();
-    filterAndRenderArticles();
+    if (!hasCache) {
+      AppState.articles = [];
+      renderCategoryPills();
+      filterAndRenderArticles();
+    }
+    setSyncStatus("idle");
   }
 }
 
