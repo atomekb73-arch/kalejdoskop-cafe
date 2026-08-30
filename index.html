@@ -6,15 +6,14 @@
   <title>Kalejdoskop Café | Inteligentna Biblioteka Seksuologii</title>
   
   <!-- Progressive Web App (PWA) -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#7c3aed">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Kalejdoskop">
-  <link rel="apple-touch-icon" href="logo192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="logo192.png">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Kalejdoskop" />
+  <link rel="apple-touch-icon" href="/logo192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo192.png" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -360,6 +359,14 @@
             <span id="gas-status-text" class="truncate">Połączono z Google Apps Script</span>
           </span>
           <p id="gas-status-subtext" class="text-[10px] text-slate-500">Apps Script Backend</p>
+        </div>
+
+        <!-- Dedykowany Przycisk Instalacji PWA (Gradient fioletowo-różowy) -->
+        <div id="pwa-sidebar-install-container" class="space-y-2">
+          <button id="pwa-sidebar-install-btn" type="button" onclick="triggerPwaInstall()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-bold rounded-xl shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95" title="Zainstaluj Kalejdoskop Café na telefonie lub komputerze">
+            <span class="text-sm">📱</span>
+            <span>Zainstaluj Aplikację</span>
+          </button>
         </div>
 
         <!-- Sekcja 2A: Przyciski Administratora (Tylko ADMIN) -->

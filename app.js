@@ -5397,12 +5397,48 @@ window.fetchArticles = loadArticles;
 // ==========================================
 let deferredInstallPrompt = null;
 
+function isPwaStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes("android-app://")
+  );
+}
+
+function updatePwaButtonsVisibility(show) {
+  const isStandalone = isPwaStandalone();
+  const shouldDisplay = show && !isStandalone;
+
+  const topBtn = document.getElementById("pwa-install-btn");
+  if (topBtn) {
+    if (shouldDisplay) {
+      topBtn.classList.remove("hidden");
+      topBtn.classList.add("flex");
+      topBtn.style.setProperty("display", "inline-flex", "important");
+    } else {
+      topBtn.classList.add("hidden");
+      topBtn.style.setProperty("display", "none", "important");
+    }
+  }
+
+  const sidebarContainer = document.getElementById("pwa-sidebar-install-container");
+  if (sidebarContainer) {
+    if (isStandalone) {
+      sidebarContainer.classList.add("hidden");
+      sidebarContainer.style.setProperty("display", "none", "important");
+    } else {
+      sidebarContainer.classList.remove("hidden");
+      sidebarContainer.style.setProperty("display", "block", "important");
+    }
+  }
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")
       .then((reg) => {
-        console.log("PWA: Service Worker zarejestrowany:", reg.scope);
+        console.log("PWA: Service Worker zarejestrowany pomyślnie:", reg.scope);
       })
       .catch((err) => {
         console.warn("PWA: Rejestracja Service Workera pominięta/błąd:", err);
@@ -5410,24 +5446,20 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// Inicjalne sprawdzenie widoczności przycisków PWA
+document.addEventListener("DOMContentLoaded", () => {
+  updatePwaButtonsVisibility(false);
+});
+
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  const installBtn = document.getElementById("pwa-install-btn");
-  if (installBtn) {
-    installBtn.classList.remove("hidden");
-    installBtn.classList.add("flex");
-    installBtn.style.setProperty("display", "inline-flex", "important");
-  }
+  updatePwaButtonsVisibility(true);
 });
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  const installBtn = document.getElementById("pwa-install-btn");
-  if (installBtn) {
-    installBtn.classList.add("hidden");
-    installBtn.style.setProperty("display", "none", "important");
-  }
+  updatePwaButtonsVisibility(false);
   showToast("Aplikacja Kalejdoskop Café została pomyślnie zainstalowana!", "success");
 });
 
@@ -5441,14 +5473,11 @@ function triggerPwaInstall() {
         console.log("PWA: Użytkownik odrzucił instalację.");
       }
       deferredInstallPrompt = null;
-      const installBtn = document.getElementById("pwa-install-btn");
-      if (installBtn) {
-        installBtn.classList.add("hidden");
-        installBtn.style.setProperty("display", "none", "important");
-      }
+      updatePwaButtonsVisibility(false);
     });
   } else {
-    showToast("Wskazówka: Aby zainstalować aplikację, użyj ikony instalacji w pasku adresu lub menu przeglądarki (Dodaj do ekranu głównego).", "info");
+    showToast("Wskazówka: Aby zainstalować aplikację, użyj ikony instalacji w pasku adresu (komputer) lub menu 'Dodaj do ekranu głównego' (telefon).", "info");
   }
 }
 window.triggerPwaInstall = triggerPwaInstall;
+window.isPwaStandalone = isPwaStandalone;
