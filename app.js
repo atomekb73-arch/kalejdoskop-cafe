@@ -1231,8 +1231,18 @@ window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
  * Dynamiczne nakładanie imiennego znaku wodnego i stempla audytowego na dokumenty SKN
  */
 async function downloadWatermarkedPdf(articleId) {
-  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
-  if (!article) return;
+  const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (ViewerState?.currentArticleId || window.currentArticleId);
+  if (!targetId && (window.currentPdfBytes || (ViewerState && ViewerState.rawPdfBytes) || window.currentPdfBase64)) {
+    return await downloadCurrentViewerPdf();
+  }
+
+  const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
+  if (!article) {
+    if (window.currentPdfBytes || (ViewerState && ViewerState.rawPdfBytes) || window.currentPdfBase64) {
+      return await downloadCurrentViewerPdf();
+    }
+    return;
+  }
 
   if (AppState.currentRole === "PUBLIC") {
     showToast("Pobieranie materiałów wewnętrznych SKN wymaga autoryzacji kodem PIN.", "error");
@@ -2711,11 +2721,11 @@ function viewerFitWidth() {
 window.viewerFitWidth = viewerFitWidth;
 
 /**
- * Obsługa pobierania z trwałym wypaleniem znaku wodnego (pdf-lib)
+ * Obsługa pobierania z trwałym wypaleniem znaku wodnego z poziomu przeglądarki PDF (pdf-lib)
  * Środek: Inteligentna Biblioteka SKN Seksuologii (kąt 45 st.)
  * Stopka: SKN Seksuologii WSKZ • Egzemplarz autoryzowany: [USER_EMAIL] • Data: [DATA_POBRANIA]
  */
-async function downloadWatermarkedPdf() {
+async function downloadCurrentViewerPdf() {
   try {
     let pdfBytes = null;
 
@@ -2809,11 +2819,11 @@ function triggerFileSave(bytes, fileName) {
   }
 }
 
-window.downloadWatermarkedPdf = downloadWatermarkedPdf;
-window.downloadCurrentPdfFile = downloadWatermarkedPdf;
+window.downloadCurrentViewerPdf = downloadCurrentViewerPdf;
+window.downloadCurrentPdfFile = downloadCurrentViewerPdf;
 window.handlePdfDownload = downloadWatermarkedPdf;
-window.viewerDownloadWatermarked = downloadWatermarkedPdf;
-window.downloadCurrentPdf = downloadWatermarkedPdf;
+window.viewerDownloadWatermarked = downloadCurrentViewerPdf;
+window.downloadCurrentPdf = downloadCurrentViewerPdf;
 
 function closeSecureViewer() {
   hideModalElement("securePdfViewerModal");
