@@ -76,6 +76,7 @@ function initApp() {
   setupGlobalListeners();
   updateGasStatusIndicator();
   loadArticles();
+  initAbstractDragResize();
 
   // Sprawdzenie jednorazowego tokenu resetu w parametrach URL (?action=reset&token=RST_...)
   if (typeof AuthResetFlow !== "undefined") {
@@ -1679,12 +1680,17 @@ function renderArticleCards(articles) {
           </div>
         </div>
 
-        <!-- Boks Abstraktu: max-h ~88px, czcionka 0.8rem / 11.5px -->
-        <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 text-[11.5px] text-slate-600 leading-[1.4] max-h-[88px] overflow-y-auto my-2 cursor-pointer hover:border-indigo-200 transition-colors" onclick="openArticleDetail('${art.id}')">
-          <p class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
-          <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-[10.5px] text-indigo-600 hover:text-indigo-800 font-semibold mt-1 inline-flex items-center gap-1 hover:underline cursor-pointer">
-            <span>Czytaj pełny abstrakt →</span>
-          </button>
+        <!-- Boks Abstraktu: elastyczne rozwijanie i skrót -->
+        <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/90 hover:border-indigo-300 rounded-xl p-2.5 text-[11.5px] text-slate-600 leading-[1.4] max-h-[96px] overflow-y-auto abstract-scrollbar my-2 transition-all duration-200 cursor-pointer shadow-2xs" onclick="toggleCardAbstract('${art.id}', event)">
+          <p id="card-abstract-text-${art.id}" class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
+          <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-200/60 text-[10.5px]">
+            <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
+              <span id="card-abstract-btn-${art.id}">Rozwiń ▼</span>
+            </button>
+            <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-slate-400 hover:text-slate-700 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer">
+              <span>Szczegóły →</span>
+            </button>
+          </div>
         </div>
 
         <!-- Tagi i słowa kluczowe -->
@@ -3862,7 +3868,16 @@ function openArticleDetail(articleId) {
   if (idEl) idEl.innerText = article.id || "-";
 
   const abstractEl = document.getElementById("detail-abstract");
-  if (abstractEl) abstractEl.innerText = abstractText;
+  if (abstractEl) {
+    abstractEl.innerText = abstractText;
+    abstractEl.style.maxHeight = "140px";
+    abstractEl.style.height = "";
+    abstractEl.classList.remove("expanded-abstract");
+  }
+  const expandTextEl = document.getElementById("detail-abstract-expand-text");
+  if (expandTextEl) expandTextEl.innerText = "Rozwiń";
+  const expandIconEl = document.getElementById("detail-abstract-expand-icon");
+  if (expandIconEl) expandIconEl.className = "fas fa-chevron-down text-[10px] transition-transform duration-200";
 
   const tagsContainer = document.getElementById("detail-tags");
   if (tagsContainer) {
@@ -3935,6 +3950,120 @@ function openArticleDetail(articleId) {
 function closeDetailModal() {
   hideModalElement("detailModal");
 }
+
+/**
+ * Przełączanie rozwijania i zwijania pełnego tekstu abstraktu w modalu szczegółów
+ */
+function toggleDetailAbstractExpand() {
+  const abstractEl = document.getElementById("detail-abstract");
+  const expandTextEl = document.getElementById("detail-abstract-expand-text");
+  const expandIconEl = document.getElementById("detail-abstract-expand-icon");
+  if (!abstractEl) return;
+
+  const isExpanded = abstractEl.classList.contains("expanded-abstract");
+
+  if (isExpanded) {
+    abstractEl.classList.remove("expanded-abstract");
+    abstractEl.style.maxHeight = "140px";
+    abstractEl.style.height = "";
+    if (expandTextEl) expandTextEl.innerText = "Rozwiń";
+    if (expandIconEl) {
+      expandIconEl.className = "fas fa-chevron-down text-[10px] transition-transform duration-200";
+    }
+  } else {
+    abstractEl.classList.add("expanded-abstract");
+    abstractEl.style.maxHeight = "65vh";
+    abstractEl.style.height = "auto";
+    if (expandTextEl) expandTextEl.innerText = "Zwiń";
+    if (expandIconEl) {
+      expandIconEl.className = "fas fa-chevron-up text-[10px] transition-transform duration-200";
+    }
+  }
+}
+window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
+
+/**
+ * Przełączanie rozwijania abstraktu na pojedynczym kafelku
+ */
+function toggleCardAbstract(articleId, event) {
+  if (event) event.stopPropagation();
+  const cardAbstract = document.getElementById(`card-abstract-${articleId}`);
+  const textEl = document.getElementById(`card-abstract-text-${articleId}`);
+  const btnEl = document.getElementById(`card-abstract-btn-${articleId}`);
+  if (!cardAbstract || !textEl) return;
+
+  const isExpanded = textEl.classList.contains("line-clamp-none");
+  if (isExpanded) {
+    textEl.classList.remove("line-clamp-none");
+    textEl.classList.add("line-clamp-3");
+    cardAbstract.style.maxHeight = "96px";
+    if (btnEl) btnEl.innerText = "Rozwiń ▼";
+  } else {
+    textEl.classList.remove("line-clamp-3");
+    textEl.classList.add("line-clamp-none");
+    cardAbstract.style.maxHeight = "360px";
+    if (btnEl) btnEl.innerText = "Zwiń ▲";
+  }
+}
+window.toggleCardAbstract = toggleCardAbstract;
+
+/**
+ * Inicjalizacja przeciągania uchwytów w pionie dla okna abstraktu
+ */
+function initAbstractDragResize() {
+  const leftHandle = document.getElementById("abstract-drag-handle-left");
+  const bottomHandle = document.getElementById("abstract-drag-handle-bottom");
+  const abstractEl = document.getElementById("detail-abstract");
+  if (!abstractEl) return;
+
+  let isDragging = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  function onPointerDown(e) {
+    isDragging = true;
+    startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+    startHeight = abstractEl.offsetHeight;
+    document.body.classList.add("abstract-resize-active");
+    if (leftHandle) leftHandle.classList.add("bg-indigo-100", "text-indigo-700");
+    if (bottomHandle) bottomHandle.classList.add("bg-indigo-200");
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const currentY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+    const deltaY = currentY - startY;
+    const minH = 90;
+    const maxH = Math.max(300, Math.floor(window.innerHeight * 0.65));
+    const newHeight = Math.min(maxH, Math.max(minH, startHeight + deltaY));
+    abstractEl.style.maxHeight = newHeight + "px";
+    abstractEl.style.height = newHeight + "px";
+  }
+
+  function onPointerUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    document.body.classList.remove("abstract-resize-active");
+    if (leftHandle) leftHandle.classList.remove("bg-indigo-100", "text-indigo-700");
+    if (bottomHandle) bottomHandle.classList.remove("bg-indigo-200");
+  }
+
+  if (leftHandle) {
+    leftHandle.addEventListener("mousedown", onPointerDown);
+    leftHandle.addEventListener("touchstart", onPointerDown, { passive: false });
+  }
+  if (bottomHandle) {
+    bottomHandle.addEventListener("mousedown", onPointerDown);
+    bottomHandle.addEventListener("touchstart", onPointerDown, { passive: false });
+  }
+
+  window.addEventListener("mousemove", onPointerMove);
+  window.addEventListener("touchmove", onPointerMove, { passive: false });
+  window.addEventListener("mouseup", onPointerUp);
+  window.addEventListener("touchend", onPointerUp);
+}
+window.initAbstractDragResize = initAbstractDragResize;
 
 /**
  * Moduł Administratora: Drag & Drop + Pipeline
@@ -4480,3 +4609,6 @@ window.copyCitationFromReportModal = copyCitationFromReportModal;
 window.printClinicalReport = printClinicalReport;
 window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
 window.generateClinicalReport = generateClinicalReport;
+window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
+window.toggleCardAbstract = toggleCardAbstract;
+window.initAbstractDragResize = initAbstractDragResize;
