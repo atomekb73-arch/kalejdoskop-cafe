@@ -149,62 +149,64 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- Sticky Glassmorphic Light Navbar -->
-  <header class="sticky top-0 z-40 light-header px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all">
-    <div class="flex items-center gap-3.5 min-w-[260px] shrink-0 pr-3 overflow-visible">
+  <header class="sticky top-0 z-40 light-header px-3 sm:px-8 py-2 sm:py-3.5 flex items-center justify-between transition-all gap-1.5 sm:gap-2">
+    <div class="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink-0 overflow-visible">
       <div class="w-8 h-8 rounded-lg overflow-hidden shadow-md shadow-indigo-500/20 shrink-0 border border-purple-200/50 bg-white flex items-center justify-center">
         <img src="/logo192.png" alt="Kalejdoskop Café" class="w-8 h-8 rounded-lg object-contain" />
       </div>
       <div class="overflow-visible whitespace-nowrap">
-        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2 overflow-visible whitespace-nowrap">
+        <h1 class="text-sm sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-1 sm:gap-2 overflow-visible whitespace-nowrap">
           <span>Kalejdoskop</span>
-          <span class="text-gradient-kaleidoscope italic pr-1 overflow-visible inline-block">Café</span>
+          <span class="text-gradient-kaleidoscope italic pr-0.5 sm:pr-1 overflow-visible inline-block">Café</span>
         </h1>
-        <p class="text-[11px] text-slate-500 font-medium tracking-wide uppercase">SKN Seksuologii • Baza Wiedzy & AI</p>
+        <p class="hidden sm:block text-[11px] text-slate-500 font-medium tracking-wide uppercase">SKN Seksuologii • Baza Wiedzy & AI</p>
       </div>
     </div>
 
     <!-- Right Controls: Sync Indicator, Role Badge & Action Buttons -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1 sm:gap-2 shrink-0">
       <!-- Pulsujący Wskaźnik Synchronizacji w Tle (Stale-While-Revalidate) -->
-      <div id="bg-sync-indicator" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300">
+      <div id="bg-sync-indicator" class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300" title="Status połączenia z bazą">
         <i id="bg-sync-icon" class="fas fa-arrows-rotate text-indigo-600 animate-spin text-[11px]"></i>
-        <span id="bg-sync-text">Synchronizuję z bazą...</span>
+        <span id="bg-sync-text" class="hidden md:inline">Synchronizuję z bazą...</span>
       </div>
 
       <!-- Badge Roli / Status Sesji -->
       <div id="auth-role-badge">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-          <i class="fas fa-eye text-slate-400"></i> Gość (Widok Publiczny)
+        <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
+          <i class="fas fa-eye text-slate-400 text-xs"></i>
+          <span>Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span>
         </span>
       </div>
 
       <!-- Pigułka Zalogowanego Użytkownika -->
-      <div id="user-session-pill" class="hidden items-center gap-2 bg-indigo-50/90 border border-indigo-200 rounded-xl px-3 py-1 text-xs shadow-xs" style="display: none;">
-        <span class="font-bold text-slate-900 flex items-center gap-1.5">
+      <div id="user-session-pill" class="hidden items-center gap-1.5 sm:gap-2 bg-indigo-50/90 border border-indigo-200 rounded-xl px-2 sm:px-3 py-1 text-xs shadow-xs" style="display: none;">
+        <span class="font-bold text-slate-900 flex items-center gap-1 sm:gap-1.5">
           <i class="fas fa-user-circle text-indigo-600 text-sm"></i>
-          <span id="user-display-name">Członek SKN</span>
+          <span id="user-display-name" class="max-w-[80px] sm:max-w-none truncate">Członek SKN</span>
         </span>
-        <span class="text-indigo-300">•</span>
-        <span id="user-display-role" class="font-semibold text-indigo-700 text-[11px]">Członek SKN</span>
-        <button type="button" onclick="handleLogout()" class="ml-1 text-slate-400 hover:text-rose-600 p-0.5 rounded transition cursor-pointer" title="Wyloguj z sesji">
+        <span class="text-indigo-300 hidden sm:inline">•</span>
+        <span id="user-display-role" class="hidden sm:inline font-semibold text-indigo-700 text-[11px]">Członek SKN</span>
+        <button type="button" onclick="handleLogout()" class="ml-0.5 text-slate-400 hover:text-rose-600 p-0.5 rounded transition cursor-pointer" title="Wyloguj z sesji">
           <i class="fas fa-sign-out-alt"></i>
         </button>
       </div>
 
       <!-- Przycisk Instalacji PWA (Pojawia się gdy przeglądarka wspiera instalację) -->
-      <button id="pwa-install-btn" type="button" onclick="triggerPwaInstall()" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-95" title="Zainstaluj aplikację na telefonie lub komputerze">
+      <button id="pwa-install-btn" type="button" onclick="triggerPwaInstall()" class="hidden items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-95" title="Zainstaluj aplikację na telefonie lub komputerze">
         <i class="fas fa-download text-xs text-purple-600"></i>
-        <span>Zainstaluj App</span>
+        <span class="hidden sm:inline">Zainstaluj App</span>
       </button>
 
       <!-- Przycisk Logowania Członka -->
-      <button id="btnLoginOpen" onclick="openLoginModal()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
+      <button id="btnLoginOpen" onclick="openLoginModal()" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 transition flex items-center gap-1 sm:gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap">
         <i class="fas fa-id-badge text-xs"></i>
-        <span>Logowanie Członka</span>
+        <span class="md:hidden">Logowanie</span>
+        <span class="hidden md:inline">Logowanie Członka</span>
       </button>
 
       <!-- Przycisk Wyloguj (Zapasowy / Mobile) -->
-      <button id="logout-btn" onclick="handleLogout()" style="display: none;" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-medium border border-slate-200 transition flex items-center gap-1.5 cursor-pointer" title="Wyloguj">
+      <button id="logout-btn" onclick="handleLogout()" style="display: none;" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-medium border border-slate-200 transition flex items-center gap-1 cursor-pointer" title="Wyloguj">
         <i class="fas fa-sign-out-alt"></i>
         <span class="hidden sm:inline">Wyloguj</span>
       </button>
@@ -212,14 +214,14 @@
   </header>
 
   <!-- Hero Header Section -->
-  <section class="w-full text-center pt-6 pb-2 px-4 max-w-5xl mx-auto">
-    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50/80 border border-indigo-100 text-[11px] sm:text-xs text-indigo-700 font-medium mb-2 shadow-sm">
+  <section class="w-full text-center pt-2 sm:pt-5 pb-1 sm:pb-2 px-3 sm:px-4 max-w-5xl mx-auto">
+    <div class="hidden md:inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50/80 border border-indigo-100 text-[11px] sm:text-xs text-indigo-700 font-medium mb-2 shadow-sm">
       <i class="fas fa-sparkles text-amber-500"></i> Standard DSM-5-TR & ICD-11 • Magazyn: Dysk SKN (Bezpieczny) • Soft Delete
     </div>
-    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-1.5">
+    <h2 class="text-base sm:text-lg md:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight my-1 sm:mb-1.5 text-center leading-tight">
       Inteligentna Biblioteka <span class="text-gradient-kaleidoscope">Seksuologii</span>
     </h2>
-    <p class="text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
+    <p class="hidden md:block text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
       Dwuwarstwowe repozytorium publikacji naukowych, abstraktów klinicznych oraz tłumaczeń akademickich SKN.
     </p>
   </section>
