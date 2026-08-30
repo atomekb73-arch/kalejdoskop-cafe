@@ -1,5 +1,4 @@
-// Service Worker - Kalejdoskop Café PWA
-const CACHE_NAME = "kalejdoskop-pwa-v1";
+const CACHE_NAME = "kalejdoskop-pwa-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -10,6 +9,8 @@ const ASSETS_TO_CACHE = [
   "/manifest.json",
   "/logo192.png",
   "/logo512.png",
+  "/apple-touch-icon.png",
+  "/favicon.png",
   "/favicon.ico"
 ];
 
