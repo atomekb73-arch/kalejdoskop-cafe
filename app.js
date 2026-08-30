@@ -582,15 +582,36 @@ function loadArticles() {
       })
       .apiGetArticles(AppState.currentRole, AppState.currentPin);
   } else if (AppState.appsScriptUrl) {
-    callGoogleScript("scan", {
-      role: AppState.currentRole,
-      pin: AppState.currentPin,
-      adminPin: AppState.currentPin || "2026"
-    })
-      .then((data) => {
+    (async () => {
+      try {
+        let data = await callGoogleScript("getArticles", {
+          userRole: AppState.currentRole || "PUBLIC",
+          role: AppState.currentRole || "PUBLIC",
+          pin: AppState.currentPin || ""
+        });
+
+        let list = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
+
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const scanData = await callGoogleScript("scan", {
+              role: AppState.currentRole,
+              pin: AppState.currentPin,
+              adminPin: AppState.currentPin || "2026"
+            });
+            const scanList = scanData.articles || scanData.files || (scanData.data && (scanData.data.articles || scanData.data.files)) || [];
+            if (Array.isArray(scanList) && scanList.length > 0) {
+              list = scanList;
+              data = scanData;
+            }
+          } catch (e) {
+            // Ignoruj błąd scanu dla użytkowników publicznych
+          }
+        }
+
         showLoadingSpinner(false);
-        const list = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
-        if ((data.status === "success" || data.success || Array.isArray(list)) && Array.isArray(list) && list.length > 0) {
+
+        if (Array.isArray(list) && list.length > 0) {
           AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
           saveArticlesToCache(AppState.articles);
@@ -603,8 +624,7 @@ function loadArticles() {
           filterAndRenderArticles();
           setSyncStatus("idle");
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         showLoadingSpinner(false);
         console.warn("Błąd synchronizacji artykułów w tle:", err);
         if (hasCache) {
@@ -615,7 +635,8 @@ function loadArticles() {
           filterAndRenderArticles();
           setSyncStatus("offline");
         }
-      });
+      }
+    })();
   } else {
     showLoadingSpinner(false);
     if (!hasCache) {
