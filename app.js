@@ -5391,3 +5391,64 @@ window.extractJournal = extractJournal;
 window.switchUploadTab = switchUploadTab;
 window.loadArticles = loadArticles;
 window.fetchArticles = loadArticles;
+
+// ==========================================
+// PWA (Progressive Web App) & Service Worker
+// ==========================================
+let deferredInstallPrompt = null;
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        console.log("PWA: Service Worker zarejestrowany:", reg.scope);
+      })
+      .catch((err) => {
+        console.warn("PWA: Rejestracja Service Workera pominięta/błąd:", err);
+      });
+  });
+}
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const installBtn = document.getElementById("pwa-install-btn");
+  if (installBtn) {
+    installBtn.classList.remove("hidden");
+    installBtn.classList.add("flex");
+    installBtn.style.setProperty("display", "inline-flex", "important");
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  const installBtn = document.getElementById("pwa-install-btn");
+  if (installBtn) {
+    installBtn.classList.add("hidden");
+    installBtn.style.setProperty("display", "none", "important");
+  }
+  showToast("Aplikacja Kalejdoskop Café została pomyślnie zainstalowana!", "success");
+});
+
+function triggerPwaInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === "accepted") {
+        console.log("PWA: Użytkownik zaakceptował instalację.");
+      } else {
+        console.log("PWA: Użytkownik odrzucił instalację.");
+      }
+      deferredInstallPrompt = null;
+      const installBtn = document.getElementById("pwa-install-btn");
+      if (installBtn) {
+        installBtn.classList.add("hidden");
+        installBtn.style.setProperty("display", "none", "important");
+      }
+    });
+  } else {
+    showToast("Wskazówka: Aby zainstalować aplikację, użyj ikony instalacji w pasku adresu lub menu przeglądarki (Dodaj do ekranu głównego).", "info");
+  }
+}
+window.triggerPwaInstall = triggerPwaInstall;
