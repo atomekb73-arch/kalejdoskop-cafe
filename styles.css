@@ -168,7 +168,7 @@ html, body {
   border-radius: 4px;
 }
 
-/* Stylizacja elastycznego rozwijania i przeciągania okna abstraktu */
+/* Stylizacja rozwijania okna abstraktu */
 .abstract-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
@@ -181,14 +181,5 @@ html, body {
 }
 .abstract-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #818cf8;
-}
-
-.abstract-resize-active {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-}
-
-.cursor-ns-resize {
-  cursor: ns-resize;
 }
 

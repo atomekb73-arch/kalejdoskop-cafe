@@ -76,7 +76,6 @@ function initApp() {
   setupGlobalListeners();
   updateGasStatusIndicator();
   loadArticles();
-  initAbstractDragResize();
 
   // Sprawdzenie jednorazowego tokenu resetu w parametrach URL (?action=reset&token=RST_...)
   if (typeof AuthResetFlow !== "undefined") {
@@ -3870,14 +3869,12 @@ function openArticleDetail(articleId) {
   const abstractEl = document.getElementById("detail-abstract");
   if (abstractEl) {
     abstractEl.innerText = abstractText;
-    abstractEl.style.maxHeight = "140px";
-    abstractEl.style.height = "";
+    abstractEl.style.maxHeight = "110px";
+    abstractEl.style.overflow = "hidden";
     abstractEl.classList.remove("expanded-abstract");
   }
   const expandTextEl = document.getElementById("detail-abstract-expand-text");
-  if (expandTextEl) expandTextEl.innerText = "Rozwiń";
-  const expandIconEl = document.getElementById("detail-abstract-expand-icon");
-  if (expandIconEl) expandIconEl.className = "fas fa-chevron-down text-[10px] transition-transform duration-200";
+  if (expandTextEl) expandTextEl.innerText = "Rozwiń ▼";
 
   const tagsContainer = document.getElementById("detail-tags");
   if (tagsContainer) {
@@ -3957,27 +3954,20 @@ function closeDetailModal() {
 function toggleDetailAbstractExpand() {
   const abstractEl = document.getElementById("detail-abstract");
   const expandTextEl = document.getElementById("detail-abstract-expand-text");
-  const expandIconEl = document.getElementById("detail-abstract-expand-icon");
   if (!abstractEl) return;
 
   const isExpanded = abstractEl.classList.contains("expanded-abstract");
 
   if (isExpanded) {
     abstractEl.classList.remove("expanded-abstract");
-    abstractEl.style.maxHeight = "140px";
-    abstractEl.style.height = "";
-    if (expandTextEl) expandTextEl.innerText = "Rozwiń";
-    if (expandIconEl) {
-      expandIconEl.className = "fas fa-chevron-down text-[10px] transition-transform duration-200";
-    }
+    abstractEl.style.maxHeight = "110px";
+    abstractEl.style.overflow = "hidden";
+    if (expandTextEl) expandTextEl.innerText = "Rozwiń ▼";
   } else {
     abstractEl.classList.add("expanded-abstract");
-    abstractEl.style.maxHeight = "65vh";
-    abstractEl.style.height = "auto";
-    if (expandTextEl) expandTextEl.innerText = "Zwiń";
-    if (expandIconEl) {
-      expandIconEl.className = "fas fa-chevron-up text-[10px] transition-transform duration-200";
-    }
+    abstractEl.style.maxHeight = "1000px";
+    abstractEl.style.overflow = "visible";
+    if (expandTextEl) expandTextEl.innerText = "Zwiń ▲";
   }
 }
 window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
@@ -4006,64 +3996,6 @@ function toggleCardAbstract(articleId, event) {
   }
 }
 window.toggleCardAbstract = toggleCardAbstract;
-
-/**
- * Inicjalizacja przeciągania uchwytów w pionie dla okna abstraktu
- */
-function initAbstractDragResize() {
-  const leftHandle = document.getElementById("abstract-drag-handle-left");
-  const bottomHandle = document.getElementById("abstract-drag-handle-bottom");
-  const abstractEl = document.getElementById("detail-abstract");
-  if (!abstractEl) return;
-
-  let isDragging = false;
-  let startY = 0;
-  let startHeight = 0;
-
-  function onPointerDown(e) {
-    isDragging = true;
-    startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
-    startHeight = abstractEl.offsetHeight;
-    document.body.classList.add("abstract-resize-active");
-    if (leftHandle) leftHandle.classList.add("bg-indigo-100", "text-indigo-700");
-    if (bottomHandle) bottomHandle.classList.add("bg-indigo-200");
-    e.preventDefault();
-  }
-
-  function onPointerMove(e) {
-    if (!isDragging) return;
-    const currentY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
-    const deltaY = currentY - startY;
-    const minH = 90;
-    const maxH = Math.max(300, Math.floor(window.innerHeight * 0.65));
-    const newHeight = Math.min(maxH, Math.max(minH, startHeight + deltaY));
-    abstractEl.style.maxHeight = newHeight + "px";
-    abstractEl.style.height = newHeight + "px";
-  }
-
-  function onPointerUp() {
-    if (!isDragging) return;
-    isDragging = false;
-    document.body.classList.remove("abstract-resize-active");
-    if (leftHandle) leftHandle.classList.remove("bg-indigo-100", "text-indigo-700");
-    if (bottomHandle) bottomHandle.classList.remove("bg-indigo-200");
-  }
-
-  if (leftHandle) {
-    leftHandle.addEventListener("mousedown", onPointerDown);
-    leftHandle.addEventListener("touchstart", onPointerDown, { passive: false });
-  }
-  if (bottomHandle) {
-    bottomHandle.addEventListener("mousedown", onPointerDown);
-    bottomHandle.addEventListener("touchstart", onPointerDown, { passive: false });
-  }
-
-  window.addEventListener("mousemove", onPointerMove);
-  window.addEventListener("touchmove", onPointerMove, { passive: false });
-  window.addEventListener("mouseup", onPointerUp);
-  window.addEventListener("touchend", onPointerUp);
-}
-window.initAbstractDragResize = initAbstractDragResize;
 
 /**
  * Moduł Administratora: Drag & Drop + Pipeline
@@ -4611,4 +4543,3 @@ window.openSecureViewerFromReportModal = openSecureViewerFromReportModal;
 window.generateClinicalReport = generateClinicalReport;
 window.toggleDetailAbstractExpand = toggleDetailAbstractExpand;
 window.toggleCardAbstract = toggleCardAbstract;
-window.initAbstractDragResize = initAbstractDragResize;
