@@ -153,10 +153,27 @@ export async function saveWebArticle(articleData, adminPin = "2026") {
   const payload = {
     action: "saveWebArticle",
     type: "WEB",
-    ...articleData,
+    titlePL: articleData.titlePL || articleData.title,
+    titleEN: articleData.titleEN || "",
+    authors: articleData.authors || "Autor nieznany",
+    year: articleData.year || String(new Date().getFullYear()),
+    category: articleData.category || "Edukacja Seksualna",
+    abstractPL: articleData.abstractPL || articleData.abstract || "",
+    sourceUrl: articleData.sourceUrl || articleData.url,
+    url: articleData.sourceUrl || articleData.url,
+    urlOriginal: articleData.sourceUrl || articleData.url,
+    urlTranslation: articleData.sourceUrl || articleData.url,
+    doi: articleData.doi || "",
+    keywords: articleData.keywords || ["Artykuł Web", "Open Access", articleData.category || "Edukacja Seksualna"],
+    accessLevel: articleData.accessLevel || "PUBLIC",
     adminPin: adminPin
   };
-  return await callGoogleScript("saveWebArticle", payload);
+
+  const result = await callGoogleScript("saveWebArticle", payload);
+  if (result && (result.status === "error" || result.success === false)) {
+    throw new Error(result.message || result.error || "Błąd zapisu w Arkuszu Google");
+  }
+  return result;
 }
 
 export default {

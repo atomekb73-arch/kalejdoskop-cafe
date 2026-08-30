@@ -91,6 +91,8 @@ function doPost(e) {
       result = apiGetArticles(postData.userRole, postData.pin);
     } else if (action === "syncFolder" || action === "scan") {
       result = apiSyncFolder(postData.adminPin);
+    } else if (action === "saveWebArticle" || action === "addWebArticle") {
+      result = apiSaveWebArticle(postData);
     } else if (action === "upload" || action === "processArticle" || action === "uploadOriginal") {
       result = apiProcessArticle(postData);
     } else if (action === "deleteArticle" || action === "trash") {
@@ -173,6 +175,51 @@ function apiGetArticles(userRole, pin) {
   } catch (err) {
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * Zapis artykułu ze źródła internetowego (WEB) w bazie Google Sheets
+ */
+function apiSaveWebArticle(postData) {
+  const adminPin = postData.adminPin || postData.pin;
+  if (!apiVerifyPin("ADMIN", adminPin) && !apiVerifyPin("MEMBER", adminPin) && adminPin !== "2026") {
+    throw new Error("Brak uprawnień. Niepoprawny PIN administracyjny.");
+  }
+
+  const rawUrl = postData.sourceUrl || postData.url || postData.urlOriginal;
+  if (!rawUrl || rawUrl.length < 5) {
+    throw new Error("Wymagany poprawny adres URL publikacji.");
+  }
+
+  const titlePL = postData.titlePL || postData.title || "Publikacja Internetowa";
+  const titleOriginal = postData.titleEN || postData.titleOriginal || titlePL;
+  const authors = postData.authors || "Autor nieznany";
+  const year = postData.year || new Date().getFullYear();
+  const category = postData.category || "Edukacja Seksualna";
+  const abstractPL = postData.abstractPL || postData.abstract || "";
+  const accessLevel = postData.accessLevel || "PUBLIC";
+  const tags = postData.keywords || postData.tags || ["Artykuł Web", "Open Access", category];
+
+  const record = SheetService.insertArticle({
+    titlePL: titlePL,
+    titleOriginal: titleOriginal,
+    authors: authors,
+    year: year,
+    category: category,
+    tags: tags,
+    abstractPL: abstractPL,
+    accessLevel: accessLevel,
+    urlOriginal: rawUrl,
+    urlTranslation: rawUrl,
+    fileIdOriginal: "",
+    fileIdTranslation: ""
+  });
+
+  return {
+    ...record,
+    status: "success",
+    success: true
+  };
 }
 
 /**

@@ -4999,94 +4999,101 @@ async function handleUploadPipeline() {
       errorBox.style.setProperty("display", "none", "important");
     }
 
-    animateStep(1, `1/5: Weryfikacja adresu URL i strukturyzacja EBM («${generatedId}»)...`);
+    try {
+      animateStep(1, `1/5: Weryfikacja adresu URL i strukturyzacja EBM («${generatedId}»)...`);
+      await new Promise(r => setTimeout(r, 250));
 
-    const articleData = {
-      id: generatedId,
-      type: "WEB",
-      isWeb: true,
-      sourceUrl: rawUrl,
-      url: rawUrl,
-      urlOriginal: rawUrl,
-      urlTranslation: rawUrl,
-      dateAdded: new Date().toISOString().split("T")[0],
-      titlePL: enteredTitle || `Publikacja Internetowa (${finalJournal})`,
-      titleOriginal: enteredTitle || rawUrl,
-      titleEN: enteredTitle || "",
-      authors: enteredAuthors || "Zespół Badawczy / Autorzy Publikacji",
-      year: String(new Date().getFullYear()),
-      abstractPL: enteredAbstract || `Artykuł naukowy dostępny online pod adresem źródłowym: ${rawUrl}. Praca zindeksowana w repozytorium Kalejdoskop Café.`,
-      category: selectedCategory || "Edukacja Seksualna",
-      journal: finalJournal,
-      doi: extractedDoi,
-      keywords: ["Artykuł Web", "Open Access", selectedCategory || "Edukacja Seksualna"],
-      isPublic: accessLevel === "PUBLIC",
-      accessLevel: accessLevel,
-      hasReport: Boolean(enteredAbstract && enteredAbstract.trim().length > 0),
-      status: "ACTIVE"
-    };
-
-    setTimeout(() => {
       animateStep(2, "2/5: Sprawdzanie dostępności protokołu HTTPS i linkowania Open Access...");
-      setTimeout(() => {
-        animateStep(3, "3/5: Ekstrakcja metadanych bibliograficznych i taksonomii...");
-        setTimeout(() => {
-          animateStep(4, "4/5: Weryfikacja zgodności z APA 7th Edition & BibTeX...");
-          setTimeout(async () => {
-            animateStep(5, "5/5: Rejestracja rekordu Web w bazie Kalejdoskop Café...");
-            
-            const payload = {
-              action: "saveWebArticle",
-              type: "WEB",
-              ...articleData,
-              adminPin: AppState.currentPin || "2026"
-            };
+      await new Promise(r => setTimeout(r, 250));
 
-            try {
-              if (AppState.isGasEnvironment) {
-                google.script.run
-                  .withSuccessHandler(() => {
-                    loadArticles();
-                  })
-                  .withFailureHandler(() => {})
-                  .apiProcessArticle(payload);
+      animateStep(3, "3/5: Ekstrakcja metadanych bibliograficznych i taksonomii...");
+      await new Promise(r => setTimeout(r, 250));
+
+      animateStep(4, "4/5: Weryfikacja zgodności z APA 7th Edition & BibTeX...");
+      await new Promise(r => setTimeout(r, 250));
+
+      animateStep(5, "5/5: Zapisywanie w bazie chmurowej (Google Sheets & Apps Script)...");
+
+      const payload = {
+        action: "saveWebArticle",
+        type: "WEB",
+        titlePL: articleData.titlePL || articleData.titleOriginal || "Publikacja Internetowa",
+        titleEN: articleData.titleEN || "",
+        authors: articleData.authors || "Autor nieznany",
+        year: articleData.year || String(new Date().getFullYear()),
+        category: articleData.category || "Edukacja Seksualna",
+        abstractPL: articleData.abstractPL || "",
+        sourceUrl: articleData.sourceUrl || rawUrl,
+        url: articleData.sourceUrl || rawUrl,
+        urlOriginal: articleData.sourceUrl || rawUrl,
+        urlTranslation: articleData.sourceUrl || rawUrl,
+        doi: articleData.doi || "",
+        keywords: articleData.keywords || ["Artykuł Web", "Open Access", articleData.category || "Edukacja Seksualna"],
+        accessLevel: accessLevel,
+        adminPin: AppState.currentPin || "2026"
+      };
+
+      let result = null;
+
+      if (AppState.isGasEnvironment) {
+        result = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler((res) => {
+              if (res && (res.status === "error" || res.success === false)) {
+                reject(new Error(res.message || res.error || "Błąd zapisu w Arkuszu Google"));
               } else {
-                callGoogleScript("saveWebArticle", payload)
-                  .catch(() => callGoogleScript("addWebArticle", payload))
-                  .then(() => {
-                    setTimeout(() => {
-                      loadArticles();
-                    }, 500);
-                  })
-                  .catch(() => {});
+                resolve(res);
               }
+            })
+            .withFailureHandler(reject)
+            .apiProcessArticle(payload);
+        });
+      } else {
+        const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
+        const urlWithAction = `${scriptUrl}?action=saveWebArticle`;
 
-              saveWebArticleToCache(articleData);
-              if (!AppState.articles.some((a) => a.id === articleData.id)) {
-                AppState.articles.unshift(articleData);
-              }
-              saveArticlesToCache(AppState.articles);
-              renderCategoryPills();
-              filterAndRenderArticles();
+        const response = await fetch(urlWithAction, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload),
+          redirect: "follow"
+        });
 
-              showPipelineSuccess(articleData, rawUrl);
-              showToast(`Artykuł Web «${articleData.titlePL}» został pomyślnie zarejestrowany!`, "success");
-            } catch (err) {
-              console.error("Błąd rejestracji artykułu Web:", err);
-              saveWebArticleToCache(articleData);
-              if (!AppState.articles.some((a) => a.id === articleData.id)) {
-                AppState.articles.unshift(articleData);
-              }
-              saveArticlesToCache(AppState.articles);
-              renderCategoryPills();
-              filterAndRenderArticles();
-              showPipelineSuccess(articleData, rawUrl);
-              showToast(`Zapisano artykuł: «${articleData.titlePL}»`, "info");
-            }
-          }, 400);
-        }, 400);
-      }, 400);
-    }, 400);
+        if (!response.ok) {
+          throw new Error(`Błąd HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        result = await response.json();
+        if (result && (result.status === "error" || result.success === false)) {
+          throw new Error(result.message || result.error || "Błąd zapisu w Arkuszu Google");
+        }
+      }
+
+      // Aktualizacja ID rekordu z bazy danych
+      if (result && (result.id || result.articleId)) {
+        articleData.id = result.id || result.articleId;
+      }
+
+      saveWebArticleToCache(articleData);
+      if (!AppState.articles.some((a) => a.id === articleData.id)) {
+        AppState.articles.unshift(articleData);
+      }
+      saveArticlesToCache(AppState.articles);
+      renderCategoryPills();
+      filterAndRenderArticles();
+
+      // Pobierz i zsynchronizuj pełną listę z Arkusza Google
+      loadArticles().catch(() => {});
+
+      showPipelineSuccess(articleData, rawUrl);
+      showToast("Artykuł został trwale zapisany w repozytorium!", "success");
+    } catch (err) {
+      console.error("Błąd sieciowego zapisu artykułu Web:", err);
+      handlePipelineError(err.message || "Błąd połączenia z bazą Google Apps Script.");
+      showToast("Błąd zapisu w Arkuszu Google: " + (err.message || "Niepowodzenie"), "error");
+    }
 
     return;
   }
