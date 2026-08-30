@@ -1144,25 +1144,68 @@
         </button>
       </div>
 
+      <!-- Przełącznik Źródła Publikacji (Tabs: PDF vs Link URL) -->
+      <div class="flex items-center p-1 bg-slate-100/90 rounded-xl mb-4 text-xs font-semibold">
+        <button type="button" id="tab-upload-pdf" onclick="switchUploadTab('PDF')" class="flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-xs">
+          <i class="fas fa-file-pdf text-red-500"></i>
+          <span>1. Plik PDF (Dysk)</span>
+        </button>
+        <button type="button" id="tab-upload-web" onclick="switchUploadTab('WEB')" class="flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
+          <i class="fas fa-globe text-sky-500"></i>
+          <span>2. Link URL / Web</span>
+        </button>
+      </div>
+
       <!-- Upload Form Inputs -->
       <div id="upload-form-inputs" class="space-y-4">
-        <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 rounded-2xl p-6 text-center transition cursor-pointer relative">
-          <input type="file" id="file-input" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-          
-          <div id="drop-prompt">
-            <i class="fas fa-file-pdf text-3xl text-indigo-500 mb-2"></i>
-            <p class="text-xs sm:text-sm font-bold text-slate-800">Przeciągnij i upuść plik PDF artykułu</p>
-            <p class="text-[11px] text-slate-500 mt-1">lub kliknij, aby wybrać z dysku (Maks. 20MB)</p>
-          </div>
+        <!-- Tab 1: PDF Dropzone -->
+        <div id="upload-tab-content-pdf">
+          <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 rounded-2xl p-6 text-center transition cursor-pointer relative">
+            <input type="file" id="file-input" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            
+            <div id="drop-prompt">
+              <i class="fas fa-file-pdf text-3xl text-indigo-500 mb-2"></i>
+              <p class="text-xs sm:text-sm font-bold text-slate-800">Przeciągnij i upuść plik PDF artykułu</p>
+              <p class="text-[11px] text-slate-500 mt-1">lub kliknij, aby wybrać z dysku (Maks. 20MB)</p>
+            </div>
 
-          <div id="selected-file-info" class="hidden" style="display: none;">
-            <div class="flex items-center justify-center gap-3 text-left bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <i class="fas fa-file-pdf text-2xl text-red-500"></i>
-              <div class="overflow-hidden">
-                <p id="selected-file-name" class="text-xs font-bold text-slate-900 truncate"></p>
-                <p id="selected-file-size" class="text-[10px] text-slate-500"></p>
+            <div id="selected-file-info" class="hidden" style="display: none;">
+              <div class="flex items-center justify-center gap-3 text-left bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <i class="fas fa-file-pdf text-2xl text-red-500"></i>
+                <div class="overflow-hidden">
+                  <p id="selected-file-name" class="text-xs font-bold text-slate-900 truncate"></p>
+                  <p id="selected-file-size" class="text-[10px] text-slate-500"></p>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Web URL / DOI Form -->
+        <div id="upload-tab-content-web" class="hidden space-y-3" style="display: none;">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              <i class="fas fa-link text-sky-500 mr-1"></i> Link do artykułu naukowego (URL / DOI) <span class="text-rose-500">*</span>
+            </label>
+            <input type="url" id="web-article-url" placeholder="https://doi.org/... lub https://journal.org/article-123" class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tytuł publikacji (PL lub oryginalny)</label>
+            <input type="text" id="web-article-title" placeholder="np. Kompleksowa analiza potencjalnego ryzyka..." class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Autorzy</label>
+              <input type="text" id="web-article-authors" placeholder="np. Gao, J., Wang, K." class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Czasopismo / Portal</label>
+              <input type="text" id="web-article-journal" placeholder="np. Andrologia, Nature, MDPI" class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Abstrakt / Streszczenie (Opcjonalnie)</label>
+            <textarea id="web-article-abstract" rows="3" placeholder="Wklej streszczenie lub abstrakt artykułu..." class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition resize-none"></textarea>
           </div>
         </div>
 

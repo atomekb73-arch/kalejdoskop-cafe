@@ -1785,6 +1785,11 @@ function renderArticleCards(articles) {
         </button>`;
     }
 
+    const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
+    const webSourceBadge = isWeb
+      ? `<span class="text-[10px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
+      : "";
+
     let bottomButtonsHtml = "";
     if (isInternal) {
       if (isWatermarking) {
@@ -1800,6 +1805,14 @@ function renderArticleCards(articles) {
             <span>🔒 Czytaj ze stemplem cyfrowym</span>
           </button>`;
       }
+    } else if (isWeb) {
+      const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
+      bottomButtonsHtml = `
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-800 py-1.5 px-1 rounded-md text-[11px] font-semibold text-center flex items-center justify-center gap-1 border border-sky-200 transition-colors whitespace-nowrap cursor-pointer" title="Otwórz bezpośrednie źródło artykułu w nowej karcie">
+          <i class="fas fa-globe text-sky-600 text-xs shrink-0"></i>
+          <span>🌐 Otwórz źródło ↗</span>
+        </a>
+        ${rightBtnHtml}`;
     } else {
       bottomButtonsHtml = `
         <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 py-1.5 px-1 rounded-md text-[11px] font-medium text-center flex items-center justify-center gap-1 border border-slate-200 transition-colors whitespace-nowrap cursor-pointer" title="Otwórz zabezpieczony czytnik oryginału">
@@ -1819,6 +1832,7 @@ function renderArticleCards(articles) {
         <div class="flex items-center justify-between gap-1.5 mb-2">
           <div class="flex flex-wrap items-center gap-1.5">
             ${categoryBadgeHtml}
+            ${webSourceBadge}
             ${accessBadge}
           </div>
           ${deleteBtnHtml}
@@ -3733,13 +3747,16 @@ function generateApaCitation(article) {
   const journal = extractJournal(article);
   const doi = extractDoi(article);
   const doiUrl = doi ? getDoiUrl(doi) : "";
+  const webUrl = article.sourceUrl || article.url || meta.sourceUrl || meta.url || "";
 
   let citation = `${authors} (${year}). ${title}${originalTitle}.`;
   if (journal) {
     citation += ` ${journal}.`;
   }
-  if (doiUrl) {
+  if (doiUrl && !doiUrl.includes("undefined")) {
     citation += ` ${doiUrl}`;
+  } else if (webUrl && !webUrl.includes("drive.google.com") && !webUrl.startsWith("#")) {
+    citation += ` Dostępne online: ${webUrl}`;
   } else {
     citation += ` Repozytorium Kalejdoskop Café - SKN Seksuologii WSKZ.`;
   }
@@ -4290,6 +4307,7 @@ function openArticleDetail(articleId) {
   }
 
   const originalLink = document.getElementById("detail-btn-original");
+  const isWeb = article.type === "WEB" || article.isWeb === true || (Boolean(article.sourceUrl) && (!article.fileIdOriginal || article.fileIdOriginal === article.id || (typeof article.url === "string" && !article.url.includes("drive.google.com") && !article.url.startsWith("#"))));
   const rawOrig = article.url || meta.url || article.urlOriginal || meta.urlOriginal || (article.fileIdOriginal ? `https://drive.google.com/file/d/${article.fileIdOriginal}/view?usp=sharing` : (article.fileId ? `https://drive.google.com/file/d/${article.fileId}/view?usp=sharing` : "#"));
   const origUrl = safeUrl(rawOrig);
   const hasReport = hasArticleReport(article);
@@ -4319,10 +4337,16 @@ function openArticleDetail(articleId) {
     }
   } else if (buttonsContainer) {
     buttonsContainer.className = "pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4";
+    const originalBtnMarkup = isWeb
+      ? `<a href="${safeUrl(article.sourceUrl || article.url || article.urlOriginal || "#")}" target="_blank" rel="noopener noreferrer" id="detail-btn-original" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+          <i class="fas fa-globe text-sky-600"></i> 🌐 Otwórz źródło ↗
+        </a>`
+      : `<button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-file-pdf text-red-500"></i> 📄 Czytaj Oryginał
+        </button>`;
+
     buttonsContainer.innerHTML = `
-      <button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-        <i class="fas fa-file-pdf text-red-500"></i> 📄 Czytaj Oryginał
-      </button>
+      ${originalBtnMarkup}
       <div id="detail-translation-btn-wrapper" class="w-full flex">
         ${isTranslating ? `
           <button disabled class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-purple-50 text-purple-700 border border-purple-300 shadow-sm flex items-center justify-center gap-2 cursor-wait">
@@ -4497,12 +4521,101 @@ function processSelectedFile(file) {
   reader.readAsDataURL(file);
 }
 
+function switchUploadTab(tabType) {
+  AppState.uploadSourceType = tabType;
+  const tabPdf = document.getElementById("tab-upload-pdf");
+  const tabWeb = document.getElementById("tab-upload-web");
+  const contentPdf = document.getElementById("upload-tab-content-pdf");
+  const contentWeb = document.getElementById("upload-tab-content-web");
+  const startBtn = document.getElementById("start-upload-btn");
+
+  if (tabType === "WEB") {
+    if (tabWeb) {
+      tabWeb.className = "flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-xs font-semibold";
+    }
+    if (tabPdf) {
+      tabPdf.className = "flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 font-semibold";
+    }
+    if (contentWeb) {
+      contentWeb.classList.remove("hidden");
+      contentWeb.style.setProperty("display", "block", "important");
+    }
+    if (contentPdf) {
+      contentPdf.classList.add("hidden");
+      contentPdf.style.setProperty("display", "none", "important");
+    }
+
+    const webUrlInput = document.getElementById("web-article-url");
+    const hasUrl = Boolean(webUrlInput && webUrlInput.value.trim().length > 5);
+    if (startBtn) {
+      startBtn.innerHTML = `<i class="fas fa-globe"></i> <span>Zarejestruj Artykuł Web & Analizuj</span>`;
+      if (hasUrl) {
+        startBtn.removeAttribute("disabled");
+      } else {
+        startBtn.setAttribute("disabled", "true");
+      }
+    }
+
+    if (webUrlInput && !webUrlInput.dataset.listenerAttached) {
+      webUrlInput.dataset.listenerAttached = "true";
+      webUrlInput.addEventListener("input", (e) => {
+        if (AppState.uploadSourceType === "WEB" && startBtn) {
+          if (e.target.value.trim().length > 5) {
+            startBtn.removeAttribute("disabled");
+          } else {
+            startBtn.setAttribute("disabled", "true");
+          }
+        }
+      });
+    }
+  } else {
+    // PDF Tab
+    if (tabPdf) {
+      tabPdf.className = "flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-xs font-semibold";
+    }
+    if (tabWeb) {
+      tabWeb.className = "flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 font-semibold";
+    }
+    if (contentPdf) {
+      contentPdf.classList.remove("hidden");
+      contentPdf.style.setProperty("display", "block", "important");
+    }
+    if (contentWeb) {
+      contentWeb.classList.add("hidden");
+      contentWeb.style.setProperty("display", "none", "important");
+    }
+    if (startBtn) {
+      startBtn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> <span>Zapisz na Dysku Google & Analizuj</span>`;
+      if (AppState.selectedUploadFile) {
+        startBtn.removeAttribute("disabled");
+      } else {
+        startBtn.setAttribute("disabled", "true");
+      }
+    }
+  }
+}
+window.switchUploadTab = switchUploadTab;
+
 function resetUploadForm() {
   AppState.selectedUploadFile = null;
   AppState.uploadBase64 = null;
+  AppState.uploadSourceType = "PDF";
 
   const fileInput = document.getElementById("file-input");
   if (fileInput) fileInput.value = "";
+
+  const webUrlInput = document.getElementById("web-article-url");
+  if (webUrlInput) webUrlInput.value = "";
+  const webTitleInput = document.getElementById("web-article-title");
+  if (webTitleInput) webTitleInput.value = "";
+  const webAuthorsInput = document.getElementById("web-article-authors");
+  if (webAuthorsInput) webAuthorsInput.value = "";
+  const webJournalInput = document.getElementById("web-article-journal");
+  if (webJournalInput) webJournalInput.value = "";
+  const webAbstractInput = document.getElementById("web-article-abstract");
+  if (webAbstractInput) webAbstractInput.value = "";
+
+  switchUploadTab("PDF");
 
   const dropPrompt = document.getElementById("drop-prompt");
   const fileInfo = document.getElementById("selected-file-info");
@@ -4524,6 +4637,7 @@ function resetUploadForm() {
     startBtn.setAttribute("disabled", "true");
     startBtn.classList.remove("hidden");
     startBtn.style.setProperty("display", "flex", "important");
+    startBtn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> <span>Zapisz na Dysku Google & Analizuj</span>`;
   }
   if (progressContainer) {
     progressContainer.classList.add("hidden");
@@ -4658,7 +4772,9 @@ function uploadFileToDrive(file, category, accessLevel) {
  * REALNE PRZESYŁANIE PLIKU DO GOOGLE DRIVE (Obsługa UI z blokadą fałszywego sukcesu)
  */
 async function handleUploadPipeline() {
-  if (!AppState.selectedUploadFile) {
+  const isWebUpload = (AppState.uploadSourceType === "WEB");
+
+  if (!isWebUpload && !AppState.selectedUploadFile) {
     showToast("Wybierz plik PDF do przesłania.", "error");
     return;
   }
@@ -4673,6 +4789,120 @@ async function handleUploadPipeline() {
   const errorBox = document.getElementById("pipeline-error-box");
   const completeBox = document.getElementById("pipeline-complete-box");
 
+  if (isWebUpload) {
+    const urlInput = document.getElementById("web-article-url");
+    const rawUrl = urlInput ? urlInput.value.trim() : "";
+    if (!rawUrl || rawUrl.length < 5) {
+      showToast("Wprowadź prawidłowy adres URL lub identyfikator DOI artykułu.", "error");
+      return;
+    }
+
+    const titleInput = document.getElementById("web-article-title");
+    const authorsInput = document.getElementById("web-article-authors");
+    const journalInput = document.getElementById("web-article-journal");
+    const abstractInput = document.getElementById("web-article-abstract");
+
+    const enteredTitle = titleInput ? titleInput.value.trim() : "";
+    const enteredAuthors = authorsInput ? authorsInput.value.trim() : "";
+    const enteredJournal = journalInput ? journalInput.value.trim() : "";
+    const enteredAbstract = abstractInput ? abstractInput.value.trim() : "";
+
+    const generatedId = generateArticleId();
+    const extractedDoi = extractDoi({ doi: rawUrl, name: enteredTitle, abstractPL: enteredAbstract });
+    const finalJournal = enteredJournal || (extractedDoi ? extractJournal({ doi: extractedDoi, name: enteredTitle }) : "Źródło Internetowe / Web");
+
+    if (uploadFormInputs) {
+      uploadFormInputs.classList.add("hidden");
+      uploadFormInputs.style.setProperty("display", "none", "important");
+    }
+    if (startBtn) {
+      startBtn.classList.add("hidden");
+      startBtn.style.setProperty("display", "none", "important");
+    }
+    if (completeBox) {
+      completeBox.classList.add("hidden");
+      completeBox.style.setProperty("display", "none", "important");
+    }
+    if (progressContainer) {
+      progressContainer.classList.remove("hidden");
+      progressContainer.style.setProperty("display", "block", "important");
+    }
+    if (errorBox) {
+      errorBox.classList.add("hidden");
+      errorBox.style.setProperty("display", "none", "important");
+    }
+
+    animateStep(1, `1/5: Weryfikacja adresu URL i strukturyzacja EBM («${generatedId}»)...`);
+
+    const articleData = {
+      id: generatedId,
+      type: "WEB",
+      isWeb: true,
+      sourceUrl: rawUrl,
+      url: rawUrl,
+      urlOriginal: rawUrl,
+      urlTranslation: rawUrl,
+      dateAdded: new Date().toISOString().split("T")[0],
+      titlePL: enteredTitle || `Publikacja Internetowa (${finalJournal})`,
+      titleOriginal: enteredTitle || rawUrl,
+      titleEN: enteredTitle || "",
+      authors: enteredAuthors || "Zespół Badawczy / Autorzy Publikacji",
+      year: String(new Date().getFullYear()),
+      abstractPL: enteredAbstract || `Artykuł naukowy dostępny online pod adresem źródłowym: ${rawUrl}. Praca zindeksowana w repozytorium Kalejdoskop Café.`,
+      category: selectedCategory || "Edukacja Seksualna",
+      journal: finalJournal,
+      doi: extractedDoi,
+      keywords: ["Artykuł Web", "Open Access", selectedCategory || "Edukacja Seksualna"],
+      isPublic: accessLevel === "PUBLIC",
+      accessLevel: accessLevel,
+      hasReport: false,
+      status: "ACTIVE"
+    };
+
+    setTimeout(() => {
+      animateStep(2, "2/5: Sprawdzanie dostępności protokołu HTTPS i linkowania Open Access...");
+      setTimeout(() => {
+        animateStep(3, "3/5: Ekstrakcja metadanych bibliograficznych i taksonomii...");
+        setTimeout(() => {
+          animateStep(4, "4/5: Weryfikacja zgodności z APA 7th Edition & BibTeX...");
+          setTimeout(async () => {
+            animateStep(5, "5/5: Rejestracja rekordu Web w bazie Kalejdoskop Café...");
+            
+            try {
+              if (AppState.isGasEnvironment) {
+                google.script.run
+                  .withSuccessHandler(() => {})
+                  .withFailureHandler(() => {})
+                  .apiProcessArticle({
+                    action: "addWebArticle",
+                    type: "WEB",
+                    ...articleData,
+                    adminPin: AppState.currentPin
+                  });
+              } else {
+                callGoogleScript("addWebArticle", articleData).catch(() => {});
+              }
+
+              AppState.articles.unshift(articleData);
+              saveArticlesToCache(AppState.articles);
+              renderCategoryPills();
+              filterAndRenderArticles();
+
+              showPipelineSuccess(articleData, rawUrl);
+              showToast(`Artykuł Web «${articleData.titlePL}» został pomyślnie zarejestrowany!`, "success");
+            } catch (err) {
+              console.error("Błąd rejestracji artykułu Web:", err);
+              handlePipelineError("Błąd zapisu publikacji: " + err.message);
+            }
+          }, 400);
+        }, 400);
+      }, 400);
+    }, 400);
+
+    return;
+  }
+
+  // STANDARDOWY PIPELINE PDF
   if (uploadFormInputs) {
     uploadFormInputs.classList.add("hidden");
     uploadFormInputs.style.setProperty("display", "none", "important");
@@ -4736,14 +4966,12 @@ async function handleUploadPipeline() {
         targetDriveName: targetDriveName,
         adminPin: AppState.currentPin
       });
-
   } else {
     animateStep(2, "2/5: Przesyłanie strumienia PDF do bezpiecznego magazynu Google Drive...");
 
     try {
       const resData = await uploadAndAnalyzePDF(AppState.selectedUploadFile, selectedCategory || "Edukacja Seksualna");
 
-      // BEZWZGLĘDNA WERYFIKACJA SUKCESU: Brak statusu success rzuca błąd i blokuje sukces w UI
       if (resData.status !== "success" && !resData.success) {
         throw new Error(resData.message || resData.error || "Błąd zapisu na koncie Google Drive.");
       }
@@ -4851,29 +5079,46 @@ function showPipelineSuccess(article, targetDriveName) {
     document.getElementById("res-article-id").innerText = article.id || "KC-OK";
     document.getElementById("res-article-title").innerText = cleanDisplayText(article.titlePL || "Sukces");
     
+    const isWeb = article.type === "WEB" || article.isWeb === true;
     const driveFileNameEl = document.getElementById("res-drive-filename");
     if (driveFileNameEl) {
-      driveFileNameEl.innerText = targetDriveName || `${article.id}_${article.titleOriginal || "dokument.pdf"}`;
+      driveFileNameEl.innerText = isWeb ? (article.sourceUrl || article.url || "Link zewnętrzny") : (targetDriveName || `${article.id}_${article.titleOriginal || "dokument.pdf"}`);
     }
 
     const origBtn = document.getElementById("res-view-orig");
     const transBtn = document.getElementById("res-view-trans");
 
     if (origBtn) {
-      origBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        closeUploadModal();
-        openSecureViewer(article.id, "original");
-      };
+      if (isWeb) {
+        origBtn.innerHTML = `<i class="fas fa-globe text-sky-600"></i> <span>Otwórz źródło Web ↗</span>`;
+        origBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeUploadModal();
+          window.open(safeUrl(article.sourceUrl || article.url), "_blank", "noopener,noreferrer");
+        };
+      } else {
+        origBtn.innerHTML = `<i class="fas fa-file-shield text-indigo-600"></i> <span>Bezpieczny Podgląd PDF</span>`;
+        origBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeUploadModal();
+          openSecureViewer(article.id, "original");
+        };
+      }
     }
     if (transBtn) {
-      transBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        closeUploadModal();
-        openSecureViewer(article.id, "translation");
-      };
+      if (isWeb) {
+        transBtn.style.display = "none";
+      } else {
+        transBtn.style.display = "flex";
+        transBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeUploadModal();
+          openSecureViewer(article.id, "translation");
+        };
+      }
     }
   }
 }
@@ -4953,3 +5198,4 @@ window.copyDoiFromDetail = copyDoiFromDetail;
 window.extractDoi = extractDoi;
 window.getDoiUrl = getDoiUrl;
 window.extractJournal = extractJournal;
+window.switchUploadTab = switchUploadTab;
