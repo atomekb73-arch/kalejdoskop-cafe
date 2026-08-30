@@ -5572,6 +5572,7 @@ if ("serviceWorker" in navigator) {
       .register("/sw.js")
       .then((reg) => {
         console.log("PWA: Service Worker zarejestrowany pomyślnie:", reg.scope);
+        reg.update().catch(() => {});
       })
       .catch((err) => {
         console.warn("PWA: Rejestracja Service Workera pominięta/błąd:", err);
