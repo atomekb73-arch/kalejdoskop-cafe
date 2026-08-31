@@ -4038,7 +4038,7 @@ async function executeGlobalSoftDelete(article) {
 
   // 2. Wysłanie dyspozycji usunięcia do centralnego skryptu Google Apps Script
   const appsScriptUrl = getAppsScriptUrl();
-  const driveFileId = article.drive_file_id || article.file_id || article.fileId || article.fileIdOriginal || null;
+  const driveFileId = article.drive_file_id || article.fileId || article.file_id || article.fileIdOriginal || null;
   const articleTitle = article.titlePL || article.title || article.titleOriginal || "";
 
   if (AppState.isGasEnvironment) {
@@ -4051,27 +4051,22 @@ async function executeGlobalSoftDelete(article) {
       console.warn("GAS apiDeleteArticle błąd:", e);
     }
   } else if (appsScriptUrl) {
-    try {
-      const payload = {
-        action: "trash_article",
-        id: targetId,
-        articleId: targetId,
-        fileId: driveFileId,
-        drive_file_id: driveFileId,
-        title: articleTitle,
-        adminPin: AppState.currentPin || "2026"
-      };
+    const payload = {
+      action: "trash_article",
+      id: targetId,
+      fileId: driveFileId,
+      title: articleTitle,
+      adminPin: AppState.currentPin || "2026"
+    };
 
-      await fetch(appsScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-
+    fetch(appsScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
       console.log("Globalne żądanie przeniesienia do kosza wysłane pomyślnie.");
-    } catch (error) {
-      console.error("Błąd podczas wysyłania żądania usunięcia do backendu:", error);
-    }
+    }).catch((err) => console.error("Błąd usuwania:", err));
   }
 }
 window.executeGlobalSoftDelete = executeGlobalSoftDelete;
