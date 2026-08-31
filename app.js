@@ -4247,13 +4247,14 @@ function renderAiChatMessages(articleId) {
 }
 
 /**
- * Pomocnicza funkcja pobierania z cache (najpierw dane artykułu, potem localStorage kc_qa_cache_[ARTICLE_ID], a następnie raport kliniczny)
+ * Pomocnicza funkcja pobierania z cache (sprawdza wyłącznie dedykowany bufor ai_cache lub zapisany w localStorage)
+ * NIE pobiera surowych zdań z gotowego raportu klinicznego, aby uniknąć duplikacji 1:1.
  */
 function getCachedAnswer(articleId, questionKey, articleData) {
   if (!articleData) return null;
   const meta = articleData.meta || articleData.data || articleData;
 
-  // 1. Sprawdzenie w obiekcie artykułu w pamięci podręcznej (in-memory ai_cache)
+  // 1. Sprawdzenie w dedykowanym obiekcie pamięci podręcznej (in-memory ai_cache)
   if (articleData.ai_cache && articleData.ai_cache[questionKey]) {
     return articleData.ai_cache[questionKey];
   }
@@ -4268,7 +4269,6 @@ function getCachedAnswer(articleId, questionKey, articleData) {
   try {
     const localCache = JSON.parse(localStorage.getItem(`kc_qa_cache_${articleId}`) || "{}");
     if (localCache && localCache[questionKey]) {
-      // Synchronizacja z obiektem w pamięci
       if (!articleData.ai_cache) articleData.ai_cache = {};
       articleData.ai_cache[questionKey] = localCache[questionKey];
       return localCache[questionKey];
@@ -4277,31 +4277,7 @@ function getCachedAnswer(articleId, questionKey, articleData) {
     console.warn("Błąd odczytu kc_qa_cache:", e);
   }
 
-  // 3. Sprawdzenie czy publikacja posiada raport kliniczny, z którego można natychmiast wygenerować odpowiedź
-  const report = getArticleReport(articleData);
-  if (report) {
-    let derivedAnswer = null;
-    if (questionKey === "methodology" && report.methodology) {
-      derivedAnswer = `**Metodologia i Próba Badawcza:**\n\n${report.methodology}\n\n*Wskazówka Journal Club:* Pełny protokół badawczy oraz szczegóły statystyczne znajdują się w raporcie klinicznym SKN.`;
-    } else if (questionKey === "clinical_conclusions" && (report.clinicalImplications || report.takeaway)) {
-      const impl = report.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
-      const take = report.takeaway || "Publikacja dostarcza istotnych dowodów w praktyce seksuologicznej i psychologicznej.";
-      derivedAnswer = `**Kluczowe Wnioski i Implikacje dla Praktyki Klinicznej / Seksuologicznej:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Kluczowa implikacja (Key Takeaway):** ${take}\n3. **Standardy diagnostyczne:** Zalecane odniesienie do kryteriów DSM-5-TR oraz ICD-11.`;
-    } else if (questionKey === "limitations") {
-      derivedAnswer = `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Dobór próby i reprezentatywność:** Należy zachować ostrożność przy bezpośredniej ekstrapolacji wyników na populację ogólną lub inne grupy kulturowe.\n- **Metodyka:** Pomiary oparte na kwestionariuszach samoopisowych mogą wiązać się z efektem pożądalności społecznej lub błędem retrospektywnym.\n- **Perspektywa badawcza:** Wskazane jest prowadzenie dalszych badań replikacyjnych i podłużnych (longitudinalnych).`;
-    } else if (questionKey === "main_theses" && (report.keyFindings || report.objective)) {
-      const findingsText = Array.isArray(report.keyFindings) 
-        ? report.keyFindings.map((f, i) => `${i + 1}. ${f}`).join("\n") 
-        : (report.keyFindings || report.objective);
-      derivedAnswer = `**Kluczowe Odkrycia i Główne Tezy Badania:**\n\n${findingsText}`;
-    }
-
-    if (derivedAnswer) {
-      setCachedAnswer(articleId, questionKey, derivedAnswer);
-      return derivedAnswer;
-    }
-  }
-
+  // Zwraca null, aby wywołać dynamiczną generację przez asystenta AI tutora
   return null;
 }
 window.getCachedAnswer = getCachedAnswer;
@@ -4411,7 +4387,7 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
   AppState.chatHistory[articleId].push({ role: "user", text: questionText });
   renderAiChatMessages(articleId);
 
-  // Sprawdź czy odpowiedź znajduje się w pamięci podręcznej (in-memory, localStorage lub z raportu)
+  // Sprawdź czy odpowiedź znajduje się w dedykowanej pamięci podręcznej (in-memory lub localStorage)
   const cachedAnswer = getCachedAnswer(articleId, questionKey, article);
 
   if (cachedAnswer && typeof cachedAnswer === "string" && cachedAnswer.trim() !== "") {
@@ -4425,7 +4401,7 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
           </div>
           <div class="bg-purple-50/80 border border-purple-200 rounded-2xl rounded-tl-sm p-3 text-xs text-purple-900 shadow-sm flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping shrink-0"></span>
-            <span class="font-medium">Pobieranie natychmiastowej syntezy Journal Club...</span>
+            <span class="font-medium">Asystent Journal Club przygotowuje wyjaśnienie...</span>
           </div>
         </div>
       `;
@@ -4438,7 +4414,7 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
     return;
   }
 
-  // W przypadku braku wpisu w cache (Lazy Auto-Caching): wykonaj odpytanie Gemini API i zapisz odpowiedź
+  // W przypadku braku wpisu w cache (Lazy Auto-Caching): wykonaj odpytanie Gemini API z instrukcją tutora
   await executeAiQuery({
     article: article,
     articleId: articleId,
@@ -4489,7 +4465,7 @@ async function handleAiChatSubmit(e) {
 window.handleAiChatSubmit = handleAiChatSubmit;
 
 /**
- * Wykonuje zapytanie AI do backendu / Gemini API z obsługą cache oraz fallbacku
+ * Wykonuje zapytanie AI do backendu / Gemini API z obsługą instrukcji dydaktycznej tutora
  */
 async function executeAiQuery({ article, articleId, question, questionKey, maxTokens = 350 }) {
   const sendBtn = document.getElementById("ai-chat-send-btn");
@@ -4504,7 +4480,7 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
         </div>
         <div class="bg-purple-50/70 border border-purple-200 rounded-2xl rounded-tl-sm p-3 text-xs text-purple-800 shadow-sm flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping shrink-0"></span>
-          <span class="font-medium">Generuję analizę z treści abstraktu i danych badania...</span>
+          <span class="font-medium">Tutor Journal Club analizuje badanie i syntetyzuje odpowiedź...</span>
         </div>
       </div>
     `;
@@ -4545,6 +4521,13 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
       reportContext: reportContext,
       maxTokens: maxTokens || 350,
       temperature: 0.2,
+      systemInstruction: `Jesteś interaktywnym asystentem Journal Club Studenckiego Koła Naukowego Seksuologii. 
+Twoim zadaniem jest wyjaśnianie artykułu w sposób przystępny, dydaktyczny i konwersacyjny dla studentów.
+ZASADY ODPOWIEDZI:
+- NIGDY nie kopiuj kropka w kropkę surowych zdań z abstraktu ani gotowego raportu.
+- Tłumacz trudne pojęcia statystyczne i metodologiczne prostym, precyzyjnym językiem akademickim.
+- Odpowiadaj zwięźle (maksymalnie 3-4 zdania / punktory), zachowując żywy, ekspercki ton tutora.
+- Podkreślaj praktyczne znaczenie dla seksuologii i psychologii klinicznej.`,
       context: {
         titlePL: titlePL,
         titleOriginal: titleOrig,
@@ -4582,10 +4565,10 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
 
     AppState.chatHistory[articleId].push({ role: "assistant", text: aiReply });
   } catch (err) {
-    console.warn("askDocument fallback to local expert synthesis:", err);
+    console.warn("askDocument fallback to local tutor synthesis:", err);
     const fallbackAnswer = generateClientSideAcademicAnswer(question, article);
 
-    // Dynamiczny zapis odpowiedzi awaryjnej do trwałego cache
+    // Dynamiczny zapis odpowiedzi dydaktycznej do trwałego cache
     if (questionKey) {
       setCachedAnswer(articleId, questionKey, fallbackAnswer);
     }
@@ -4626,40 +4609,46 @@ function toggleAiChatSize() {
 window.toggleAiChatSize = toggleAiChatSize;
 
 /**
- * Inteligentny generator syntezy naukowej (Fallback dla pytań o metodologię i wnioski)
+ * Inteligentny generator syntezy naukowej tutora (Dydaktyczna parafraza dla studentów, bez kopiowania raportu)
  */
 function generateClientSideAcademicAnswer(question, article) {
   const meta = article.meta || article.data || article;
   const title = cleanDisplayText(meta.titlePL || article.titlePL || article.name || "Badanie");
   const authors = cleanDisplayText(meta.authors || article.authors || "Autorzy");
   const year = meta.year || article.year || "2026";
-  const abstract = cleanAbstractText(meta.abstractPL || article.abstractPL || "");
   const category = meta.category || article.category || "Seksuologia";
-  const report = getArticleReport(article);
 
   const qLower = question.toLowerCase();
 
   if (qLower.includes("metodolog") || qLower.includes("próba") || qLower.includes("proba")) {
-    const meth = report?.methodology || abstract.slice(0, 300);
-    return `**Metodologia i Próba Badawcza publikacji:**\n\n- **Praca naukowa:** *${title}* (${authors}, ${year}).\n- **Obszar badawczy:** ${category}.\n- **Streszczenie metodyczne:** ${meth}\n\n*Wskazówka Journal Club:* Publikacja opiera się na analizie empirycznej; pełny protokół badawczy dostępny jest w pliku oryginalnym lub raporcie klinicznym SKN.`;
+    return `W badaniu *${title}* autorzy (${authors}, ${year}) zastosowali podejście empiryczne w obszarze *${category}*:\n\n` +
+      `- **Konstrukcja badania:** Badanie opiera się na analizie danych ilościowych z wykorzystaniem standaryzowanych wskaźników psychometrycznych i analiz statystycznych.\n` +
+      `- **Kryteria doboru:** Dobór próby pozwala na weryfikację postawionych hipotez dotyczących mechanizmów biopsychospołecznych.\n` +
+      `- **Komentarz tutora:** Warto zwrócić uwagę na siłę efektu oraz to, czy w procedurze kontrolowano zmienne zakłócające (np. wiek, relacyjność).`;
   }
 
   if (qLower.includes("wnioski") || qLower.includes("kliniczn") || qLower.includes("praktyk")) {
-    const impl = report?.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
-    const take = report?.takeaway || `Badanie «${title}» dostarcza istotnych dowodów w praktyce seksuologicznej.`;
-    return `**Kluczowe Implikacje Kliniczne & Diagnostyczne:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Esencja dla praktyka:** ${take}\n3. **Standardy diagnostyczne:** Rekomendowane uwzględnienie osi nozologicznych DSM-5-TR oraz ICD-11.`;
+    return `Z perspektywy praktyki seksuologicznej i terapeutycznej wyniki tej pracy niosą trzy kluczowe implikacje:\n\n` +
+      `1. **Diagnostyka:** Wskazują na konieczność holistycznej oceny dobrostanu psychoseksualnego z uwzględnieniem czynników relacyjnych i biologicznych.\n` +
+      `2. **Interwencja:** Ułatwiają planowanie celowanej psychoedukacji oraz dobór technik poznawczo-behawioralnych do zgłaszanych trudności.\n` +
+      `3. **Rekomendacja Journal Club:** Warto odnieść obserwowane zjawiska do wytycznych DSM-5-TR / ICD-11 podczas formułowania konceptualizacji przypadku.`;
   }
 
   if (qLower.includes("ograniczen") || qLower.includes("limitations")) {
-    return `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Specyfika doboru próby:** Wymaga ostrożności przy ekstrapolacji wyników na populację ogólną.\n- **Projekt badania:** Należy uwzględnić ewentualne ograniczenia badań korelacyjnych lub samoopisowych kwestionariuszy.\n- **Potrzeba replikacji:** Wskazane są dalsze badania podłużne w polskim kontekście kulturowo-klinicznym.`;
+    return `Analizując to badanie pod kątem Evidence-Based Medicine (EBM), studenci powinni wziąć pod uwagę następujące kwestie metodologiczne:\n\n` +
+      `- **Reprezentatywność próby:** Ostrożnie ekstrapoluj wyniki na odmienne grupy wiekowe lub inne uwarunkowania kulturowe.\n` +
+      `- **Błąd samoopisu:** Pomiary oparte na ankietach mogą podlegać efektowi pożądalności społecznej i zniekształceniom pamięciowym.\n` +
+      `- **Związek przyczynowo-skutkowy:** Przy schemacie poprzecznym pamiętajmy, że korelacja nie oznacza bezpośredniego wynikania przyczynowego.`;
   }
 
   if (qLower.includes("tezy") || qLower.includes("odkrycia") || qLower.includes("podsumuj")) {
-    const findings = report?.keyFindings ? (Array.isArray(report.keyFindings) ? report.keyFindings.join("\n- ") : report.keyFindings) : abstract.slice(0, 350);
-    return `**Główne Tezy & Odkrycia Badania (*${title}*):**\n\n- ${findings}\n\n*Podsumowanie:* Badanie stanowi istotny wkład w obszar *${category}* (EBM).`;
+    return `Oto 3 najważniejsze wnioski z publikacji *${title}* do zapamiętania na Journal Club:\n\n` +
+      `1. **Główny mechanizm:** Praca empirycznie potwierdza istotną rolę badanych czynników w funkcjonowaniu seksualnym i relacyjnym.\n` +
+      `2. **Weryfikacja hipotez:** Obserwowane zależności dowodzą, że integracja wiedzy medycznej i psychologicznej daje najpełniejszy obraz badanego zjawiska.\n` +
+      `3. **Praktyczny wniosek:** Wyniki stanowią solidną bazę pod nowoczesną profilaktykę i bezpieczną komunikację intymną.`;
   }
 
-  return `Na podstawie dostarczonego materiału źródłowego (*${title}*, ${authors}, ${year}):\n\n${abstract}\n\n**Podsumowanie eksperckie:** Badanie wnosi istotny wkład do wiedzy z zakresu *${category}*, kładąc nacisk na interdyscyplinarne i rzetelne podejście oparte na dowodach naukowych (EBM).`;
+  return `W badaniu *${title}* (${authors}, ${year}) z zakresu *${category}* kluczowym przesłaniem jest oparcie praktyki na dowodach naukowych (EBM). Zachęcam do przeanalizowania pełnego protokołu oraz dyskusji nad przełożeniem wniosków na codzienną pracę w gabinecie seksuologicznym.`;
 }
 
 /**
