@@ -561,32 +561,58 @@ const DEFAULT_SEMINAR_ARTICLES = [
   }
 ];
 
+const TRASHED_ARTICLES_KEY = "kc_trashed_ids";
 const DELETED_ARTICLES_KEY = "kc_deleted_articles_cache";
 
-function getDeletedArticlesCache() {
+// Pobieranie listy ID w koszu
+function getTrashedIds() {
   try {
-    const raw = localStorage.getItem(DELETED_ARTICLES_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const fromTrashed = JSON.parse(localStorage.getItem(TRASHED_ARTICLES_KEY) || '[]');
+    const fromDeleted = JSON.parse(localStorage.getItem(DELETED_ARTICLES_KEY) || '[]');
+    const combined = [
+      ...(Array.isArray(fromTrashed) ? fromTrashed : []),
+      ...(Array.isArray(fromDeleted) ? fromDeleted : [])
+    ];
+    return Array.from(new Set(combined));
   } catch (e) {
     return [];
   }
 }
-window.getDeletedArticlesCache = getDeletedArticlesCache;
+window.getTrashedIds = getTrashedIds;
+window.getDeletedArticlesCache = getTrashedIds;
 
-function addDeletedArticleId(id) {
-  try {
-    const list = getDeletedArticlesCache();
-    if (!list.includes(id)) {
-      list.push(id);
-      localStorage.setItem(DELETED_ARTICLES_KEY, JSON.stringify(list));
-    }
-  } catch (e) {}
+// Dodawanie ID do kosza
+function markAsTrashed(articleId) {
+  if (!articleId) return;
+  const trashed = getTrashedIds();
+  if (!trashed.includes(articleId)) {
+    trashed.push(articleId);
+    try {
+      localStorage.setItem(TRASHED_ARTICLES_KEY, JSON.stringify(trashed));
+      localStorage.setItem(DELETED_ARTICLES_KEY, JSON.stringify(trashed));
+    } catch (e) {}
+  }
 }
-window.addDeletedArticleId = addDeletedArticleId;
+window.markAsTrashed = markAsTrashed;
+window.addDeletedArticleId = markAsTrashed;
+
+function isArticleTrashed(article) {
+  if (!article) return false;
+  const trashed = getTrashedIds();
+  if (trashed.length === 0) return false;
+  if (typeof article === "string") return trashed.includes(article);
+  const id = article.id || article.ID_Artykulu || article.fileId || article.fileIdOriginal;
+  if (id && trashed.includes(id)) return true;
+  if (article.id && trashed.includes(article.id)) return true;
+  if (article.fileId && trashed.includes(article.fileId)) return true;
+  if (article.fileIdOriginal && trashed.includes(article.fileIdOriginal)) return true;
+  if (article.FileID_Oryginal && trashed.includes(article.FileID_Oryginal)) return true;
+  return false;
+}
+window.isArticleTrashed = isArticleTrashed;
 
 function getCachedArticles() {
   try {
-    const deletedIds = getDeletedArticlesCache();
     const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
     let articles = [];
     if (raw) {
@@ -595,14 +621,14 @@ function getCachedArticles() {
     }
     const webArticles = getWebArticlesCache();
     webArticles.forEach((wa) => {
-      if (!deletedIds.includes(wa.id) && !articles.some((a) => a.id === wa.id)) {
+      if (!isArticleTrashed(wa) && !articles.some((a) => a.id === wa.id)) {
         articles.unshift(wa);
       }
     });
 
     // Dołączenie prezentacji seminaryjnych SKN
     DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
-      if (deletedIds.includes(sa.id)) return;
+      if (isArticleTrashed(sa)) return;
       const existing = articles.find((a) => a.id === sa.id);
       if (!existing) {
         articles.unshift(sa);
@@ -617,12 +643,11 @@ function getCachedArticles() {
       }
     });
 
-    articles = articles.filter((a) => !deletedIds.includes(a.id));
-    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES.filter((a) => !deletedIds.includes(a.id));
+    articles = articles.filter((a) => !isArticleTrashed(a));
+    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES.filter((a) => !isArticleTrashed(a));
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
-    const deletedIds = getDeletedArticlesCache();
-    return DEFAULT_SEMINAR_ARTICLES.filter((a) => !deletedIds.includes(a.id));
+    return DEFAULT_SEMINAR_ARTICLES.filter((a) => !isArticleTrashed(a));
   }
 }
 
@@ -836,11 +861,12 @@ function updateLibraryWithRealDriveFiles(files) {
   if (!Array.isArray(files)) files = [];
 
   const reportsCache = getReportsCache();
-  const webArticles = getWebArticlesCache();
+  const webArticles = getWebArticlesCache().filter((wa) => !isArticleTrashed(wa));
 
-  // 1. Zawsze dołącz i zachowaj artykuły WEB oraz prezentacje seminaryjne
-  const persistentSources = [...webArticles, ...DEFAULT_SEMINAR_ARTICLES];
+  // 1. Zawsze dołącz i zachowaj artykuły WEB oraz prezentacje seminaryjne (jeśli nie są w koszu)
+  const persistentSources = [...webArticles, ...DEFAULT_SEMINAR_ARTICLES].filter((item) => !isArticleTrashed(item));
   persistentSources.forEach((item) => {
+    if (isArticleTrashed(item)) return;
     const meta = item.meta || item.data || item;
     const title = item.titlePL || item.title || meta.titlePL || meta.title || item.name;
     const hasSource = item.pdf_url || item.fileId || item.fileIdOriginal || item.url || item.urlOriginal || item.external_url || item.sourceUrl || item.source_url || item.abstractPL || item.abstract || meta.abstractPL || meta.abstract;
@@ -852,7 +878,10 @@ function updateLibraryWithRealDriveFiles(files) {
   });
 
   files.forEach((file) => {
+    if (isArticleTrashed(file)) return;
     const id = file.id || file.ID_Artykulu || generateArticleId();
+    if (isArticleTrashed(id)) return;
+
     const meta = file.meta || file.data || file;
     const rawOrigTitle = meta.titleEN || meta.originalTitle || meta.titleOriginal || file.titleEN || file.originalTitle || file.titleOriginal || file.Tytul_Oryginalny || file.name || file.newName || "";
     const polishTitle = meta.titlePL || meta.polishTitle || meta.translatedTitle || file.titlePL || file.polishTitle || file.Tytul_PL || file.title || (rawOrigTitle ? rawOrigTitle.replace(/^KC-\d{14}_?/, "").replace(/\.pdf$/i, "").replace(/_/g, " ") : "Dokument PDF");
@@ -978,8 +1007,9 @@ function updateLibraryWithRealDriveFiles(files) {
     }
   });
 
-  // Dodatkowe zabezpieczenie obecności prezentacji seminaryjnych po synchronizacji
+  // Dodatkowe zabezpieczenie obecności prezentacji seminaryjnych po synchronizacji (jeśli nie są w koszu)
   DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
+    if (isArticleTrashed(sa)) return;
     const existingIdx = AppState.articles.findIndex((a) => a.id === sa.id);
     if (existingIdx === -1) {
       AppState.articles.push(sa);
@@ -993,6 +1023,8 @@ function updateLibraryWithRealDriveFiles(files) {
     }
   });
 
+  AppState.articles = AppState.articles.filter((a) => !isArticleTrashed(a));
+  saveArticlesToCache(AppState.articles);
   renderCategoryPills();
   filterAndRenderArticles();
 }
@@ -1004,6 +1036,7 @@ function isInternalArticle(article) {
 }
 
 function filterAndRenderArticles() {
+  AppState.articles = (AppState.articles || []).filter((a) => !isArticleTrashed(a));
   let list = [...AppState.articles];
 
   // 1. Kategoria (obsługa wielu kategorii rozdzielonych |, ,, /)
@@ -4055,8 +4088,14 @@ function resetDeleteButton() {
 
 function applyLocalDeletion(articleId) {
   try {
-    addDeletedArticleId(articleId);
-    const webList = getWebArticlesCache().filter((a) => a.id !== articleId);
+    const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+    markAsTrashed(articleId);
+    if (article) {
+      if (article.fileId) markAsTrashed(article.fileId);
+      if (article.fileIdOriginal) markAsTrashed(article.fileIdOriginal);
+      if (article.FileID_Oryginal) markAsTrashed(article.FileID_Oryginal);
+    }
+    const webList = getWebArticlesCache().filter((a) => a.id !== articleId && !isArticleTrashed(a));
     localStorage.setItem(WEB_CACHE_KEY, JSON.stringify(webList));
   } catch (e) {
     console.warn("Błąd aktualizacji cache po usunięciu:", e);
@@ -4066,15 +4105,15 @@ function applyLocalDeletion(articleId) {
   if (card) {
     card.classList.add("opacity-0", "scale-95");
     setTimeout(() => {
-      AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
-      AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId) : [];
+      AppState.articles = (AppState.articles || []).filter((a) => a.id !== articleId && a.fileIdOriginal !== articleId && !isArticleTrashed(a));
+      AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId && a.fileIdOriginal !== articleId && !isArticleTrashed(a)) : [];
       saveArticlesToCache(AppState.articles);
       renderCategoryPills();
       filterAndRenderArticles();
     }, 300);
   } else {
-    AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
-    AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId) : [];
+    AppState.articles = (AppState.articles || []).filter((a) => a.id !== articleId && a.fileIdOriginal !== articleId && !isArticleTrashed(a));
+    AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId && a.fileIdOriginal !== articleId && !isArticleTrashed(a)) : [];
     saveArticlesToCache(AppState.articles);
     renderCategoryPills();
     filterAndRenderArticles();
