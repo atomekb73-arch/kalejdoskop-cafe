@@ -4328,6 +4328,52 @@ window.saveCachedAnswer = saveCachedAnswer;
 window.setCachedAnswer = saveCachedAnswer;
 
 /**
+ * Czyści pamięć podręczną Q&A dla aktywnego artykułu i resetuje czat
+ */
+function handleClearCache() {
+  const detailIdEl = document.getElementById("detail-id");
+  const articleId = detailIdEl ? detailIdEl.innerText.trim() : null;
+  if (!articleId || articleId === "-") return;
+
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+
+  // 1. Usunięcie wszystkich wersji kluczy tego artykułu z LocalStorage
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith(`kc_qa_${articleId}`) || key.startsWith(`kc_qa_cache_${articleId}`))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (e) {
+    console.warn("Błąd usuwania wpisów kc_qa z localStorage:", e);
+  }
+
+  // 2. Wyczyszczenie obiektu ai_cache w pamięci podręcznej artykułu
+  if (article) {
+    article.ai_cache = {};
+    if (article.meta && typeof article.meta === "object") {
+      article.meta.ai_cache = {};
+    }
+    saveArticlesToCache(AppState.articles);
+  }
+
+  // 3. Wyczyszczenie historii czatu dla tego artykułu
+  if (AppState.chatHistory) {
+    AppState.chatHistory[articleId] = [];
+  }
+  renderAiChatMessages(articleId);
+
+  if (typeof showToast === "function") {
+    showToast("Pamięć analizy AI została wyczyszczona. Następne zapytanie pobierze świeże dane z modelu.", "info");
+  }
+}
+window.handleClearCache = handleClearCache;
+window.handleClearAiCache = handleClearCache;
+
+/**
  * Pobiera lub inicjalizuje obiekt pamięci podręcznej odpowiedzi AI (ai_cache)
  */
 function getArticleAiCache(article) {

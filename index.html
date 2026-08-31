@@ -1005,17 +1005,31 @@
 
       <!-- ZAKŁADKA 2: Interaktywny Asystent AI Q&A (Journal Club Assistant) -->
       <div id="tab-content-chat" class="hidden pr-1 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col transition-all duration-300" style="display: none;">
-        <!-- Pasek Narzędzi Czatu z Przełącznikiem Rozmiaru 4x -->
+        <!-- Pasek Narzędzi Czatu z Przełącznikiem Rozmiaru 4x i Odświeżaniem Cache -->
         <div class="flex items-center justify-between gap-2 pb-0.5 select-none">
           <div class="flex items-center gap-1.5 text-xs font-bold text-purple-800">
             <i class="fas fa-robot text-purple-600"></i>
             <span>Asystent Journal Club AI</span>
             <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 ml-1">EBM Assistant</span>
           </div>
-          <button type="button" id="btn-toggle-chat-size" onclick="toggleAiChatSize()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-900 border border-purple-200 transition cursor-pointer shadow-2xs" title="Przełącz rozmiar okna czatu (kompaktowy / 4x powiększony)">
-            <i id="ai-chat-size-icon" class="fas fa-up-right-and-down-left-from-center text-[10px]"></i>
-            <span id="ai-chat-size-text">⤢ Powiększ widok</span>
-          </button>
+          <div class="flex items-center gap-3">
+            <button 
+              type="button" 
+              onclick="handleClearCache()" 
+              class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors cursor-pointer"
+              title="Wyczyść pamięć i wygeneruj świeżą analizę z abstraktu"
+            >
+              <svg class="w-3.5 h-3.5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+              </svg>
+              <span>Odśwież analizę</span>
+            </button>
+            <button type="button" id="btn-toggle-chat-size" onclick="toggleAiChatSize()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-900 border border-purple-200 transition cursor-pointer shadow-2xs" title="Przełącz rozmiar okna czatu (kompaktowy / 4x powiększony)">
+              <i id="ai-chat-size-icon" class="fas fa-up-right-and-down-left-from-center text-[10px]"></i>
+              <span id="ai-chat-size-text">⤢ Powiększ widok</span>
+            </button>
+          </div>
         </div>
 
         <!-- Kontener Wiadomości Czatu (domyślnie h-32, po powiększeniu h-[480px]) -->
