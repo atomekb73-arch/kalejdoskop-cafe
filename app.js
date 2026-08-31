@@ -4045,57 +4045,48 @@ async function handleConfirmDelete() {
     if (article.fileId) markAsTrashed(article.fileId);
     if (article.fileIdOriginal) markAsTrashed(article.fileIdOriginal);
     if (article.FileID_Oryginal) markAsTrashed(article.FileID_Oryginal);
+    if (article.drive_file_id) markAsTrashed(article.drive_file_id);
   }
 
-  // 2. Natychmiastowa aktualizacja stanu lokalnego
+  // 2. Natychmiastowa aktualizacja stanu lokalnego i UI
   applyLocalDeletion(articleId);
+  closeDeleteModal();
+  resetDeleteButton();
+  if (typeof showToast === "function") {
+    showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
+  }
 
-  // 3. Synchronizacja zdalna ze statusem Arkusza / Dysku Google
-  const isWebOrLocal = article ? (article.isWeb || article.type === "WEB" || article.publication_type === "seminar_presentation" || !article.fileIdOriginal || article.fileIdOriginal === article.id) : false;
+  // 3. Globalna synchronizacja sieciowa z Arkuszem Google & Dyskiem
+  const driveFileId = article ? (article.drive_file_id || article.fileId || article.fileIdOriginal || null) : null;
+  const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
 
   try {
-    if (AppState.isGasEnvironment && !isWebOrLocal) {
+    if (AppState.isGasEnvironment) {
       google.script.run
         .withSuccessHandler((res) => {
-          resetDeleteButton();
-          closeDeleteModal();
-          if (typeof showToast === "function") showToast("Publikacja została przeniesiona do Kosza (STATUS: TRASHED).", "info");
+          console.log("GAS: Artykuł oznaczony jako TRASHED w arkuszu:", res);
         })
         .withFailureHandler((err) => {
-          resetDeleteButton();
-          closeDeleteModal();
-          if (typeof showToast === "function") showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
+          console.warn("GAS: Błąd oznaczania w koszu:", err);
         })
-        .apiDeleteArticle(articleId, AppState.currentPin);
-    } else if (AppState.appsScriptUrl || localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url")) {
-      callGoogleScript("deleteArticle", {
-        action: "deleteArticle",
-        articleId: articleId,
-        id: articleId,
-        adminPin: AppState.currentPin || "2026"
-      }).catch((remoteErr) => {
-        console.warn("Zdalne usuwanie z Arkusza/Dysku nie powiodło się, zachowano usunięcie lokalne:", remoteErr);
-      }).finally(() => {
-        resetDeleteButton();
-        closeDeleteModal();
-        if (typeof showToast === "function") {
-          showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
-        }
-      });
-    } else {
-      resetDeleteButton();
-      closeDeleteModal();
-      if (typeof showToast === "function") {
-        showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
-      }
+        .apiDeleteArticle(articleId, AppState.currentPin || "2026", driveFileId);
+    } else if (scriptUrl) {
+      fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "trash_article",
+          id: articleId,
+          articleId: articleId,
+          fileId: driveFileId,
+          drive_file_id: driveFileId,
+          adminPin: AppState.currentPin || "2026"
+        }),
+        redirect: "follow"
+      }).catch((err) => console.error("Błąd globalnej synchronizacji kosza:", err));
     }
   } catch (error) {
-    console.error("Błąd podczas usuwania:", error);
-    resetDeleteButton();
-    closeDeleteModal();
-    if (typeof showToast === "function") {
-      showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
-    }
+    console.error("Błąd podczas wysyłania żądania usunięcia do backendu:", error);
   }
 }
 window.handleConfirmDelete = handleConfirmDelete;

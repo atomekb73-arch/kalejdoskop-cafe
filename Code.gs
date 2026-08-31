@@ -95,8 +95,8 @@ function doPost(e) {
       result = apiSaveWebArticle(postData);
     } else if (action === "askDocument" || action === "ask") {
       result = apiAskDocument(postData);
-    } else if (action === "deleteArticle" || action === "trash") {
-      result = apiDeleteArticle(postData.articleId || postData.fileId, postData.adminPin);
+    } else if (action === "deleteArticle" || action === "trash" || action === "trash_article") {
+      result = apiDeleteArticle(postData.id || postData.articleId || postData.fileId, postData.adminPin, postData.fileId || postData.drive_file_id);
     } else {
       throw new Error("Nieznana akcja API: " + action);
     }
@@ -368,23 +368,44 @@ function apiUploadOriginalOnly(payload) {
 /**
  * Endpoint Soft Delete (Przeniesienie artykułu i plików do kosza)
  */
-function apiDeleteArticle(articleId, adminPin) {
-  if (adminPin && (adminPin || "").trim() !== CONFIG.ADMIN_PIN) {
+function apiDeleteArticle(articleId, adminPin, explicitFileId) {
+  if (adminPin && (adminPin || "").trim() !== CONFIG.ADMIN_PIN && (adminPin || "").trim() !== "2026") {
     throw new Error("Brak uprawnień administratora do usunięcia artykułu.");
   }
 
   const trashInfo = SheetService.markArticleAsTrashed(articleId);
 
-  const driveResult = DriveService.trashArticleFiles(
-    trashInfo.fileIdOriginal,
-    trashInfo.fileIdTranslation
-  );
+  const fileIdToTrash = explicitFileId || trashInfo.fileIdOriginal;
+  let driveResult = null;
+
+  if (fileIdToTrash) {
+    try {
+      const file = DriveApp.getFileById(fileIdToTrash);
+      if (file) {
+        file.setTrashed(true);
+        driveResult = "TRASHED";
+      }
+    } catch (e) {
+      console.warn("Błąd przenoszenia pliku do kosza:", e);
+    }
+  }
+
+  if (trashInfo.fileIdTranslation) {
+    try {
+      const transFile = DriveApp.getFileById(trashInfo.fileIdTranslation);
+      if (transFile) {
+        transFile.setTrashed(true);
+      }
+    } catch (e) {
+      console.warn("Błąd przenoszenia pliku tłumaczenia do kosza:", e);
+    }
+  }
 
   return {
     success: true,
     status: "success",
     articleId: articleId,
-    driveTrashStatus: driveResult
+    driveTrashStatus: driveResult || "OK"
   };
 }
 

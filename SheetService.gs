@@ -53,7 +53,7 @@ const SheetService = {
       const status = row[14] || "ACTIVE";
 
       // Filtrujemy rekordy przeniesione do kosza
-      if (status === "TRASHED") continue;
+      if (status === "TRASHED" || status === "DELETED" || row[14] === "TRASHED" || row[14] === "DELETED") continue;
 
       const accessLevel = row[9] || "PUBLIC";
 
@@ -160,11 +160,13 @@ const SheetService = {
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === articleId) {
-        const rowNumber = i + 1;
-        const fileIdOrig = data[i][12];
-        const fileIdTrans = data[i][13];
+      const rowId = data[i][0];
+      const fileIdOrig = data[i][12];
+      const fileIdTrans = data[i][13];
+      const directUrl = data[i][10];
 
+      if (rowId === articleId || (fileIdOrig && fileIdOrig === articleId) || (directUrl && directUrl === articleId)) {
+        const rowNumber = i + 1;
         // Kolumna 15 (Status) -> TRASHED
         sheet.getRange(rowNumber, 15).setValue("TRASHED");
 
