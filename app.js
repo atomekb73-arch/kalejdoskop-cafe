@@ -4247,103 +4247,85 @@ function renderAiChatMessages(articleId) {
 }
 
 /**
- * Generuje wersjonowany klucz pamięci podręcznej Q&A powiązany z polem updated_at lub treścią abstraktu
+ * Klucz pamięci podręcznej z wersjonowaniem (Cache Invalidation)
  */
-function getArticleCacheKey(articleId, articleData) {
-  const art = articleData || AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId) || {};
-  const meta = art.meta || art.data || art;
-
-  // 1. Sprawdź pole daty aktualizacji artykułu
-  let version = art.updated_at || art.updatedAt || meta.updated_at || meta.updatedAt;
-  if (!version) {
-    // 2. Jeśli brak pola updated_at, użyj hasha z treści abstraktu jako znacznika wersji (Cache Invalidation)
-    const abs = String(art.abstractPL || meta.abstractPL || art.abstract || meta.abstract || "");
-    if (abs) {
-      let hash = 0;
-      for (let i = 0; i < abs.length; i++) {
-        hash = ((hash << 5) - hash) + abs.charCodeAt(i);
-        hash |= 0;
-      }
-      version = "abs_" + Math.abs(hash).toString(36) + "_" + abs.length;
-    } else {
-      version = "v1";
-    }
-  } else {
-    version = String(version).replace(/[^a-zA-Z0-9_-]/g, "_");
-  }
-
-  return `kc_qa_${articleId}_${version}`;
-}
-window.getArticleCacheKey = getArticleCacheKey;
+const getCacheKey = (article) => {
+  if (!article) return "kc_qa_unknown_v1";
+  const meta = article.meta || article.data || article;
+  const version = article.version || meta.version || article.updated_at || meta.updated_at || article.updatedAt || meta.updatedAt || "1";
+  return `kc_qa_${article.id}_v${String(version).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+};
+window.getCacheKey = getCacheKey;
+window.getArticleCacheKey = (articleId, articleData) => getCacheKey(articleData || { id: articleId });
 
 /**
- * Pomocnicza funkcja pobierania z cache (sprawdza wersjonowany bufor LocalStorage kc_qa_[ID]_[UPDATED_AT])
- * Jeśli treść abstraktu lub data updated_at ulegnie zmianie, system automatycznie unieważnia stary cache.
+ * Pobieranie z cache (wersjonowany klucz LocalStorage lub in-memory ai_cache)
  */
-function getCachedAnswer(articleId, questionKey, articleData) {
-  if (!articleData) return null;
-  const meta = articleData.meta || articleData.data || articleData;
+function getCachedAnswer(article, questionKey) {
+  if (!article) return null;
+  let art = article;
+  let qKey = questionKey;
+  if (typeof article === "string" && typeof questionKey === "string" && arguments[2]) {
+    art = arguments[2];
+    qKey = questionKey;
+  } else if (typeof article === "string") {
+    art = AppState.articles?.find((a) => a.id === article) || AppState.filteredArticles?.find((a) => a.id === article);
+  }
+  if (!art) return null;
 
-  // 1. Sprawdzenie w dedykowanym obiekcie pamięci podręcznej (in-memory ai_cache)
-  if (articleData.ai_cache && articleData.ai_cache[questionKey]) {
-    return articleData.ai_cache[questionKey];
-  }
-  if (meta && meta.ai_cache && meta.ai_cache[questionKey]) {
-    return meta.ai_cache[questionKey];
-  }
-  if (articleData.aiCache && articleData.aiCache[questionKey]) {
-    return articleData.aiCache[questionKey];
-  }
+  if (art.ai_cache?.[qKey]) return art.ai_cache[qKey];
+  const meta = art.meta || art.data || art;
+  if (meta.ai_cache?.[qKey]) return meta.ai_cache[qKey];
 
-  // 2. Sprawdzenie w trwałym magazynie localStorage powiązanym z wersją artykułu (Cache Invalidation)
   try {
-    const cacheKey = getArticleCacheKey(articleId, articleData);
-    const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
-    if (localCache && localCache[questionKey]) {
-      if (!articleData.ai_cache) articleData.ai_cache = {};
-      articleData.ai_cache[questionKey] = localCache[questionKey];
-      return localCache[questionKey];
+    const key = getCacheKey(art);
+    const local = JSON.parse(localStorage.getItem(key) || "{}");
+    if (local && local[qKey]) {
+      if (!art.ai_cache) art.ai_cache = {};
+      art.ai_cache[qKey] = local[qKey];
+      return local[qKey];
     }
   } catch (e) {
-    console.warn("Błąd odczytu kc_qa cache:", e);
+    return null;
   }
-
-  // Zwraca null, aby wywołać dynamiczną generację przez asystenta AI tutora
   return null;
 }
 window.getCachedAnswer = getCachedAnswer;
 
 /**
- * Pomocnicza funkcja trwałego zapisu odpowiedzi do pamięci podręcznej (LocalStorage kc_qa_[ID]_[UPDATED_AT] oraz in-memory)
+ * Zapisywanie do cache (LocalStorage kc_qa_[ID]_v[VERSION] oraz in-memory)
  */
-function setCachedAnswer(articleId, questionKey, answerText) {
-  if (!articleId || !questionKey || !answerText) return;
-  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
-  const cacheKey = getArticleCacheKey(articleId, article);
-
-  // 1. Zapis do dedykowanego klucza localStorage powiązanego z wersją artykułu
-  try {
-    const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
-    localCache[questionKey] = answerText;
-    localStorage.setItem(cacheKey, JSON.stringify(localCache));
-  } catch (e) {
-    console.warn("Błąd zapisu do " + cacheKey + ":", e);
+function saveCachedAnswer(article, questionKey, answerText) {
+  if (!article || !questionKey || !answerText) return;
+  let art = article;
+  let qKey = questionKey;
+  let ansText = answerText;
+  if (typeof article === "string") {
+    art = AppState.articles?.find((a) => a.id === article) || AppState.filteredArticles?.find((a) => a.id === article);
   }
+  if (!art) return;
 
-  // 2. Zapis w obiekcie artykułu w pamięci AppState
-  if (article) {
-    if (!article.ai_cache || typeof article.ai_cache !== "object") {
-      article.ai_cache = {};
+  try {
+    const key = getCacheKey(art);
+    const local = JSON.parse(localStorage.getItem(key) || "{}");
+    local[qKey] = ansText;
+    localStorage.setItem(key, JSON.stringify(local));
+
+    if (!art.ai_cache || typeof art.ai_cache !== "object") {
+      art.ai_cache = {};
     }
-    article.ai_cache[questionKey] = answerText;
-    if (article.meta && typeof article.meta === "object") {
-      if (!article.meta.ai_cache) article.meta.ai_cache = {};
-      article.meta.ai_cache[questionKey] = answerText;
+    art.ai_cache[qKey] = ansText;
+    if (art.meta && typeof art.meta === "object") {
+      if (!art.meta.ai_cache) art.meta.ai_cache = {};
+      art.meta.ai_cache[qKey] = ansText;
     }
     saveArticlesToCache(AppState.articles);
+  } catch (e) {
+    console.error("Błąd zapisu do cache:", e);
   }
 }
-window.setCachedAnswer = setCachedAnswer;
+window.saveCachedAnswer = saveCachedAnswer;
+window.setCachedAnswer = saveCachedAnswer;
 
 /**
  * Pobiera lub inicjalizuje obiekt pamięci podręcznej odpowiedzi AI (ai_cache)
@@ -4366,7 +4348,7 @@ function getArticleAiCache(article) {
 
   // Odczyt również z dedykowanego magazynu localStorage powiązanego z wersją artykułu
   try {
-    const cacheKey = getArticleCacheKey(article.id, article);
+    const cacheKey = getCacheKey(article);
     const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
     cache = { ...localCache, ...cache };
   } catch (e) {}
@@ -4419,8 +4401,8 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
   AppState.chatHistory[articleId].push({ role: "user", text: questionText });
   renderAiChatMessages(articleId);
 
-  // Sprawdź czy odpowiedź znajduje się w dedykowanej pamięci podręcznej (in-memory lub localStorage)
-  const cachedAnswer = getCachedAnswer(articleId, questionKey, article);
+  // Sprawdź czy odpowiedź znajduje się w dedykowanej pamięci podręcznej (in-memory lub localStorage z wersjonowaniem)
+  const cachedAnswer = getCachedAnswer(article, questionKey);
 
   if (cachedAnswer && typeof cachedAnswer === "string" && cachedAnswer.trim() !== "") {
     // Zero-latency instant cache z płynną symulacją myślenia (150 ms)
@@ -4553,13 +4535,14 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
       reportContext: reportContext,
       maxTokens: maxTokens || 350,
       temperature: 0.2,
-      systemInstruction: `Jesteś interaktywnym asystentem Journal Club Studenckiego Koła Naukowego Seksuologii. 
-Twoim zadaniem jest wyjaśnianie artykułu w sposób przystępny, dydaktyczny i konwersacyjny dla studentów.
-ZASADY ODPOWIEDZI:
-- NIGDY nie kopiuj kropka w kropkę surowych zdań z abstraktu ani gotowego raportu.
+      systemInstruction: `Jesteś interaktywnym tutorem Journal Club Studenckiego Koła Naukowego Seksuologii.
+Twoim celem jest tłumaczenie badań naukowych studentom w sposób przejrzysty, dydaktyczny i angażujący.
+
+ZASADY ODPOWIADANIA:
+- NIGDY nie kopiuj kropka w kropkę gotowych zdań z abstraktu ani surowych sekcji raportu.
 - Tłumacz trudne pojęcia statystyczne i metodologiczne prostym, precyzyjnym językiem akademickim.
-- Odpowiadaj zwięźle (maksymalnie 3-4 zdania / punktory), zachowując żywy, ekspercki ton tutora.
-- Podkreślaj praktyczne znaczenie dla seksuologii i psychologii klinicznej.`,
+- Odpowiadaj zwięźle (maksymalnie 3-4 zdania lub punktory), zachowując żywy, mentorski ton.
+- Zawsze uwypuklaj praktyczny sens badania dla seksuologii i psychologii klinicznej.`,
       context: {
         titlePL: titlePL,
         titleOriginal: titleOrig,
@@ -4590,9 +4573,9 @@ ZASADY ODPOWIEDZI:
       aiReply = generateClientSideAcademicAnswer(question, article);
     }
 
-    // Dynamiczny zapis do trwałego cache (Lazy Auto-Caching)
+    // Dynamiczny zapis do trwałego cache z wersjonowaniem (Lazy Auto-Caching)
     if (questionKey) {
-      setCachedAnswer(articleId, questionKey, aiReply);
+      saveCachedAnswer(article, questionKey, aiReply);
     }
 
     AppState.chatHistory[articleId].push({ role: "assistant", text: aiReply });
@@ -4602,7 +4585,7 @@ ZASADY ODPOWIEDZI:
 
     // Dynamiczny zapis odpowiedzi dydaktycznej do trwałego cache
     if (questionKey) {
-      setCachedAnswer(articleId, questionKey, fallbackAnswer);
+      saveCachedAnswer(article, questionKey, fallbackAnswer);
     }
 
     AppState.chatHistory[articleId].push({ role: "assistant", text: fallbackAnswer });
