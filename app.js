@@ -883,8 +883,8 @@ function updateLibraryWithRealDriveFiles(files) {
   const reportsCache = getReportsCache();
   const webArticles = getWebArticlesCache().filter((wa) => !isArticleTrashed(wa));
 
-  // 1. Zawsze dołącz i zachowaj artykuły WEB oraz prezentacje seminaryjne (jeśli nie są w koszu)
-  const persistentSources = [...webArticles, ...DEFAULT_SEMINAR_ARTICLES].filter((item) => !isArticleTrashed(item));
+  // 1. Zawsze dołącz i zachowaj artykuły WEB (jeśli nie są w koszu)
+  const persistentSources = [...webArticles].filter((item) => !isArticleTrashed(item));
   persistentSources.forEach((item) => {
     if (isArticleTrashed(item)) return;
     const meta = item.meta || item.data || item;
@@ -901,6 +901,7 @@ function updateLibraryWithRealDriveFiles(files) {
     if (isArticleTrashed(file)) return;
     const id = file.id || file.ID_Artykulu || generateArticleId();
     if (isArticleTrashed(id)) return;
+    if (file.status === "TRASHED" || file.status === "DELETED" || file.trashed || file.deleted) return;
 
     const meta = file.meta || file.data || file;
     const rawOrigTitle = meta.titleEN || meta.originalTitle || meta.titleOriginal || file.titleEN || file.originalTitle || file.titleOriginal || file.Tytul_Oryginalny || file.name || file.newName || "";
@@ -1027,21 +1028,14 @@ function updateLibraryWithRealDriveFiles(files) {
     }
   });
 
-  // Dodatkowe zabezpieczenie obecności prezentacji seminaryjnych po synchronizacji (jeśli nie są w koszu)
-  DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
-    if (isArticleTrashed(sa)) return;
-    const existingIdx = AppState.articles.findIndex((a) => a.id === sa.id);
-    if (existingIdx === -1) {
-      AppState.articles.push(sa);
-    } else {
-      const existing = AppState.articles[existingIdx];
-      if (!existing.reviews || existing.reviews.length === 0) existing.reviews = sa.reviews;
-      if (!existing.publication_type) {
-        existing.publication_type = sa.publication_type;
-        existing.publicationType = sa.publicationType;
+  // W trybie demonstracyjnym/offline jeśli baza jest pusta, dołącz nieusunięte prezentacje domyślne
+  if (AppState.articles.length === 0 && files.length === 0) {
+    DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
+      if (!isArticleTrashed(sa) && !AppState.articles.some((a) => a.id === sa.id)) {
+        AppState.articles.push(sa);
       }
-    }
-  });
+    });
+  }
 
   AppState.articles = AppState.articles.filter((a) => !isArticleTrashed(a));
   saveArticlesToCache(AppState.articles);
@@ -4021,11 +4015,67 @@ window.trashFile = trashFile;
 window.trashFileById = trashFile;
 window.moveToTrash = trashFile;
 
-function closeDeleteModal() {
-  AppState.pendingDeleteArticleId = null;
-  hideModalElement("deleteModal");
+function getAppsScriptUrl() {
+  return localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
 }
-window.closeDeleteModal = closeDeleteModal;
+window.getAppsScriptUrl = getAppsScriptUrl;
+
+async function executeGlobalSoftDelete(article) {
+  if (!article) return;
+  const targetId = article.id || article.ID_Artykulu;
+
+  // 1. Optymistyczna aktualizacja UI na bieżącym urządzeniu
+  AppState.articles = (AppState.articles || []).filter((a) => a.id !== targetId && a.fileIdOriginal !== targetId && a.fileId !== targetId);
+  AppState.filteredArticles = (AppState.filteredArticles || []).filter((a) => a.id !== targetId && a.fileIdOriginal !== targetId && a.fileId !== targetId);
+  saveArticlesToCache(AppState.articles);
+  renderCategoryPills();
+  filterAndRenderArticles();
+
+  markAsTrashed(targetId);
+  if (article.fileId) markAsTrashed(article.fileId);
+  if (article.fileIdOriginal) markAsTrashed(article.fileIdOriginal);
+  if (article.drive_file_id) markAsTrashed(article.drive_file_id);
+
+  // 2. Wysłanie dyspozycji usunięcia do centralnego skryptu Google Apps Script
+  const appsScriptUrl = getAppsScriptUrl();
+  const driveFileId = article.drive_file_id || article.file_id || article.fileId || article.fileIdOriginal || null;
+  const articleTitle = article.titlePL || article.title || article.titleOriginal || "";
+
+  if (AppState.isGasEnvironment) {
+    try {
+      google.script.run
+        .withSuccessHandler((res) => console.log("GAS: Globalne usunięcie zsynchronizowane:", res))
+        .withFailureHandler((err) => console.warn("GAS: Błąd usunięcia:", err))
+        .apiDeleteArticle(targetId, AppState.currentPin || "2026", driveFileId);
+    } catch (e) {
+      console.warn("GAS apiDeleteArticle błąd:", e);
+    }
+  } else if (appsScriptUrl) {
+    try {
+      const payload = {
+        action: "trash_article",
+        id: targetId,
+        articleId: targetId,
+        fileId: driveFileId,
+        drive_file_id: driveFileId,
+        title: articleTitle,
+        adminPin: AppState.currentPin || "2026"
+      };
+
+      await fetch(appsScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      console.log("Globalne żądanie przeniesienia do kosza wysłane pomyślnie.");
+    } catch (error) {
+      console.error("Błąd podczas wysyłania żądania usunięcia do backendu:", error);
+    }
+  }
+}
+window.executeGlobalSoftDelete = executeGlobalSoftDelete;
+window.handleDeleteArticle = executeGlobalSoftDelete;
 
 async function handleConfirmDelete() {
   const articleId = AppState.pendingDeleteArticleId;
@@ -4037,56 +4087,15 @@ async function handleConfirmDelete() {
     confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Przenoszenie...`;
   }
 
-  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId) || { id: articleId };
 
-  // 1. Rejestracja w trwałym rejestrze kosza localStorage
-  markAsTrashed(articleId);
-  if (article) {
-    if (article.fileId) markAsTrashed(article.fileId);
-    if (article.fileIdOriginal) markAsTrashed(article.fileIdOriginal);
-    if (article.FileID_Oryginal) markAsTrashed(article.FileID_Oryginal);
-    if (article.drive_file_id) markAsTrashed(article.drive_file_id);
-  }
-
-  // 2. Natychmiastowa aktualizacja stanu lokalnego i UI
-  applyLocalDeletion(articleId);
   closeDeleteModal();
   resetDeleteButton();
+
+  await executeGlobalSoftDelete(article);
+
   if (typeof showToast === "function") {
-    showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
-  }
-
-  // 3. Globalna synchronizacja sieciowa z Arkuszem Google & Dyskiem
-  const driveFileId = article ? (article.drive_file_id || article.fileId || article.fileIdOriginal || null) : null;
-  const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-
-  try {
-    if (AppState.isGasEnvironment) {
-      google.script.run
-        .withSuccessHandler((res) => {
-          console.log("GAS: Artykuł oznaczony jako TRASHED w arkuszu:", res);
-        })
-        .withFailureHandler((err) => {
-          console.warn("GAS: Błąd oznaczania w koszu:", err);
-        })
-        .apiDeleteArticle(articleId, AppState.currentPin || "2026", driveFileId);
-    } else if (scriptUrl) {
-      fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "trash_article",
-          id: articleId,
-          articleId: articleId,
-          fileId: driveFileId,
-          drive_file_id: driveFileId,
-          adminPin: AppState.currentPin || "2026"
-        }),
-        redirect: "follow"
-      }).catch((err) => console.error("Błąd globalnej synchronizacji kosza:", err));
-    }
-  } catch (error) {
-    console.error("Błąd podczas wysyłania żądania usunięcia do backendu:", error);
+    showToast("Publikacja została trwale przeniesiona do Kosza.", "info");
   }
 }
 window.handleConfirmDelete = handleConfirmDelete;
