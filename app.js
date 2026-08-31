@@ -4020,88 +4020,89 @@ function getAppsScriptUrl() {
 }
 window.getAppsScriptUrl = getAppsScriptUrl;
 
-async function executeGlobalSoftDelete(article) {
-  if (!article) return;
-  const targetId = article.id || article.ID_Artykulu;
-
-  // 1. Optymistyczna aktualizacja UI na bieżącym urządzeniu
-  AppState.articles = (AppState.articles || []).filter((a) => a.id !== targetId && a.fileIdOriginal !== targetId && a.fileId !== targetId);
-  AppState.filteredArticles = (AppState.filteredArticles || []).filter((a) => a.id !== targetId && a.fileIdOriginal !== targetId && a.fileId !== targetId);
-  saveArticlesToCache(AppState.articles);
-  renderCategoryPills();
-  filterAndRenderArticles();
-
-  markAsTrashed(targetId);
-  if (article.fileId) markAsTrashed(article.fileId);
-  if (article.fileIdOriginal) markAsTrashed(article.fileIdOriginal);
-  if (article.drive_file_id) markAsTrashed(article.drive_file_id);
-
-  // 2. Wysłanie dyspozycji usunięcia do centralnego skryptu Google Apps Script
-  const appsScriptUrl = getAppsScriptUrl();
-  const driveFileId = article.drive_file_id || article.fileId || article.file_id || article.fileIdOriginal || null;
-  const articleTitle = article.titlePL || article.title || article.titleOriginal || "";
-
-  if (AppState.isGasEnvironment) {
-    try {
-      google.script.run
-        .withSuccessHandler((res) => console.log("GAS: Globalne usunięcie zsynchronizowane:", res))
-        .withFailureHandler((err) => console.warn("GAS: Błąd usunięcia:", err))
-        .apiDeleteArticle(targetId, AppState.currentPin || "2026", driveFileId);
-    } catch (e) {
-      console.warn("GAS apiDeleteArticle błąd:", e);
-    }
-  } else if (appsScriptUrl) {
-    const payload = {
-      action: "trash_article",
-      id: targetId,
-      fileId: driveFileId,
-      title: articleTitle,
-      adminPin: AppState.currentPin || "2026"
-    };
-
-    fetch(appsScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).then(() => {
-      console.log("Globalne żądanie przeniesienia do kosza wysłane pomyślnie.");
-    }).catch((err) => console.error("Błąd usuwania:", err));
-  }
-}
-window.executeGlobalSoftDelete = executeGlobalSoftDelete;
-window.handleDeleteArticle = executeGlobalSoftDelete;
-
-async function handleConfirmDelete() {
-  const articleId = AppState.pendingDeleteArticleId;
-  if (!articleId) return;
-
-  const confirmBtn = document.getElementById("confirm-delete-btn");
-  if (confirmBtn) {
-    confirmBtn.setAttribute("disabled", "true");
-    confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Przenoszenie...`;
-  }
-
-  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId) || { id: articleId };
-
-  closeDeleteModal();
-  resetDeleteButton();
-
-  await executeGlobalSoftDelete(article);
-
-  if (typeof showToast === "function") {
-    showToast("Publikacja została trwale przeniesiona do Kosza.", "info");
-  }
-}
-window.handleConfirmDelete = handleConfirmDelete;
-
 function resetDeleteButton() {
   const confirmBtn = document.getElementById("confirm-delete-btn");
   if (confirmBtn) {
     confirmBtn.removeAttribute("disabled");
-    confirmBtn.innerHTML = `<i class="fas fa-trash-can"></i> Przenieś do Kosza`;
+    confirmBtn.innerHTML = `
+      <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        <line x1="10" y1="11" x2="10" y2="17"/>
+        <line x1="14" y1="11" x2="14" y2="17"/>
+      </svg>
+      <span>Przenieś do Kosza</span>
+    `;
   }
 }
+window.resetDeleteButton = resetDeleteButton;
+
+function closeDeleteModal() {
+  AppState.pendingDeleteArticleId = null;
+  resetDeleteButton();
+  hideModalElement("deleteModal");
+}
+window.closeDeleteModal = closeDeleteModal;
+
+async function handleConfirmTrash() {
+  const targetId = AppState.pendingDeleteArticleId;
+  if (!targetId) return;
+
+  const targetArticle = AppState.articles?.find((a) => a.id === targetId) || AppState.filteredArticles?.find((a) => a.id === targetId) || { id: targetId };
+
+  // 1. Natychmiastowe usunięcie ze stanu UI i zamknięcie modala (Optimistic Update)
+  const articleToDelete = targetArticle;
+  AppState.articles = (AppState.articles || []).filter((a) => a.id !== articleToDelete.id && a.fileIdOriginal !== articleToDelete.id && a.fileId !== articleToDelete.id);
+  AppState.filteredArticles = (AppState.filteredArticles || []).filter((a) => a.id !== articleToDelete.id && a.fileIdOriginal !== articleToDelete.id && a.fileId !== articleToDelete.id);
+  saveArticlesToCache(AppState.articles);
+  renderCategoryPills();
+  filterAndRenderArticles();
+
+  markAsTrashed(articleToDelete.id);
+  if (articleToDelete.fileId) markAsTrashed(articleToDelete.fileId);
+  if (articleToDelete.fileIdOriginal) markAsTrashed(articleToDelete.fileIdOriginal);
+  if (articleToDelete.drive_file_id) markAsTrashed(articleToDelete.drive_file_id);
+
+  // Natychmiastowe zamknięcie okna modala
+  closeDeleteModal();
+
+  // 2. Dyskretny komunikat sukcesu
+  if (typeof showToast === "function") {
+    showToast("Publikacja została przeniesiona do Kosza.");
+  }
+
+  // 3. Wysłanie dyspozycji w tle (Fire & Forget, bez blokowania interfejsu)
+  try {
+    const appsScriptUrl = getAppsScriptUrl();
+    const payload = {
+      action: "trash_article",
+      id: articleToDelete.id,
+      fileId: articleToDelete.drive_file_id || articleToDelete.fileId || articleToDelete.fileIdOriginal || null,
+      title: articleToDelete.titlePL || articleToDelete.title || articleToDelete.titleOriginal || ""
+    };
+
+    if (AppState.isGasEnvironment) {
+      google.script.run
+        .withSuccessHandler((res) => console.log("GAS: Sukces usunięcia w tle:", res))
+        .withFailureHandler((err) => console.warn("GAS: Błąd usunięcia:", err))
+        .apiDeleteArticle(articleToDelete.id, AppState.currentPin || "2026", payload.fileId);
+    } else if (appsScriptUrl) {
+      fetch(appsScriptUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch((err) => console.warn("Błąd wysyłki kosza do Apps Script:", err));
+    }
+  } catch (err) {
+    console.error("Błąd podczas operacji soft-delete:", err);
+  }
+}
+window.handleConfirmTrash = handleConfirmTrash;
+window.handleConfirmDelete = handleConfirmTrash;
+window.executeGlobalSoftDelete = handleConfirmTrash;
+window.handleDeleteArticle = handleConfirmTrash;
 
 function applyLocalDeletion(articleId) {
   try {
