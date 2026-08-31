@@ -95,5 +95,61 @@ const GeminiService = {
     } catch (e) {
       throw new Error("Błąd parsowania odpowiedzi JSON z Gemini API: " + e.message);
     }
+  },
+
+  /**
+   * Odpowiada na pytania do publikacji (Journal Club Q&A) z limitem tokenów
+   */
+  askDocument: function(question, context, maxTokens) {
+    const apiKey = getGeminiApiKey();
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+
+    const title = context.titlePL || context.title || "Publikacja naukowa";
+    const authors = context.authors || "Zespół badawczy";
+    const year = context.year || "2026";
+    const category = context.category || "Seksuologia";
+    const abstract = context.abstractPL || context.abstract || "";
+    const reportContext = context.reportContext || "";
+
+    const systemPrompt = `Jesteś asystentem Journal Club SKN Seksuologii (EBM / DSM-5-TR / ICD-11).
+Odpowiedz profesjonalnie, zwięźle i precyzyjnie językiem naukowym i klinicznym, wyłącznie w oparciu o poniższy kontekst publikacji. Nie zmyślaj faktów, których nie ma w tekście. Stosuj formatowanie Markdown (wypunktowania, pogrubienia).
+
+Kontekst artykułu:
+- Tytuł: ${title} (${authors}, ${year})
+- Kategoria: ${category}
+- Abstrakt: ${abstract}
+${reportContext ? `- Raport kliniczny / Metodologia: ${reportContext}` : ""}`;
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: systemPrompt + `\n\nPytanie użytkownika: ${question}` }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: maxTokens || 350
+      }
+    };
+
+    const options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(requestBody),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(endpoint, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    if (responseCode !== 200) {
+      throw new Error(`Błąd Gemini API (${responseCode}): ${responseText}`);
+    }
+
+    const data = JSON.parse(responseText);
+    return data.candidates[0].content.parts[0].text;
   }
 };

@@ -71,6 +71,15 @@ const SheetService = {
         }
       }
 
+      let aiCache = null;
+      if (row[15]) {
+        try {
+          aiCache = typeof row[15] === "string" ? JSON.parse(row[15]) : row[15];
+        } catch (e) {
+          aiCache = null;
+        }
+      }
+
       articles.push({
         id: row[0],
         dateAdded: row[1],
@@ -86,7 +95,8 @@ const SheetService = {
         urlTranslation: row[11] || CONFIG.FALLBACK_DRIVE_URL,
         fileIdOriginal: row[12],
         fileIdTranslation: row[13],
-        status: status
+        status: status,
+        ai_cache: aiCache
       });
     }
 

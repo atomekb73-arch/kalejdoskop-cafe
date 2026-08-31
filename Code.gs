@@ -93,8 +93,8 @@ function doPost(e) {
       result = apiSyncFolder(postData.adminPin);
     } else if (action === "saveWebArticle" || action === "addWebArticle") {
       result = apiSaveWebArticle(postData);
-    } else if (action === "upload" || action === "processArticle" || action === "uploadOriginal") {
-      result = apiProcessArticle(postData);
+    } else if (action === "askDocument" || action === "ask") {
+      result = apiAskDocument(postData);
     } else if (action === "deleteArticle" || action === "trash") {
       result = apiDeleteArticle(postData.articleId || postData.fileId, postData.adminPin);
     } else {
@@ -118,6 +118,9 @@ function doPost(e) {
       pdfBase64: result ? (result.base64 || result.pdfBase64) : null,
       user: result ? result.user : null,
       token: result ? (result.token || (result.user && result.user.token)) : null,
+      answer: result ? (result.answer || result.reply) : null,
+      reply: result ? (result.reply || result.answer) : null,
+      ai_cache: result ? (result.ai_cache || result.aiCache) : null,
       data: result,
       files: result ? (result.items || result.files || []) : []
     })).setMimeType(ContentService.MimeType.JSON);
@@ -693,4 +696,24 @@ function testujWszystko() {
 
   Logger.log("WYNIKI TESTÓW:\n" + JSON.stringify(results, null, 2));
   return results;
+}
+
+/**
+ * Endpoint API Journal Club Q&A (obsługa Gemini z limitem tokenów i kontekstem)
+ */
+function apiAskDocument(postData) {
+  const question = postData.question || postData.query || "";
+  const context = postData.context || postData;
+  const maxTokens = postData.maxTokens || 350;
+
+  if (!question) {
+    throw new Error("Brak pytania do analizy dokumentu.");
+  }
+
+  const answer = GeminiService.askDocument(question, context, maxTokens);
+  return {
+    status: "success",
+    answer: answer,
+    reply: answer
+  };
 }

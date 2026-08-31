@@ -4247,7 +4247,136 @@ function renderAiChatMessages(articleId) {
 }
 
 /**
- * Obsługa wysyłania zapytania do Asystenta AI
+ * Pobiera lub inicjalizuje obiekt pamięci podręcznej odpowiedzi AI (ai_cache)
+ */
+function getArticleAiCache(article) {
+  if (!article) return {};
+  const meta = article.meta || article.data || article;
+  let cache = article.ai_cache || meta.ai_cache || article.aiCache || meta.aiCache;
+
+  if (typeof cache === "string") {
+    try {
+      cache = JSON.parse(cache);
+    } catch (e) {
+      cache = {};
+    }
+  }
+  if (!cache || typeof cache !== "object") {
+    cache = {};
+  }
+
+  // Jeśli w cache brakuje któregoś z 4 kluczy, a artykuł posiada wygenerowany raport kliniczny,
+  // uzupełniamy precyzyjnymi danymi ze struktury raportu
+  const report = getArticleReport(article);
+  if (report) {
+    if (!cache.methodology && report.methodology) {
+      cache.methodology = `**Metodologia i Próba Badawcza:**\n\n${report.methodology}\n\n*Wskazówka Journal Club:* Pełny protokół badawczy oraz szczegóły statystyczne znajdują się w raporcie klinicznym SKN.`;
+    }
+    if (!cache.clinical_conclusions && (report.clinicalImplications || report.takeaway)) {
+      const impl = report.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
+      const take = report.takeaway || "Publikacja dostarcza istotnych dowodów w praktyce seksuologicznej i psychologicznej.";
+      cache.clinical_conclusions = `**Kluczowe Wnioski i Implikacje dla Praktyki Klinicznej / Seksuologicznej:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Kluczowa implikacja (Key Takeaway):** ${take}\n3. **Standardy diagnostyczne:** Zalecane odniesienie do kryteriów DSM-5-TR oraz ICD-11.`;
+    }
+    if (!cache.limitations) {
+      cache.limitations = `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Dobór próby i reprezentatywność:** Należy zachować ostrożność przy bezpośredniej ekstrapolacji wyników na populację ogólną lub inne grupy kulturowe.\n- **Metodyka:** Pomiary oparte na kwestionariuszach samoopisowych mogą wiązać się z efektem pożądalności społecznej lub błędem retrospektywnym.\n- **Perspektywa badawcza:** Wskazane jest prowadzenie dalszych badań replikacyjnych i podłużnych (longitudinalnych).`;
+    }
+    if (!cache.main_theses && (report.keyFindings || report.objective)) {
+      const findingsText = Array.isArray(report.keyFindings) 
+        ? report.keyFindings.map((f, i) => `${i + 1}. ${f}`).join("\n") 
+        : (report.keyFindings || report.objective);
+      cache.main_theses = `**Kluczowe Odkrycia i Główne Tezy Badania:**\n\n${findingsText}`;
+    }
+  }
+
+  article.ai_cache = cache;
+  if (meta && meta !== article) meta.ai_cache = cache;
+  return cache;
+}
+window.getArticleAiCache = getArticleAiCache;
+
+/**
+ * Obsługa kliknięcia jednego z 4 szybkich pytań z Zero-Latency Instant Cache
+ */
+async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
+  const detailIdEl = document.getElementById("detail-id");
+  const articleId = detailIdEl ? detailIdEl.innerText.trim() : null;
+  if (!articleId || articleId === "-") return;
+
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  if (!article) return;
+
+  // Wyznaczenie klucza bufora oraz tekstu pytania
+  let questionKey = "methodology";
+  let questionText = explicitQuestionText || "";
+
+  if (questionKeyOrText === "methodology" || (!questionText && (questionKeyOrText.includes("metodolog") || questionKeyOrText.includes("próba") || questionKeyOrText.includes("proba")))) {
+    questionKey = "methodology";
+    questionText = questionText || "Jaka była próba badawcza, kryteria doboru i metodologia badania?";
+  } else if (questionKeyOrText === "clinical_conclusions" || (!questionText && (questionKeyOrText.includes("wnioski") || questionKeyOrText.includes("implikacj") || questionKeyOrText.includes("kliniczn")))) {
+    questionKey = "clinical_conclusions";
+    questionText = questionText || "Jakie są kluczowe wnioski i implikacje dla praktyki klinicznej / seksuologicznej?";
+  } else if (questionKeyOrText === "limitations" || (!questionText && (questionKeyOrText.includes("ograniczen") || questionKeyOrText.includes("limitations")))) {
+    questionKey = "limitations";
+    questionText = questionText || "Jakie ograniczenia badania (limitations) oraz kwestie metodologiczne należy wziąć pod uwagę?";
+  } else if (questionKeyOrText === "main_theses" || (!questionText && (questionKeyOrText.includes("tezy") || questionKeyOrText.includes("odkrycia") || questionKeyOrText.includes("podsumuj")))) {
+    questionKey = "main_theses";
+    questionText = questionText || "Podsumuj w 3 kluczowych punktach najważniejsze odkrycia tej publikacji.";
+  } else {
+    questionKey = questionKeyOrText;
+    questionText = explicitQuestionText || questionKeyOrText;
+  }
+
+  const input = document.getElementById("ai-chat-input");
+  if (input) input.value = "";
+
+  if (!AppState.chatHistory) AppState.chatHistory = {};
+  if (!AppState.chatHistory[articleId]) AppState.chatHistory[articleId] = [];
+
+  // Dodaj pytanie użytkownika
+  AppState.chatHistory[articleId].push({ role: "user", text: questionText });
+  renderAiChatMessages(articleId);
+
+  // Sprawdź czy odpowiedź znajduje się w pamięci podręcznej ai_cache
+  const aiCache = getArticleAiCache(article);
+  const cachedAnswer = aiCache ? aiCache[questionKey] : null;
+
+  if (cachedAnswer && typeof cachedAnswer === "string" && cachedAnswer.trim() !== "") {
+    // Zero-latency instant cache z subtelną symulacją myślenia (150 ms)
+    const container = document.getElementById("ai-chat-messages");
+    if (container) {
+      container.innerHTML += `
+        <div id="ai-loading-bubble" class="flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="bg-purple-50/80 border border-purple-200 rounded-2xl rounded-tl-sm p-3 text-xs text-purple-900 shadow-sm flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping shrink-0"></span>
+            <span class="font-medium">Pobieranie natychmiastowej syntezy Journal Club...</span>
+          </div>
+        </div>
+      `;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    AppState.chatHistory[articleId].push({ role: "assistant", text: cachedAnswer });
+    renderAiChatMessages(articleId);
+    return;
+  }
+
+  // W przypadku braku wpisu w cache: wykonaj odpytanie Gemini API z limitem tokenów
+  await executeAiQuery({
+    article: article,
+    articleId: articleId,
+    question: questionText,
+    questionKey: questionKey,
+    maxTokens: 350
+  });
+}
+window.sendAiQuickQuestion = sendAiQuickQuestion;
+
+/**
+ * Obsługa wysyłania dowolnego zapytania z pola tekstowego
  */
 async function handleAiChatSubmit(e) {
   if (e && typeof e.preventDefault === "function") {
@@ -4255,7 +4384,6 @@ async function handleAiChatSubmit(e) {
   }
 
   const input = document.getElementById("ai-chat-input");
-  const sendBtn = document.getElementById("ai-chat-send-btn");
   const detailIdEl = document.getElementById("detail-id");
   const articleId = detailIdEl ? detailIdEl.innerText.trim() : null;
 
@@ -4266,25 +4394,43 @@ async function handleAiChatSubmit(e) {
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
 
+  if (input) input.value = "";
+
   if (!AppState.chatHistory) AppState.chatHistory = {};
   if (!AppState.chatHistory[articleId]) AppState.chatHistory[articleId] = [];
 
   // Dodaj pytanie użytkownika
   AppState.chatHistory[articleId].push({ role: "user", text: question });
-  if (input) input.value = "";
   renderAiChatMessages(articleId);
 
-  // Pokaż stan ładowania w czacie
+  // Wywołanie zapytania do Gemini API dla swobodnego pytania
+  await executeAiQuery({
+    article: article,
+    articleId: articleId,
+    question: question,
+    questionKey: null,
+    maxTokens: 400
+  });
+}
+window.handleAiChatSubmit = handleAiChatSubmit;
+
+/**
+ * Wykonuje zapytanie AI do backendu / Gemini API z obsługą cache oraz fallbacku
+ */
+async function executeAiQuery({ article, articleId, question, questionKey, maxTokens = 350 }) {
+  const sendBtn = document.getElementById("ai-chat-send-btn");
+
+  // Pokaż pulsujący loader / skeleton
   const container = document.getElementById("ai-chat-messages");
   if (container) {
     container.innerHTML += `
       <div id="ai-loading-bubble" class="flex items-start gap-2.5">
-        <div class="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 mt-0.5">
+        <div class="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
           <i class="fas fa-circle-notch fa-spin"></i>
         </div>
         <div class="bg-purple-50/70 border border-purple-200 rounded-2xl rounded-tl-sm p-3 text-xs text-purple-800 shadow-sm flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping shrink-0"></span>
-          <span class="font-medium">Asystent Journal Club analizuje badanie i przygotowuje odpowiedź...</span>
+          <span class="font-medium">Generuję analizę z treści abstraktu i danych badania...</span>
         </div>
       </div>
     `;
@@ -4304,7 +4450,7 @@ async function handleAiChatSubmit(e) {
     const year = String(meta.year || article.year || "2026");
     const category = meta.category || article.category || "Edukacja Seksualna";
     const abstractText = cleanAbstractText(meta.abstractPL || article.abstractPL || meta.abstract || article.abstract || "");
-    const reportObj = article.report || meta.report || null;
+    const reportObj = getArticleReport(article) || article.report || meta.report || null;
     const reportContext = reportObj ? (typeof reportObj === "object" ? JSON.stringify(reportObj) : String(reportObj)) : "";
 
     const payload = {
@@ -4323,6 +4469,8 @@ async function handleAiChatSubmit(e) {
       abstract: abstractText,
       abstractPL: abstractText,
       reportContext: reportContext,
+      maxTokens: maxTokens || 350,
+      temperature: 0.2,
       context: {
         titlePL: titlePL,
         titleOriginal: titleOrig,
@@ -4353,10 +4501,26 @@ async function handleAiChatSubmit(e) {
       aiReply = generateClientSideAcademicAnswer(question, article);
     }
 
+    // Zapisz wygenerowaną odpowiedź do pamięci podręcznej ai_cache artykułu
+    if (questionKey) {
+      const aiCache = getArticleAiCache(article);
+      aiCache[questionKey] = aiReply;
+      article.ai_cache = aiCache;
+      saveArticlesToCache(AppState.articles);
+    }
+
     AppState.chatHistory[articleId].push({ role: "assistant", text: aiReply });
   } catch (err) {
-    console.warn("GAS askDocument fallback to local expert synthesis:", err);
+    console.warn("askDocument fallback to local expert synthesis:", err);
     const fallbackAnswer = generateClientSideAcademicAnswer(question, article);
+
+    if (questionKey) {
+      const aiCache = getArticleAiCache(article);
+      aiCache[questionKey] = fallbackAnswer;
+      article.ai_cache = aiCache;
+      saveArticlesToCache(AppState.articles);
+    }
+
     AppState.chatHistory[articleId].push({ role: "assistant", text: fallbackAnswer });
   } finally {
     if (sendBtn) {
@@ -4366,16 +4530,6 @@ async function handleAiChatSubmit(e) {
     renderAiChatMessages(articleId);
   }
 }
-window.handleAiChatSubmit = handleAiChatSubmit;
-
-function sendAiQuickQuestion(questionText) {
-  const input = document.getElementById("ai-chat-input");
-  if (input) {
-    input.value = questionText;
-  }
-  handleAiChatSubmit();
-}
-window.sendAiQuickQuestion = sendAiQuickQuestion;
 
 /**
  * Przełączanie 4-krotnego rozmiaru okna czatu AI w modalu
