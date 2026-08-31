@@ -4247,6 +4247,98 @@ function renderAiChatMessages(articleId) {
 }
 
 /**
+ * Pomocnicza funkcja pobierania z cache (najpierw dane artykułu, potem localStorage kc_qa_cache_[ARTICLE_ID], a następnie raport kliniczny)
+ */
+function getCachedAnswer(articleId, questionKey, articleData) {
+  if (!articleData) return null;
+  const meta = articleData.meta || articleData.data || articleData;
+
+  // 1. Sprawdzenie w obiekcie artykułu w pamięci podręcznej (in-memory ai_cache)
+  if (articleData.ai_cache && articleData.ai_cache[questionKey]) {
+    return articleData.ai_cache[questionKey];
+  }
+  if (meta && meta.ai_cache && meta.ai_cache[questionKey]) {
+    return meta.ai_cache[questionKey];
+  }
+  if (articleData.aiCache && articleData.aiCache[questionKey]) {
+    return articleData.aiCache[questionKey];
+  }
+
+  // 2. Sprawdzenie w trwałym magazynie localStorage dla danego ID artykułu
+  try {
+    const localCache = JSON.parse(localStorage.getItem(`kc_qa_cache_${articleId}`) || "{}");
+    if (localCache && localCache[questionKey]) {
+      // Synchronizacja z obiektem w pamięci
+      if (!articleData.ai_cache) articleData.ai_cache = {};
+      articleData.ai_cache[questionKey] = localCache[questionKey];
+      return localCache[questionKey];
+    }
+  } catch (e) {
+    console.warn("Błąd odczytu kc_qa_cache:", e);
+  }
+
+  // 3. Sprawdzenie czy publikacja posiada raport kliniczny, z którego można natychmiast wygenerować odpowiedź
+  const report = getArticleReport(articleData);
+  if (report) {
+    let derivedAnswer = null;
+    if (questionKey === "methodology" && report.methodology) {
+      derivedAnswer = `**Metodologia i Próba Badawcza:**\n\n${report.methodology}\n\n*Wskazówka Journal Club:* Pełny protokół badawczy oraz szczegóły statystyczne znajdują się w raporcie klinicznym SKN.`;
+    } else if (questionKey === "clinical_conclusions" && (report.clinicalImplications || report.takeaway)) {
+      const impl = report.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
+      const take = report.takeaway || "Publikacja dostarcza istotnych dowodów w praktyce seksuologicznej i psychologicznej.";
+      derivedAnswer = `**Kluczowe Wnioski i Implikacje dla Praktyki Klinicznej / Seksuologicznej:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Kluczowa implikacja (Key Takeaway):** ${take}\n3. **Standardy diagnostyczne:** Zalecane odniesienie do kryteriów DSM-5-TR oraz ICD-11.`;
+    } else if (questionKey === "limitations") {
+      derivedAnswer = `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Dobór próby i reprezentatywność:** Należy zachować ostrożność przy bezpośredniej ekstrapolacji wyników na populację ogólną lub inne grupy kulturowe.\n- **Metodyka:** Pomiary oparte na kwestionariuszach samoopisowych mogą wiązać się z efektem pożądalności społecznej lub błędem retrospektywnym.\n- **Perspektywa badawcza:** Wskazane jest prowadzenie dalszych badań replikacyjnych i podłużnych (longitudinalnych).`;
+    } else if (questionKey === "main_theses" && (report.keyFindings || report.objective)) {
+      const findingsText = Array.isArray(report.keyFindings) 
+        ? report.keyFindings.map((f, i) => `${i + 1}. ${f}`).join("\n") 
+        : (report.keyFindings || report.objective);
+      derivedAnswer = `**Kluczowe Odkrycia i Główne Tezy Badania:**\n\n${findingsText}`;
+    }
+
+    if (derivedAnswer) {
+      setCachedAnswer(articleId, questionKey, derivedAnswer);
+      return derivedAnswer;
+    }
+  }
+
+  return null;
+}
+window.getCachedAnswer = getCachedAnswer;
+
+/**
+ * Pomocnicza funkcja trwałego zapisu odpowiedzi do pamięci podręcznej (localStorage oraz in-memory)
+ */
+function setCachedAnswer(articleId, questionKey, answerText) {
+  if (!articleId || !questionKey || !answerText) return;
+  const cacheKey = `kc_qa_cache_${articleId}`;
+
+  // 1. Zapis do dedykowanego klucza localStorage dla tego artykułu
+  try {
+    const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+    localCache[questionKey] = answerText;
+    localStorage.setItem(cacheKey, JSON.stringify(localCache));
+  } catch (e) {
+    console.warn("Błąd zapisu do " + cacheKey + ":", e);
+  }
+
+  // 2. Zapis w obiekcie artykułu w pamięci AppState
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+  if (article) {
+    if (!article.ai_cache || typeof article.ai_cache !== "object") {
+      article.ai_cache = {};
+    }
+    article.ai_cache[questionKey] = answerText;
+    if (article.meta && typeof article.meta === "object") {
+      if (!article.meta.ai_cache) article.meta.ai_cache = {};
+      article.meta.ai_cache[questionKey] = answerText;
+    }
+    saveArticlesToCache(AppState.articles);
+  }
+}
+window.setCachedAnswer = setCachedAnswer;
+
+/**
  * Pobiera lub inicjalizuje obiekt pamięci podręcznej odpowiedzi AI (ai_cache)
  */
 function getArticleAiCache(article) {
@@ -4265,28 +4357,11 @@ function getArticleAiCache(article) {
     cache = {};
   }
 
-  // Jeśli w cache brakuje któregoś z 4 kluczy, a artykuł posiada wygenerowany raport kliniczny,
-  // uzupełniamy precyzyjnymi danymi ze struktury raportu
-  const report = getArticleReport(article);
-  if (report) {
-    if (!cache.methodology && report.methodology) {
-      cache.methodology = `**Metodologia i Próba Badawcza:**\n\n${report.methodology}\n\n*Wskazówka Journal Club:* Pełny protokół badawczy oraz szczegóły statystyczne znajdują się w raporcie klinicznym SKN.`;
-    }
-    if (!cache.clinical_conclusions && (report.clinicalImplications || report.takeaway)) {
-      const impl = report.clinicalImplications || "Zgodnie z wynikami badania kluczowa jest wielowymiarowa perspektywa biopsychospołeczna.";
-      const take = report.takeaway || "Publikacja dostarcza istotnych dowodów w praktyce seksuologicznej i psychologicznej.";
-      cache.clinical_conclusions = `**Kluczowe Wnioski i Implikacje dla Praktyki Klinicznej / Seksuologicznej:**\n\n1. **Wnioski kliniczne:** ${impl}\n2. **Kluczowa implikacja (Key Takeaway):** ${take}\n3. **Standardy diagnostyczne:** Zalecane odniesienie do kryteriów DSM-5-TR oraz ICD-11.`;
-    }
-    if (!cache.limitations) {
-      cache.limitations = `**Ograniczenia Badania (Critical Appraisal):**\n\n- **Dobór próby i reprezentatywność:** Należy zachować ostrożność przy bezpośredniej ekstrapolacji wyników na populację ogólną lub inne grupy kulturowe.\n- **Metodyka:** Pomiary oparte na kwestionariuszach samoopisowych mogą wiązać się z efektem pożądalności społecznej lub błędem retrospektywnym.\n- **Perspektywa badawcza:** Wskazane jest prowadzenie dalszych badań replikacyjnych i podłużnych (longitudinalnych).`;
-    }
-    if (!cache.main_theses && (report.keyFindings || report.objective)) {
-      const findingsText = Array.isArray(report.keyFindings) 
-        ? report.keyFindings.map((f, i) => `${i + 1}. ${f}`).join("\n") 
-        : (report.keyFindings || report.objective);
-      cache.main_theses = `**Kluczowe Odkrycia i Główne Tezy Badania:**\n\n${findingsText}`;
-    }
-  }
+  // Odczyt również z dedykowanego magazynu localStorage kc_qa_cache_[ID]
+  try {
+    const localCache = JSON.parse(localStorage.getItem(`kc_qa_cache_${article.id}`) || "{}");
+    cache = { ...localCache, ...cache };
+  } catch (e) {}
 
   article.ai_cache = cache;
   if (meta && meta !== article) meta.ai_cache = cache;
@@ -4295,7 +4370,7 @@ function getArticleAiCache(article) {
 window.getArticleAiCache = getArticleAiCache;
 
 /**
- * Obsługa kliknięcia jednego z 4 szybkich pytań z Zero-Latency Instant Cache
+ * Obsługa kliknięcia jednego z 4 szybkich pytań z Lazy Auto-Caching
  */
 async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
   const detailIdEl = document.getElementById("detail-id");
@@ -4332,16 +4407,15 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
   if (!AppState.chatHistory) AppState.chatHistory = {};
   if (!AppState.chatHistory[articleId]) AppState.chatHistory[articleId] = [];
 
-  // Dodaj pytanie użytkownika
+  // Dodaj pytanie użytkownika do historii
   AppState.chatHistory[articleId].push({ role: "user", text: questionText });
   renderAiChatMessages(articleId);
 
-  // Sprawdź czy odpowiedź znajduje się w pamięci podręcznej ai_cache
-  const aiCache = getArticleAiCache(article);
-  const cachedAnswer = aiCache ? aiCache[questionKey] : null;
+  // Sprawdź czy odpowiedź znajduje się w pamięci podręcznej (in-memory, localStorage lub z raportu)
+  const cachedAnswer = getCachedAnswer(articleId, questionKey, article);
 
   if (cachedAnswer && typeof cachedAnswer === "string" && cachedAnswer.trim() !== "") {
-    // Zero-latency instant cache z subtelną symulacją myślenia (150 ms)
+    // Zero-latency instant cache z płynną symulacją myślenia (150 ms)
     const container = document.getElementById("ai-chat-messages");
     if (container) {
       container.innerHTML += `
@@ -4364,7 +4438,7 @@ async function sendAiQuickQuestion(questionKeyOrText, explicitQuestionText) {
     return;
   }
 
-  // W przypadku braku wpisu w cache: wykonaj odpytanie Gemini API z limitem tokenów
+  // W przypadku braku wpisu w cache (Lazy Auto-Caching): wykonaj odpytanie Gemini API i zapisz odpowiedź
   await executeAiQuery({
     article: article,
     articleId: articleId,
@@ -4501,12 +4575,9 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
       aiReply = generateClientSideAcademicAnswer(question, article);
     }
 
-    // Zapisz wygenerowaną odpowiedź do pamięci podręcznej ai_cache artykułu
+    // Dynamiczny zapis do trwałego cache (Lazy Auto-Caching)
     if (questionKey) {
-      const aiCache = getArticleAiCache(article);
-      aiCache[questionKey] = aiReply;
-      article.ai_cache = aiCache;
-      saveArticlesToCache(AppState.articles);
+      setCachedAnswer(articleId, questionKey, aiReply);
     }
 
     AppState.chatHistory[articleId].push({ role: "assistant", text: aiReply });
@@ -4514,11 +4585,9 @@ async function executeAiQuery({ article, articleId, question, questionKey, maxTo
     console.warn("askDocument fallback to local expert synthesis:", err);
     const fallbackAnswer = generateClientSideAcademicAnswer(question, article);
 
+    // Dynamiczny zapis odpowiedzi awaryjnej do trwałego cache
     if (questionKey) {
-      const aiCache = getArticleAiCache(article);
-      aiCache[questionKey] = fallbackAnswer;
-      article.ai_cache = aiCache;
-      saveArticlesToCache(AppState.articles);
+      setCachedAnswer(articleId, questionKey, fallbackAnswer);
     }
 
     AppState.chatHistory[articleId].push({ role: "assistant", text: fallbackAnswer });
