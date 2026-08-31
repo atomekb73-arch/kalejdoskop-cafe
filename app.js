@@ -2624,8 +2624,9 @@ function initViewerTouchGestures() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       currentScaleFactor = currentDistance / startDistance;
-      const liveScale = Math.max(0.5, Math.min(3.0, startScale * currentScaleFactor));
+      const liveScale = Math.max(0.4, Math.min(3.5, startScale * currentScaleFactor));
       if (canvasWrapper) {
+        canvasWrapper.style.transformOrigin = "top center";
         canvasWrapper.style.transform = `scale(${currentScaleFactor})`;
       }
       if (zoomLabel) {
@@ -2636,15 +2637,16 @@ function initViewerTouchGestures() {
 
   const endPinch = () => {
     if (startDistance !== null) {
+      const finalScale = Math.max(0.4, Math.min(3.5, startScale * currentScaleFactor));
+      startDistance = null;
       if (canvasWrapper) {
         canvasWrapper.style.transform = "none";
       }
-      const targetScale = Math.max(0.5, Math.min(3.0, startScale * currentScaleFactor));
-      startDistance = null;
-      if (Math.abs(targetScale - startScale) > 0.04) {
-        ViewerState.scale = targetScale;
-        renderViewerPage(ViewerState.pageNum);
+      ViewerState.scale = finalScale;
+      if (zoomLabel) {
+        zoomLabel.innerText = `${Math.round(finalScale * 100)}%`;
       }
+      renderViewerPage(ViewerState.pageNum);
     }
   };
 
@@ -2669,17 +2671,22 @@ async function renderViewerPage(num) {
   try {
     const page = await ViewerState.pdfDoc.getPage(num);
 
-    // Automatyczne dopasowanie skali dla widoku mobilnego lub auto
+    // Automatyczne dopasowanie skali dla nowego otwarcia lub zachowanie trwałej skali
     const container = document.getElementById("viewer-scroll-container");
     const containerWidth = container ? container.clientWidth - 16 : window.innerWidth - 32;
     const unscaledViewport = page.getViewport({ scale: 1.0 });
-    const targetScale = (ViewerState.scale === "auto" || !ViewerState.scale || window.innerWidth < 768)
-      ? (window.innerWidth < 768 ? (containerWidth / (unscaledViewport.width || 595)) : 1.2)
-      : (typeof ViewerState.scale === "number" ? ViewerState.scale : 1.2);
 
-    ViewerState.scale = targetScale;
+    let targetScale;
+    if (ViewerState.scale === "auto" || !ViewerState.scale) {
+      targetScale = window.innerWidth < 768
+        ? (containerWidth / (unscaledViewport.width || 595))
+        : 1.2;
+      ViewerState.scale = targetScale;
+    } else {
+      targetScale = typeof ViewerState.scale === "number" ? ViewerState.scale : 1.2;
+    }
 
-    if (zoomLabel) zoomLabel.innerText = `${Math.round(ViewerState.scale * 100)}%`;
+    if (zoomLabel) zoomLabel.innerText = `${Math.round(targetScale * 100)}%`;
 
     if (canvas) {
       const ctx = canvas.getContext("2d", { alpha: false });
@@ -4147,8 +4154,8 @@ function switchDetailTab(tab) {
   const tabContentAbstract = document.getElementById("tab-content-abstract");
   const tabContentChat = document.getElementById("tab-content-chat");
 
-  const activeClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow-xs border border-slate-200 transition cursor-pointer";
-  const inactiveClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-white/60 transition cursor-pointer";
+  const activeClass = "flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer";
+  const inactiveClass = "flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
 
   if (tab === "chat") {
     if (tabBtnAbstract) tabBtnAbstract.className = inactiveClass;

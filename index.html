@@ -418,19 +418,17 @@
   </div>
 
   <!-- Footer -->
-  <footer class="mt-auto border-t border-slate-200 bg-white py-6 px-4 sm:px-8 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2">
+  <footer class="mt-auto border-t border-slate-100 bg-white py-4 px-6 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
         <span class="font-bold text-slate-700">Kalejdoskop Café</span>
-        <span>•</span>
+        <span class="text-slate-300">•</span>
         <span>Studenckie Koło Naukowe Seksuologii</span>
       </div>
-      <div class="flex items-center gap-4 text-slate-400">
-        <span>Google Drive API</span>
-        <span>•</span>
-        <span>Magazyn: Dysk SKN (Bezpieczny)</span>
-        <span>•</span>
-        <span>Soft Delete (Kosz)</span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-400 font-medium">
+          Stworzone przez atomekb.
+        </span>
       </div>
     </div>
   </footer>
@@ -936,16 +934,18 @@
         </div>
       </div>
 
-      <!-- Przełącznik Zakładek: [ Streszczenie & Dane ] | [ AI ] -->
+      <!-- Przełącznik Zakładek: [ Streszczenie & Dane ] | [ AI Journal Club ] -->
       <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-4 w-full">
-        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap truncate transition-all bg-white text-indigo-700 shadow-xs border border-slate-200 cursor-pointer">
-          <i class="fas fa-file-lines text-indigo-600 text-xs"></i>
-          <span class="truncate text-xs font-semibold">Streszczenie & Dane</span>
+        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer">
+          <i class="fas fa-file-lines text-indigo-600 shrink-0"></i>
+          <span class="truncate">Streszczenie & Dane</span>
         </button>
-        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-white/60 cursor-pointer">
-          <i class="fas fa-robot text-purple-600 text-xs"></i>
-          <span class="truncate text-xs font-semibold">AI</span>
-          <span class="shrink-0 text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-full">JC</span>
+        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+          <i class="fas fa-robot text-purple-600 shrink-0"></i>
+          <span>AI</span>
+          <span class="text-[10px] bg-purple-100 text-purple-700 font-medium px-2 py-0.5 rounded-full whitespace-nowrap">
+            Journal Club
+          </span>
         </button>
       </div>
 
