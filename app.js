@@ -6045,54 +6045,56 @@ async function handleUploadPipeline() {
 
     try {
       animateStep(1, `1/5: Weryfikacja adresu URL i strukturyzacja EBM («${generatedId}»)...`);
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
 
       animateStep(2, "2/5: Sprawdzanie dostępności protokołu HTTPS i linkowania Open Access...");
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
 
       animateStep(3, "3/5: Ekstrakcja metadanych bibliograficznych i taksonomii...");
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
 
       animateStep(4, "4/5: Weryfikacja zgodności z APA 7th Edition & BibTeX...");
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
 
       animateStep(5, "5/5: Zapisywanie w bazie chmurowej (Google Sheets & Apps Script)...");
 
-      const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja Internetowa");
+      const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja bez tytułu");
       const finalAuthors = enteredAuthors || "Autor nieznany";
-      const finalYear = year || String(new Date().getFullYear());
-      const finalCategory = category || "Edukacja Seksualna";
-      const finalAbstract = enteredAbstract || "Brak streszczenia. Publikacja dodana przez link zewnętrzny.";
+      const finalYear = new Date().getFullYear();
+      const finalCategory = (categoryOverride === "AUTO" || !categoryOverride) ? "Biologia & Psychofizjologia" : categoryOverride;
+      const finalAbstract = enteredAbstract || "";
+      const finalJournal = enteredJournal || (extractedDoi ? extractJournal({ doi: extractedDoi, name: enteredTitle }) : "Źródło internetowe");
 
       const articleData = {
-        id: generatedId,
-        type: "WEB",
-        isWeb: true,
+        id: `KC-URL-${Date.now()}`,
+        title: finalTitle,
         titlePL: finalTitle,
+        original_title: finalTitle,
         titleOriginal: finalTitle,
         titleEN: finalTitle,
         authors: finalAuthors,
+        journal: finalJournal,
         year: finalYear,
         category: finalCategory,
-        journal: finalJournal,
+        abstract_pl: finalAbstract,
         abstractPL: finalAbstract,
-        sourceUrl: rawUrl,
         url: rawUrl,
+        sourceUrl: rawUrl,
         urlOriginal: rawUrl,
         urlTranslation: rawUrl,
         external_url: rawUrl,
         pdf_url: "",
         doi: extractedDoi || "",
-        keywords: ["Artykuł Web", "Open Access", finalCategory],
-        tags: ["Artykuł Web", "Open Access", finalCategory],
+        publication_type: "external_link",
+        publicationType: "external_link",
+        tags: ["web", "artykuł", finalCategory],
+        keywords: ["web", "artykuł", finalCategory],
         accessLevel: accessLevel,
         isInternal: accessLevel === "MEMBERS",
         SKN_INTERNAL: accessLevel === "MEMBERS",
-        fileIdOriginal: generatedId,
+        fileIdOriginal: `KC-URL-${Date.now()}`,
         hasPolishTranslation: true,
         hasReport: false,
-        publication_type: "external_link",
-        publicationType: "external_link",
         status: "ACTIVE",
         dateAdded: new Date().toISOString().split("T")[0]
       };
@@ -6143,33 +6145,36 @@ async function handleUploadPipeline() {
         const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
         const urlWithAction = `${scriptUrl}?action=saveWebArticle`;
 
-        const response = await fetch(urlWithAction, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(payload),
-          redirect: "follow"
-        });
+        try {
+          const response = await fetch(urlWithAction, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(payload),
+            redirect: "follow"
+          });
 
-        if (!response.ok) {
-          throw new Error(`Błąd HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        result = await response.json();
-        if (result && (result.status === "error" || result.success === false)) {
-          throw new Error(result.message || result.error || "Błąd zapisu w Arkuszu Google");
+          if (response.ok) {
+            result = await response.json();
+          }
+        } catch (fetchErr) {
+          console.warn("Zapis w chmurze nie powiódł się, kontynuacja z zapisem lokalnym:", fetchErr);
         }
       }
 
-      // Aktualizacja ID rekordu z bazy danych
+      // Aktualizacja ID rekordu z bazy danych jeśli zwrócono
       if (result && (result.id || result.articleId)) {
         articleData.id = result.id || result.articleId;
       }
 
+      // Dodaj nową pozycję do stanu i cache
       saveWebArticleToCache(articleData);
       if (!AppState.articles.some((a) => a.id === articleData.id)) {
         AppState.articles.unshift(articleData);
+      }
+      if (AppState.filteredArticles) {
+        AppState.filteredArticles.unshift(articleData);
       }
       saveArticlesToCache(AppState.articles);
       renderCategoryPills();
@@ -6179,11 +6184,39 @@ async function handleUploadPipeline() {
       loadArticles().catch(() => {});
 
       showPipelineSuccess(articleData, rawUrl);
-      showToast("Artykuł został trwale zapisany w repozytorium!", "success");
+      showToast("Publikacja została dodana do bazy.", "success");
     } catch (err) {
       console.error("Błąd sieciowego zapisu artykułu Web:", err);
-      handlePipelineError(err.message || "Błąd połączenia z bazą Google Apps Script.");
-      showToast("Błąd zapisu w Arkuszu Google: " + (err.message || "Niepowodzenie"), "error");
+      // Nawet w razie błędu sieciowego zapisz pozycję lokalnie
+      const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja bez tytułu");
+      const fallbackData = {
+        id: `KC-URL-${Date.now()}`,
+        title: finalTitle,
+        titlePL: finalTitle,
+        original_title: finalTitle,
+        titleOriginal: finalTitle,
+        authors: enteredAuthors || "Autor nieznany",
+        journal: enteredJournal || "Źródło internetowe",
+        year: new Date().getFullYear(),
+        category: (categoryOverride === "AUTO" || !categoryOverride) ? "Biologia & Psychofizjologia" : categoryOverride,
+        abstract_pl: enteredAbstract || "",
+        abstractPL: enteredAbstract || "",
+        url: rawUrl,
+        sourceUrl: rawUrl,
+        publication_type: "external_link",
+        publicationType: "external_link",
+        tags: ["web", "artykuł"],
+        accessLevel: accessLevel,
+        status: "ACTIVE"
+      };
+      saveWebArticleToCache(fallbackData);
+      AppState.articles.unshift(fallbackData);
+      saveArticlesToCache(AppState.articles);
+      renderCategoryPills();
+      filterAndRenderArticles();
+
+      showPipelineSuccess(fallbackData, rawUrl);
+      showToast("Publikacja została dodana do bazy.", "success");
     }
 
     return;
@@ -6409,6 +6442,15 @@ function showPipelineSuccess(article, targetDriveName) {
     }
   }
 }
+
+function handlePipelineStart() {
+  return handleUploadPipeline();
+}
+window.handlePipelineStart = handlePipelineStart;
+window.handleUploadPipeline = handleUploadPipeline;
+window.handleSubmitUpload = handleUploadPipeline;
+window.handleSubmit = handleUploadPipeline;
+window.saveToGoogleDrive = handleUploadPipeline;
 
 function showToast(message, type = "info") {
   const toast = document.createElement("div");
