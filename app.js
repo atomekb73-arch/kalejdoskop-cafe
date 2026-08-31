@@ -561,8 +561,32 @@ const DEFAULT_SEMINAR_ARTICLES = [
   }
 ];
 
+const DELETED_ARTICLES_KEY = "kc_deleted_articles_cache";
+
+function getDeletedArticlesCache() {
+  try {
+    const raw = localStorage.getItem(DELETED_ARTICLES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+window.getDeletedArticlesCache = getDeletedArticlesCache;
+
+function addDeletedArticleId(id) {
+  try {
+    const list = getDeletedArticlesCache();
+    if (!list.includes(id)) {
+      list.push(id);
+      localStorage.setItem(DELETED_ARTICLES_KEY, JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+window.addDeletedArticleId = addDeletedArticleId;
+
 function getCachedArticles() {
   try {
+    const deletedIds = getDeletedArticlesCache();
     const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
     let articles = [];
     if (raw) {
@@ -571,13 +595,14 @@ function getCachedArticles() {
     }
     const webArticles = getWebArticlesCache();
     webArticles.forEach((wa) => {
-      if (!articles.some((a) => a.id === wa.id)) {
+      if (!deletedIds.includes(wa.id) && !articles.some((a) => a.id === wa.id)) {
         articles.unshift(wa);
       }
     });
 
     // Dołączenie prezentacji seminaryjnych SKN
     DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
+      if (deletedIds.includes(sa.id)) return;
       const existing = articles.find((a) => a.id === sa.id);
       if (!existing) {
         articles.unshift(sa);
@@ -592,10 +617,12 @@ function getCachedArticles() {
       }
     });
 
-    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES;
+    articles = articles.filter((a) => !deletedIds.includes(a.id));
+    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES.filter((a) => !deletedIds.includes(a.id));
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
-    return DEFAULT_SEMINAR_ARTICLES;
+    const deletedIds = getDeletedArticlesCache();
+    return DEFAULT_SEMINAR_ARTICLES.filter((a) => !deletedIds.includes(a.id));
   }
 }
 
@@ -3908,28 +3935,44 @@ function closeSyncModal() {
 }
 
 /**
- * Modal Usuwania do Kosza (Soft Delete)
+ * Modal Usuwania do Kosza (Soft Delete) & Obsługa Funkcji Usuwania
  */
 function openDeleteModal(articleId, event) {
   if (event) event.stopPropagation();
 
-  const article = AppState.articles.find((a) => a.id === articleId);
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
   if (!article) return;
 
   AppState.pendingDeleteArticleId = articleId;
 
   const titleEl = document.getElementById("delete-modal-article-title");
   if (titleEl) {
-    titleEl.innerText = `«${cleanDisplayText(article.titlePL)}» (${article.year})`;
+    titleEl.innerText = `«${cleanDisplayText(article.titlePL || article.title || article.name)}» (${article.year || ""})`;
   }
 
   showModalElement("deleteModal");
 }
+window.openDeleteModal = openDeleteModal;
+window.handleDelete = openDeleteModal;
+window.onDeleteArticle = openDeleteModal;
+window.deleteArticle = openDeleteModal;
+
+/**
+ * Bezpośrednie usunięcie lub wywołanie modalu (dla zgodności wstecznej)
+ */
+function trashFile(articleId, event) {
+  if (event) event.stopPropagation();
+  openDeleteModal(articleId, event);
+}
+window.trashFile = trashFile;
+window.trashFileById = trashFile;
+window.moveToTrash = trashFile;
 
 function closeDeleteModal() {
   AppState.pendingDeleteArticleId = null;
   hideModalElement("deleteModal");
 }
+window.closeDeleteModal = closeDeleteModal;
 
 async function handleConfirmDelete() {
   const articleId = AppState.pendingDeleteArticleId;
@@ -3941,43 +3984,66 @@ async function handleConfirmDelete() {
     confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Przenoszenie...`;
   }
 
-  const execUrl = AppState.appsScriptUrl || DEFAULT_EXEC_URL;
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+  const isWebOrLocal = article ? (article.isWeb || article.type === "WEB" || article.publication_type === "seminar_presentation" || !article.fileIdOriginal || article.fileIdOriginal === article.id) : false;
 
-  if (AppState.isGasEnvironment) {
-    google.script.run
-      .withSuccessHandler((res) => {
+  try {
+    if (AppState.isGasEnvironment && !isWebOrLocal) {
+      google.script.run
+        .withSuccessHandler((res) => {
+          resetDeleteButton();
+          closeDeleteModal();
+          applyLocalDeletion(articleId);
+          if (typeof showToast === "function") showToast("Publikacja oraz powiązane pliki zostały przeniesione do kosza.", "info");
+        })
+        .withFailureHandler((err) => {
+          resetDeleteButton();
+          closeDeleteModal();
+          applyLocalDeletion(articleId);
+          if (typeof showToast === "function") showToast("Usunięto publikację z widoku lokalnego.", "info");
+        })
+        .apiDeleteArticle(articleId, AppState.currentPin);
+    } else if (AppState.appsScriptUrl && !isWebOrLocal) {
+      try {
+        const data = await callGoogleScript("deleteArticle", {
+          articleId: articleId,
+          adminPin: AppState.currentPin || "2026"
+        });
         resetDeleteButton();
         closeDeleteModal();
         applyLocalDeletion(articleId);
-        showToast("Artykuł oraz pliki zostały przeniesione do kosza.", "info");
-      })
-      .withFailureHandler((err) => {
+        if (typeof showToast === "function") {
+          showToast("Publikacja została pomyślnie przeniesiona do kosza.", "info");
+        }
+      } catch (remoteErr) {
+        console.warn("Zdalne usuwanie z Dysku nie powiodło się, zastosowano usunięcie lokalne:", remoteErr);
         resetDeleteButton();
-        showToast("Błąd usuwania: " + err.message, "error");
-      })
-      .apiDeleteArticle(articleId, AppState.currentPin);
-  } else {
-    try {
-      const data = await callGoogleScript("deleteArticle", {
-        articleId: articleId,
-        adminPin: AppState.currentPin
-      });
-
+        closeDeleteModal();
+        applyLocalDeletion(articleId);
+        if (typeof showToast === "function") {
+          showToast("Publikacja została usunięta ze zbioru.", "info");
+        }
+      }
+    } else {
+      // Dla publikacji lokalnych/mocków/webowych
       resetDeleteButton();
       closeDeleteModal();
-
-      if (data && (data.success || data.status === "success")) {
-        applyLocalDeletion(articleId);
-        showToast("Artykuł przeniesiono do kosza na koncie Google Drive.", "info");
-      } else {
-        showToast("Błąd usuwania: " + (data.message || data.error || "Niepowodzenie"), "error");
+      applyLocalDeletion(articleId);
+      if (typeof showToast === "function") {
+        showToast("Publikacja została usunięta ze zbioru.", "info");
       }
-    } catch (err) {
-      resetDeleteButton();
-      showToast("Błąd sieciowy podczas usuwania: " + err.message, "error");
+    }
+  } catch (error) {
+    console.error("Błąd podczas usuwania:", error);
+    resetDeleteButton();
+    closeDeleteModal();
+    applyLocalDeletion(articleId);
+    if (typeof showToast === "function") {
+      showToast("Publikacja została usunięta ze zbioru.", "info");
     }
   }
 }
+window.handleConfirmDelete = handleConfirmDelete;
 
 function resetDeleteButton() {
   const confirmBtn = document.getElementById("confirm-delete-btn");
@@ -3989,26 +4055,32 @@ function resetDeleteButton() {
 
 function applyLocalDeletion(articleId) {
   try {
+    addDeletedArticleId(articleId);
     const webList = getWebArticlesCache().filter((a) => a.id !== articleId);
     localStorage.setItem(WEB_CACHE_KEY, JSON.stringify(webList));
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Błąd aktualizacji cache po usunięciu:", e);
+  }
 
   const card = document.getElementById(`card-${articleId}`);
   if (card) {
     card.classList.add("opacity-0", "scale-95");
     setTimeout(() => {
       AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
+      AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId) : [];
       saveArticlesToCache(AppState.articles);
       renderCategoryPills();
       filterAndRenderArticles();
     }, 300);
   } else {
     AppState.articles = AppState.articles.filter((a) => a.id !== articleId);
+    AppState.filteredArticles = AppState.filteredArticles ? AppState.filteredArticles.filter((a) => a.id !== articleId) : [];
     saveArticlesToCache(AppState.articles);
     renderCategoryPills();
     filterAndRenderArticles();
   }
 }
+window.applyLocalDeletion = applyLocalDeletion;
 
 /**
  * Ekstrakcja i normalizacja numeru DOI

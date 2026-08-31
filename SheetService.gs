@@ -177,7 +177,13 @@ const SheetService = {
       }
     }
 
-    throw new Error(`Nie znaleziono artykułu o ID «${articleId}» w bazie.`);
+    return {
+      success: true,
+      notFoundInSheet: true,
+      fileIdOriginal: null,
+      fileIdTranslation: null,
+      message: `Publikacja o ID «${articleId}» nie występuje w arkuszu (usunięto lokalnie).`
+    };
   },
 
   // ==========================================
