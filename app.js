@@ -4247,8 +4247,38 @@ function renderAiChatMessages(articleId) {
 }
 
 /**
- * Pomocnicza funkcja pobierania z cache (sprawdza wyłącznie dedykowany bufor ai_cache lub zapisany w localStorage)
- * NIE pobiera surowych zdań z gotowego raportu klinicznego, aby uniknąć duplikacji 1:1.
+ * Generuje wersjonowany klucz pamięci podręcznej Q&A powiązany z polem updated_at lub treścią abstraktu
+ */
+function getArticleCacheKey(articleId, articleData) {
+  const art = articleData || AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId) || {};
+  const meta = art.meta || art.data || art;
+
+  // 1. Sprawdź pole daty aktualizacji artykułu
+  let version = art.updated_at || art.updatedAt || meta.updated_at || meta.updatedAt;
+  if (!version) {
+    // 2. Jeśli brak pola updated_at, użyj hasha z treści abstraktu jako znacznika wersji (Cache Invalidation)
+    const abs = String(art.abstractPL || meta.abstractPL || art.abstract || meta.abstract || "");
+    if (abs) {
+      let hash = 0;
+      for (let i = 0; i < abs.length; i++) {
+        hash = ((hash << 5) - hash) + abs.charCodeAt(i);
+        hash |= 0;
+      }
+      version = "abs_" + Math.abs(hash).toString(36) + "_" + abs.length;
+    } else {
+      version = "v1";
+    }
+  } else {
+    version = String(version).replace(/[^a-zA-Z0-9_-]/g, "_");
+  }
+
+  return `kc_qa_${articleId}_${version}`;
+}
+window.getArticleCacheKey = getArticleCacheKey;
+
+/**
+ * Pomocnicza funkcja pobierania z cache (sprawdza wersjonowany bufor LocalStorage kc_qa_[ID]_[UPDATED_AT])
+ * Jeśli treść abstraktu lub data updated_at ulegnie zmianie, system automatycznie unieważnia stary cache.
  */
 function getCachedAnswer(articleId, questionKey, articleData) {
   if (!articleData) return null;
@@ -4265,16 +4295,17 @@ function getCachedAnswer(articleId, questionKey, articleData) {
     return articleData.aiCache[questionKey];
   }
 
-  // 2. Sprawdzenie w trwałym magazynie localStorage dla danego ID artykułu
+  // 2. Sprawdzenie w trwałym magazynie localStorage powiązanym z wersją artykułu (Cache Invalidation)
   try {
-    const localCache = JSON.parse(localStorage.getItem(`kc_qa_cache_${articleId}`) || "{}");
+    const cacheKey = getArticleCacheKey(articleId, articleData);
+    const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
     if (localCache && localCache[questionKey]) {
       if (!articleData.ai_cache) articleData.ai_cache = {};
       articleData.ai_cache[questionKey] = localCache[questionKey];
       return localCache[questionKey];
     }
   } catch (e) {
-    console.warn("Błąd odczytu kc_qa_cache:", e);
+    console.warn("Błąd odczytu kc_qa cache:", e);
   }
 
   // Zwraca null, aby wywołać dynamiczną generację przez asystenta AI tutora
@@ -4283,13 +4314,14 @@ function getCachedAnswer(articleId, questionKey, articleData) {
 window.getCachedAnswer = getCachedAnswer;
 
 /**
- * Pomocnicza funkcja trwałego zapisu odpowiedzi do pamięci podręcznej (localStorage oraz in-memory)
+ * Pomocnicza funkcja trwałego zapisu odpowiedzi do pamięci podręcznej (LocalStorage kc_qa_[ID]_[UPDATED_AT] oraz in-memory)
  */
 function setCachedAnswer(articleId, questionKey, answerText) {
   if (!articleId || !questionKey || !answerText) return;
-  const cacheKey = `kc_qa_cache_${articleId}`;
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+  const cacheKey = getArticleCacheKey(articleId, article);
 
-  // 1. Zapis do dedykowanego klucza localStorage dla tego artykułu
+  // 1. Zapis do dedykowanego klucza localStorage powiązanego z wersją artykułu
   try {
     const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
     localCache[questionKey] = answerText;
@@ -4299,7 +4331,6 @@ function setCachedAnswer(articleId, questionKey, answerText) {
   }
 
   // 2. Zapis w obiekcie artykułu w pamięci AppState
-  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
   if (article) {
     if (!article.ai_cache || typeof article.ai_cache !== "object") {
       article.ai_cache = {};
@@ -4333,9 +4364,10 @@ function getArticleAiCache(article) {
     cache = {};
   }
 
-  // Odczyt również z dedykowanego magazynu localStorage kc_qa_cache_[ID]
+  // Odczyt również z dedykowanego magazynu localStorage powiązanego z wersją artykułu
   try {
-    const localCache = JSON.parse(localStorage.getItem(`kc_qa_cache_${article.id}`) || "{}");
+    const cacheKey = getArticleCacheKey(article.id, article);
+    const localCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
     cache = { ...localCache, ...cache };
   } catch (e) {}
 
