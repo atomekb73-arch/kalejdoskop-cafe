@@ -959,16 +959,36 @@
         </div>
       </div>
 
-      <!-- Przełącznik Zakładek: [ Streszczenie & Dane ] | [ AI Journal Club ] -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-4 w-full">
-        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer">
-          <i class="fas fa-file-lines text-indigo-600 shrink-0"></i>
-          <span class="truncate">Streszczenie & Dane</span>
+      <!-- Przełącznik Zakładek: [ Streszczenie & Dane ] | [ Recenzje EBM ] | [ AI Journal Club ] -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl mb-4 w-full">
+        <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer">
+          <svg class="w-3.5 h-3.5 stroke-[1.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span class="truncate">Streszczenie</span>
         </button>
-        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
-          <i class="fas fa-robot text-purple-600 shrink-0"></i>
+        <button type="button" id="tab-btn-reviews" onclick="switchDetailTab('reviews')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+          <svg class="w-3.5 h-3.5 stroke-[1.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <span class="truncate">Recenzje EBM</span>
+          <span id="detail-reviews-count-badge" class="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.2 rounded-full ml-0.5">0</span>
+        </button>
+        <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+          <svg class="w-3.5 h-3.5 stroke-[1.5] text-purple-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M15 13v2"/>
+            <path d="M9 13v2"/>
+          </svg>
           <span>AI</span>
-          <span class="text-[10px] bg-purple-100 text-purple-700 font-medium px-2 py-0.5 rounded-full whitespace-nowrap">
+          <span class="text-[9px] bg-purple-100 text-purple-700 font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap hidden sm:inline">
             Journal Club
           </span>
         </button>
@@ -1003,7 +1023,39 @@
         </div>
       </div>
 
-      <!-- ZAKŁADKA 2: Interaktywny Asystent AI Q&A (Journal Club Assistant) -->
+      <!-- ZAKŁADKA 2: Wieloautorski Moduł Recenzji Akademickich (Critical Appraisal / EBM) -->
+      <div id="tab-content-reviews" class="hidden space-y-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed" style="display: none;">
+        <!-- Pasek Nagłówka z Przyciskiem Dodania Nowej Recenzji -->
+        <div class="flex flex-wrap items-center justify-between gap-2 py-0.5 select-none border-b border-slate-100 pb-2.5">
+          <div>
+            <h4 class="font-bold text-indigo-900 text-xs uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-600 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <span>Recenzje Akademickie & Critical Appraisal (EBM)</span>
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">Wieloautorskie analizy metodologiczne, mocne strony, ograniczenia i dyskusja seminaryjna.</p>
+          </div>
+          <button 
+            type="button" 
+            onclick="openAddReviewModal()" 
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs cursor-pointer active:scale-95 shrink-0"
+            title="Dodaj autorską recenzję akademicką do tej publikacji"
+          >
+            <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Dodaj recenzję</span>
+          </button>
+        </div>
+
+        <!-- Lista Recenzji dla bieżącego artykułu -->
+        <div id="detail-reviews-list" class="space-y-3"></div>
+      </div>
+
+      <!-- ZAKŁADKA 3: Interaktywny Asystent AI Q&A (Journal Club Assistant) -->
       <div id="tab-content-chat" class="hidden pr-1 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col transition-all duration-300" style="display: none;">
         <!-- Pasek Narzędzi Czatu z Przełącznikiem Rozmiaru 4x i Odświeżaniem Cache -->
         <div class="flex items-center justify-between gap-2 pb-0.5 select-none">
@@ -1595,6 +1647,196 @@
           <canvas id="pdf-render-canvas" class="block mx-auto" style="display: block; margin: 0 auto;"></canvas>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pełnoekranowy Czytnik Recenzji Akademickiej (Focus Reader) -->
+  <div id="focus-reader-modal" class="fixed inset-0 z-60 hidden flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md transition-all duration-300" style="display: none;">
+    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Pasek Górny Czytnika (Focus Toolbar) -->
+      <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200/90 flex items-center justify-between gap-3 shrink-0 select-none">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span id="focus-reader-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">Critical Appraisal EBM</span>
+              <span class="text-[11px] text-slate-400 font-medium hidden sm:inline">Focus Reader</span>
+            </div>
+            <h3 id="focus-reader-headline" class="text-xs sm:text-sm font-bold text-slate-900 truncate mt-0.5">Analiza metodologiczna</h3>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" onclick="adjustFocusTextSize(-1)" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition cursor-pointer" title="Zmniejsz czcionkę">A-</button>
+          <button type="button" onclick="adjustFocusTextSize(1)" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition cursor-pointer" title="Powiększ czcionkę">A+</button>
+          <button type="button" onclick="printFocusReview()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition cursor-pointer" title="Drukuj recenzję / Zapisz PDF">
+            <svg class="w-4 h-4 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+          </button>
+          <button type="button" onclick="closeFocusReader()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-100 text-slate-600 hover:text-rose-600 transition flex items-center justify-center cursor-pointer ml-1" title="Zamknij (Esc)">
+            <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Treść Recenzji w Trybie Focus -->
+      <div id="focus-reader-content-scroll" class="overflow-y-auto p-5 sm:p-8 space-y-6 flex-1 bg-white">
+        <!-- Metadane Recenzenta i Publikacji -->
+        <div class="border-b border-slate-100 pb-5">
+          <p id="focus-reader-article-title" class="text-xs sm:text-sm text-indigo-700 font-semibold mb-1"></p>
+          <h2 id="focus-reader-main-title" class="text-base sm:text-xl font-extrabold text-slate-900 leading-tight"></h2>
+          
+          <div class="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-500">
+            <div class="flex items-center gap-1.5 font-medium text-slate-700">
+              <svg class="w-3.5 h-3.5 text-indigo-500 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span id="focus-reader-author"></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <svg class="w-3.5 h-3.5 text-purple-500 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+              <span id="focus-reader-affiliation"></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <svg class="w-3.5 h-3.5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="focus-reader-date"></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-emerald-600 font-medium ml-auto">
+              <svg class="w-3.5 h-3.5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span id="focus-reader-read-time">~3 min czytania</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-Elementowa Macierz Analizy Krytycznej (Critical Appraisal Grid) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <!-- Mocne strony -->
+          <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+            <div class="flex items-center gap-2 text-xs font-bold text-emerald-900 uppercase tracking-wider mb-1.5">
+              <svg class="w-4 h-4 text-emerald-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>Mocne strony badania</span>
+            </div>
+            <p id="focus-reader-strengths" class="text-xs sm:text-sm text-emerald-950 leading-relaxed"></p>
+          </div>
+
+          <!-- Ograniczenia -->
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200">
+            <div class="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase tracking-wider mb-1.5">
+              <svg class="w-4 h-4 text-amber-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Ograniczenia próby & metodologii</span>
+            </div>
+            <p id="focus-reader-limitations" class="text-xs sm:text-sm text-amber-950 leading-relaxed"></p>
+          </div>
+
+          <!-- Implikacje kliniczne -->
+          <div class="p-4 rounded-2xl bg-purple-50/70 border border-purple-200">
+            <div class="flex items-center gap-2 text-xs font-bold text-purple-900 uppercase tracking-wider mb-1.5">
+              <svg class="w-4 h-4 text-purple-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+              <span>Implikacje dla praktyki klinicznej</span>
+            </div>
+            <p id="focus-reader-takeaway" class="text-xs sm:text-sm text-purple-950 leading-relaxed"></p>
+          </div>
+
+          <!-- Pytania seminaryjne -->
+          <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200">
+            <div class="flex items-center gap-2 text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1.5">
+              <svg class="w-4 h-4 text-indigo-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Pytania do dyskusji seminaryjnej</span>
+            </div>
+            <p id="focus-reader-discussion" class="text-xs sm:text-sm text-indigo-950 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Pełny Tekst Autorskiej Analizy -->
+        <div class="pt-3">
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2 mb-3">
+            <svg class="w-4 h-4 text-slate-600 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Pełna treść recenzji i dyskusja naukowa</span>
+          </h4>
+          <div id="focus-reader-fulltext" class="prose prose-slate max-w-none text-slate-800 text-sm leading-relaxed whitespace-pre-line bg-slate-50/60 p-5 sm:p-6 rounded-2xl border border-slate-200"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Formularz Dodawania Recenzji Akademickiej -->
+  <div id="add-review-modal" class="fixed inset-0 z-60 hidden flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm" style="display: none;">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Nagłówek -->
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 select-none">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Dodaj Recenzję Akademicką (EBM)</h3>
+            <p class="text-[11px] text-slate-500">Wprowadź krytyczną analizę publikacji lub prezentacji seminaryjnej.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddReviewModal()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition flex items-center justify-center cursor-pointer">
+          <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Formularz -->
+      <form id="add-review-form" onsubmit="handleSaveNewReview(event)" class="overflow-y-auto p-6 space-y-4 flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Autor recenzji / Imię i nazwisko *</label>
+            <input type="text" id="review-input-author" required placeholder="np. mgr Jan Kowalski" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Sekcja / Afiliacja *</label>
+            <input type="text" id="review-input-affiliation" required placeholder="np. Sekcja Seksuologii Klinicznej SKN" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tytuł recenzji / Teza wiodąca *</label>
+          <input type="text" id="review-input-headline" required placeholder="np. Kluczowa analiza metodologii i implikacji diagnostycznych" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-emerald-800 mb-1">Mocne strony badania (Strengths)</label>
+            <textarea id="review-input-strengths" rows="2" placeholder="np. Dobór próby, wysoka rzetelność narzędzi..." class="w-full bg-emerald-50/40 border border-emerald-200 rounded-xl p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-amber-800 mb-1">Ograniczenia metodologiczne (Limitations)</label>
+            <textarea id="review-input-limitations" rows="2" placeholder="np. Brak grupy kontrolnej, błąd samoopisu..." class="w-full bg-amber-50/40 border border-amber-200 rounded-xl p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-200"></textarea>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-purple-800 mb-1">Wnioski kliniczne dla praktyka</label>
+            <textarea id="review-input-takeaway" rows="2" placeholder="np. Wskazówki diagnostyczne do pracy w gabinecie..." class="w-full bg-purple-50/40 border border-purple-200 rounded-xl p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-200"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-indigo-800 mb-1">Pytania do dyskusji seminaryjnej</label>
+            <textarea id="review-input-discussion" rows="2" placeholder="np. Kwestie replikacji na populacji polskiej..." class="w-full bg-indigo-50/40 border border-indigo-200 rounded-xl p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Pełna treść analizy akademickiej (500-800 słów) *</label>
+          <textarea id="review-input-fulltext" rows="5" required placeholder="Napisz szczegółową analizę merytoryczną..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="closeAddReviewModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer">Anuluj</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm cursor-pointer">Zapisz recenzję</button>
+        </div>
+      </form>
     </div>
   </div>
 

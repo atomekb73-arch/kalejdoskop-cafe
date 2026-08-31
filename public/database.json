@@ -1,0 +1,72 @@
+[
+  {
+    "id": "SKN-2026-001",
+    "title": "Ewolucyjne uwarunkowania zachowań masturbacyjnych u naczelnych a współczesna seksuologia",
+    "authors": "Matylda Brindle, Christopher Opie (Prelegent: mgr Jan Kowalski)",
+    "publication_type": "seminar_presentation",
+    "year": "2026",
+    "category": "Ewolucja i Biologia",
+    "tags": ["masturbacja", "naczelne", "ewolucja", "prezentacja seminaryjna", "EBM"],
+    "abstractPL": "Prezentacja seminaryjna przedstawiająca filogenetyczną analizę zachowań autoseksualnych u ssaków naczelnych. Wystąpienie omawia dwie główne hipotezy adaptacyjne: hipotezę redukcji patogenów drogą przepłukiwania cewki moczowej u samców oraz hipotezę optymalizacji jakości nasienia w warunkach rywalizacji plemnikowej. Wyniki wskazują na głębokie ewolucyjne korzenie zachowań autoerotycznych i ich adaptacyjny, a nie patologiczny charakter.",
+    "accessLevel": "PUBLIC",
+    "urlOriginal": "https://www.nature.com/articles/s41598-023-35639-6",
+    "urlTranslation": "https://www.nature.com/articles/s41598-023-35639-6",
+    "fileIdOriginal": "SKN-2026-001",
+    "status": "ACTIVE",
+    "reviews": [
+      {
+        "id": "rev-1",
+        "author": "mgr Jan Kowalski",
+        "affiliation": "Sekcja Seksuologii Klinicznej SKN",
+        "date": "2026-08",
+        "headline": "Przełom w ewolucyjnej normalizacji zachowań autoseksualnych",
+        "strengths": "Imponująca baza 400 źródeł prymatologicznych, rygorystyczne modelowanie bayesowskie eliminujące błąd filogenetyczny.",
+        "limitations": "Mniejsza dostępność danych dla samic naczelnych ze względu na historyczny błąd badawczy (observer bias).",
+        "clinical_takeaway": "Niezbędny materiał do pracy z pacjentami doświadczającymi lęku moralnego i poczucia winy wokół masturbacji. Pozwala na biologiczną normalizację zachowania.",
+        "discussion_points": "Jak skutecznie przełożyć wnioski z filogenezy na psychoedukację pacjentów w gabinecie psychoterapii seksuologicznej?",
+        "full_text": "Badanie Brindle i Opie stanowi jedno z najbardziej wyczerpujących ujęć ewolucyjnego podłoża autoerotyzmu. Autorzy zrekonstruowali stan przodków naczelnych, dowodząc, że masturbacja jest cechą starą ewolucyjnie, a nie produktem ubocznym niewoli czy patologii. W kontekście seksuologii klinicznej badanie to dostarcza twardych dowodów EBM obalających mity o szkodliwości autostymulacji. W wystąpieniu seminaryjnym szczególną uwagę zwrócono na mechanizm post-copulatory masturbation jako czynnik protekcyjny przed zakażeniami STI, co otwiera nowe perspektywy w edukacji zdrowotnej."
+      },
+      {
+        "id": "rev-2",
+        "author": "lek. Anna Nowak",
+        "affiliation": "Sekcja Psychiatrii i Farmakoterapii SKN",
+        "date": "2026-08",
+        "headline": "Metodologiczne aspekty hipotezy pathogen discharge",
+        "strengths": "Wykazanie istotnej koewolucji zachowań z ładunkiem patogenów w układzie moczowo-płciowym.",
+        "limitations": "Konieczność dalszych badań eksperymentalnych weryfikujących stężenie immunoglobulin w ejakulacie post-masturbacyjnym.",
+        "clinical_takeaway": "Umożliwia precyzyjne różnicowanie zachowań normatywnych od kompulsywnych zaburzeń zachowań seksualnych (CSBD wg ICD-11).",
+        "discussion_points": "Czy hipoteza protekcyjna może być wykorzystana w profilaktyce zakażeń uroginekologicznych?",
+        "full_text": "Warto podkreślić rzetelność aparatu statystycznego zastosowanego przez autorów. Wykorzystanie metod komparatywnych PGLS (Phylogenetic Generalized Least Squares) pozwoliło oddzielić rzeczywiste korelacje funkcjonalne od podobieństw wynikających ze wspólnego pochodzenia. Praca ta doskonale wpisuje się w nurt nowoczesnej medycyny ewolucyjnej."
+      }
+    ]
+  },
+  {
+    "id": "SKN-2026-002",
+    "title": "Standardy diagnostyczne dysfunkcji seksualnych w DSM-5-TR a ICD-11: Warsztat seminaryjny",
+    "authors": "Zespół Sekcji Seksuologii Klinicznej SKN (Prelegent: dr Marek Wiśniewski)",
+    "publication_type": "seminar_presentation",
+    "year": "2026",
+    "category": "Diagnostyka i Wytyczne",
+    "tags": ["DSM-5-TR", "ICD-11", "dysfunkcje seksualne", "klasyfikacja", "warsztat"],
+    "abstractPL": "Materiał z warsztatów seminaryjnych poświęconych komparatywnej analizie kryteriów diagnostycznych dysfunkcji seksualnych według klasyfikacji DSM-5-TR oraz ICD-11. Omówiono kluczowe zmiany nozologiczne, w tym rezygnację z kategorii zaburzeń pożądania na rzecz połączonego zespołu pożądania/podniecenia u kobiet, nowe ramy czasowe (6 miesięcy) oraz kryteria subiektywnego cierpienia (distress).",
+    "accessLevel": "PUBLIC",
+    "urlOriginal": "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    "urlTranslation": "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    "fileIdOriginal": "SKN-2026-002",
+    "status": "ACTIVE",
+    "reviews": [
+      {
+        "id": "rev-3",
+        "author": "mgr Karolina Zielińska",
+        "affiliation": "Koordynator Warsztatów Diagnostycznych SKN",
+        "date": "2026-08",
+        "headline": "Kluczowy przewodnik po różnicach nozologicznych ICD-11 vs DSM-5-TR",
+        "strengths": "Bardzo przejrzyste tabele korelacyjne i zestawienie algorytmów decyzyjnych dla diagnosty.",
+        "limitations": "Wymaga uzupełnienia o specyfikę orzecznictwa w polskim systemie opieki zdrowotnej.",
+        "clinical_takeaway": "Unikanie nadrozpoznawalności dysfunkcji poprzez rygorystyczne stosowanie kryterium czasu trwania (min. 6 miesięcy) i cierpienia.",
+        "discussion_points": "Jakie trudności diagnostyczne rodzi fuzja faz pożądania i podniecenia u kobiet w praktyce gabinetowej?",
+        "full_text": "Prezentacja dr. Wiśniewskiego systematyzuje najbardziej newralgiczne punkty styku między amerykańską klasyfikacją DSM-5-TR a międzynarodową ICD-11. Szczególnie cenne jest podkreślenie depatolozacji wariantów normy seksualnej oraz precyzyjne odróżnienie dysfunkcji od niedopasowania partnerskiego."
+      }
+    ]
+  }
+]

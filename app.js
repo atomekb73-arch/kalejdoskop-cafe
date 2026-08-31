@@ -474,6 +474,93 @@ function saveWebArticleToCache(webArticle) {
   }
 }
 
+const DEFAULT_SEMINAR_ARTICLES = [
+  {
+    id: "SKN-2026-001",
+    titlePL: "Ewolucyjne uwarunkowania zachowań masturbacyjnych u naczelnych a współczesna seksuologia",
+    titleOriginal: "Evolution of masturbation in primates and modern sexology",
+    authors: "Matylda Brindle, Christopher Opie (Prelegent: mgr Jan Kowalski)",
+    publication_type: "seminar_presentation",
+    publicationType: "seminar_presentation",
+    year: "2026",
+    category: "Ewolucja i Biologia",
+    tags: ["masturbacja", "naczelne", "ewolucja", "prezentacja seminaryjna", "EBM"],
+    keywords: ["masturbacja", "naczelne", "ewolucja", "prezentacja seminaryjna", "EBM"],
+    abstractPL: "Prezentacja seminaryjna przedstawiająca filogenetyczną analizę zachowań autoseksualnych u ssaków naczelnych. Wystąpienie omawia dwie główne hipotezy adaptacyjne: hipotezę redukcji patogenów drogą przepłukiwania cewki moczowej u samców oraz hipotezę optymalizacji jakości nasienia w warunkach rywalizacji plemnikowej. Wyniki wskazują na głębokie ewolucyjne korzenie zachowań autoerotycznych i ich adaptacyjny, a nie patologiczny charakter.",
+    accessLevel: "PUBLIC",
+    urlOriginal: "https://www.nature.com/articles/s41598-023-35639-6",
+    url: "https://www.nature.com/articles/s41598-023-35639-6",
+    urlTranslation: "https://www.nature.com/articles/s41598-023-35639-6",
+    translationUrl: "https://www.nature.com/articles/s41598-023-35639-6",
+    fileIdOriginal: "SKN-2026-001",
+    hasPolishTranslation: true,
+    hasReport: true,
+    status: "ACTIVE",
+    reviews: [
+      {
+        id: "rev-1",
+        author: "mgr Jan Kowalski",
+        affiliation: "Sekcja Seksuologii Klinicznej SKN",
+        date: "2026-08",
+        headline: "Przełom w ewolucyjnej normalizacji zachowań autoseksualnych",
+        strengths: "Imponująca baza 400 źródeł prymatologicznych, rygorystyczne modelowanie bayesowskie eliminujące błąd filogenetyczny.",
+        limitations: "Mniejsza dostępność danych dla samic naczelnych ze względu na historyczny błąd badawczy (observer bias).",
+        clinical_takeaway: "Niezbędny materiał do pracy z pacjentami doświadczającymi lęku moralnego i poczucia winy wokół masturbacji. Pozwala na biologiczną normalizację zachowania.",
+        discussion_points: "Jak skutecznie przełożyć wnioski z filogenezy na psychoedukację pacjentów w gabinecie psychoterapii seksuologicznej?",
+        full_text: "Badanie Brindle i Opie stanowi jedno z najbardziej wyczerpujących ujęć ewolucyjnego podłoża autoerotyzmu. Autorzy zrekonstruowali stan przodków naczelnych, dowodząc, że masturbacja jest cechą starą ewolucyjnie, a nie produktem ubocznym niewoli czy patologii. W kontekście seksuologii klinicznej badanie to dostarcza twardych dowodów EBM obalających mity o szkodliwości autostymulacji. W wystąpieniu seminaryjnym szczególną uwagę zwrócono na mechanizm post-copulatory masturbation jako czynnik protekcyjny przed zakażeniami STI, co otwiera nowe perspektywy w edukacji zdrowotnej."
+      },
+      {
+        id: "rev-2",
+        author: "lek. Anna Nowak",
+        affiliation: "Sekcja Psychiatrii i Farmakoterapii SKN",
+        date: "2026-08",
+        headline: "Metodologiczne aspekty hipotezy pathogen discharge",
+        strengths: "Wykazanie istotnej koewolucji zachowań z ładunkiem patogenów w układzie moczowo-płciowym.",
+        limitations: "Konieczność dalszych badań eksperymentalnych weryfikujących stężenie immunoglobulin w ejakulacie post-masturbacyjnym.",
+        clinical_takeaway: "Umożliwia precyzyjne różnicowanie zachowań normatywnych od kompulsywnych zaburzeń zachowań seksualnych (CSBD wg ICD-11).",
+        discussion_points: "Czy hipoteza protekcyjna może być wykorzystana w profilaktyce zakażeń uroginekologicznych?",
+        full_text: "Warto podkreślić rzetelność aparatu statystycznego zastosowanego przez autorów. Wykorzystanie metod komparatywnych PGLS (Phylogenetic Generalized Least Squares) pozwoliło oddzielić rzeczywiste korelacje funkcjonalne od podobieństw wynikających ze wspólnego pochodzenia. Praca ta doskonale wpisuje się w nurt nowoczesnej medycyny ewolucyjnej."
+      }
+    ]
+  },
+  {
+    id: "SKN-2026-002",
+    titlePL: "Standardy diagnostyczne dysfunkcji seksualnych w DSM-5-TR a ICD-11: Warsztat seminaryjny",
+    titleOriginal: "Diagnostic standards of sexual dysfunctions in DSM-5-TR and ICD-11",
+    authors: "Zespół Sekcji Seksuologii Klinicznej SKN (Prelegent: dr Marek Wiśniewski)",
+    publication_type: "seminar_presentation",
+    publicationType: "seminar_presentation",
+    year: "2026",
+    category: "Diagnostyka i Wytyczne",
+    tags: ["DSM-5-TR", "ICD-11", "dysfunkcje seksualne", "klasyfikacja", "warsztat"],
+    keywords: ["DSM-5-TR", "ICD-11", "dysfunkcje seksualne", "klasyfikacja", "warsztat"],
+    abstractPL: "Materiał z warsztatów seminaryjnych poświęconych komparatywnej analizie kryteriów diagnostycznych dysfunkcji seksualnych według klasyfikacji DSM-5-TR oraz ICD-11. Omówiono kluczowe zmiany nozologiczne, w tym rezygnację z kategorii zaburzeń pożądania na rzecz połączonego zespołu pożądania/podniecenia u kobiet, nowe ramy czasowe (6 miesięcy) oraz kryteria subiektywnego cierpienia (distress).",
+    accessLevel: "PUBLIC",
+    urlOriginal: "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    url: "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    urlTranslation: "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    translationUrl: "https://www.who.int/standards/classifications/frequently-asked-questions/gender-incongruence-and-transgender-health-in-the-icd",
+    fileIdOriginal: "SKN-2026-002",
+    hasPolishTranslation: true,
+    hasReport: true,
+    status: "ACTIVE",
+    reviews: [
+      {
+        id: "rev-3",
+        author: "mgr Karolina Zielińska",
+        affiliation: "Koordynator Warsztatów Diagnostycznych SKN",
+        date: "2026-08",
+        headline: "Kluczowy przewodnik po różnicach nozologicznych ICD-11 vs DSM-5-TR",
+        strengths: "Bardzo przejrzyste tabele korelacyjne i zestawienie algorytmów decyzyjnych dla diagnosty.",
+        limitations: "Wymaga uzupełnienia o specyfikę orzecznictwa w polskim systemie opieki zdrowotnej.",
+        clinical_takeaway: "Unikanie nadrozpoznawalności dysfunkcji poprzez rygorystyczne stosowanie kryterium czasu trwania (min. 6 miesięcy) i cierpienia.",
+        discussion_points: "Jakie trudności diagnostyczne rodzi fuzja faz pożądania i podniecenia u kobiet w praktyce gabinetowej?",
+        full_text: "Prezentacja dr. Wiśniewskiego systematyzuje najbardziej newralgiczne punkty styku między amerykańską klasyfikacją DSM-5-TR a międzynarodową ICD-11. Szczególnie cenne jest podkreślenie depatolozacji wariantów normy seksualnej oraz precyzyjne odróżnienie dysfunkcji od niedopasowania partnerskiego."
+      }
+    ]
+  }
+];
+
 function getCachedArticles() {
   try {
     const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
@@ -488,10 +575,27 @@ function getCachedArticles() {
         articles.unshift(wa);
       }
     });
-    return articles.length > 0 ? articles : null;
+
+    // Dołączenie prezentacji seminaryjnych SKN
+    DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
+      const existing = articles.find((a) => a.id === sa.id);
+      if (!existing) {
+        articles.unshift(sa);
+      } else {
+        if (!existing.reviews || existing.reviews.length === 0) {
+          existing.reviews = sa.reviews;
+        }
+        if (!existing.publication_type) {
+          existing.publication_type = sa.publication_type;
+          existing.publicationType = sa.publicationType;
+        }
+      }
+    });
+
+    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES;
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
-    return null;
+    return DEFAULT_SEMINAR_ARTICLES;
   }
 }
 
@@ -810,6 +914,9 @@ function updateLibraryWithRealDriveFiles(files) {
       hasPolishTranslation: hasTranslation,
       hasReport: hasReport,
       report: rawReport,
+      publication_type: file.publication_type || meta.publication_type || file.publicationType || meta.publicationType || (isInternal ? "internal_material" : "journal_article"),
+      publicationType: file.publication_type || meta.publication_type || file.publicationType || meta.publicationType || (isInternal ? "internal_material" : "journal_article"),
+      reviews: Array.isArray(file.reviews) ? file.reviews : (Array.isArray(meta.reviews) ? meta.reviews : []),
       status: "ACTIVE"
     };
 
@@ -820,7 +927,10 @@ function updateLibraryWithRealDriveFiles(files) {
         ...articleObj,
         hasReport: articleObj.hasReport || prev.hasReport,
         report: articleObj.report || prev.report,
-        hasPolishTranslation: articleObj.hasPolishTranslation || prev.hasPolishTranslation
+        hasPolishTranslation: articleObj.hasPolishTranslation || prev.hasPolishTranslation,
+        publication_type: articleObj.publication_type || prev.publication_type,
+        publicationType: articleObj.publicationType || prev.publicationType,
+        reviews: (articleObj.reviews && articleObj.reviews.length > 0) ? articleObj.reviews : (prev.reviews || [])
       };
     } else {
       AppState.articles.unshift(articleObj);
@@ -1981,6 +2091,16 @@ function renderArticleCards(articles) {
         `}`;
     }
 
+    const isSeminar = (art.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || art.publicationType === "seminar_presentation");
+    const seminarBadge = isSeminar
+      ? `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 flex items-center gap-1 shadow-2xs shrink-0" title="Wystąpienie seminaryjne / prezentacja członków SKN"><svg class="w-3 h-3 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h20v14H2z"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> <span>Seminarium SKN</span></span>`
+      : "";
+
+    const artReviews = getArticleReviews(art);
+    const reviewsBadge = (artReviews && artReviews.length > 0)
+      ? `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 shadow-2xs shrink-0" title="${artReviews.length} recenzji akademickich Critical Appraisal (EBM)"><svg class="w-3 h-3 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span>${artReviews.length} ${artReviews.length === 1 ? "recenzja EBM" : "recenzje EBM"}</span></span>`
+      : "";
+
     const card = document.createElement("div");
     card.id = `card-${art.id}`;
     card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-4 shadow-sm hover:shadow-md transition-all duration-200 select-text";
@@ -1991,6 +2111,8 @@ function renderArticleCards(articles) {
         <div class="flex items-center justify-between gap-1.5 mb-2">
           <div class="flex flex-wrap items-center gap-1.5">
             ${categoryBadgeHtml}
+            ${seminarBadge}
+            ${reviewsBadge}
             ${webSourceBadge}
             ${accessBadge}
           </div>
@@ -3986,6 +4108,11 @@ function generateApaCitation(article) {
   const doi = extractDoi(article);
   const doiUrl = doi ? getDoiUrl(doi) : "";
   const webUrl = article.sourceUrl || article.url || meta.sourceUrl || meta.url || "";
+  const isSeminar = (article.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || article.publicationType === "seminar_presentation");
+
+  if (isSeminar) {
+    return `${authors} (${year}). ${title}${originalTitle} [Prezentacja seminaryjna]. Studenckie Koło Naukowe Seksuologii, Kalejdoskop Café.`;
+  }
 
   let citation = `${authors} (${year}). ${title}${originalTitle}.`;
   if (journal) {
@@ -4016,6 +4143,18 @@ function formatBibTeX(doc) {
   const journal = extractJournal(doc);
   const doi = extractDoi(doc);
   const url = doi ? getDoiUrl(doi) : (doc.url || doc.urlOriginal || "");
+  const isSeminar = (doc.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || doc.publicationType === "seminar_presentation");
+
+  if (isSeminar) {
+    let bib = `@misc{${citeKey},\n`;
+    bib += `  author       = {${rawAuthors}},\n`;
+    bib += `  title        = {${titlePL}},\n`;
+    bib += `  year         = {${year}},\n`;
+    bib += `  howpublished = {Prezentacja seminaryjna},\n`;
+    bib += `  note         = {Studenckie Koło Naukowe Seksuologii - Kalejdoskop Café}\n`;
+    bib += `}`;
+    return bib;
+  }
 
   let bib = `@article{${citeKey},\n`;
   bib += `  author    = {${rawAuthors}},\n`;
@@ -4150,26 +4289,58 @@ window.formatBibTeX = formatBibTeX;
 
 function switchDetailTab(tab) {
   const tabBtnAbstract = document.getElementById("tab-btn-abstract");
+  const tabBtnReviews = document.getElementById("tab-btn-reviews");
   const tabBtnChat = document.getElementById("tab-btn-chat");
+
   const tabContentAbstract = document.getElementById("tab-content-abstract");
+  const tabContentReviews = document.getElementById("tab-content-reviews");
   const tabContentChat = document.getElementById("tab-content-chat");
 
-  const activeClass = "flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer";
-  const inactiveClass = "flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+  const activeClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-all bg-white text-indigo-600 shadow-sm cursor-pointer";
+  const inactiveClass = "flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
 
-  if (tab === "chat") {
+  const detailId = document.getElementById("detail-id")?.innerText.trim();
+  const article = (detailId && detailId !== "-")
+    ? (AppState.articles?.find((a) => a.id === detailId) || AppState.filteredArticles?.find((a) => a.id === detailId))
+    : null;
+
+  if (tab === "reviews") {
     if (tabBtnAbstract) tabBtnAbstract.className = inactiveClass;
-    if (tabBtnChat) tabBtnChat.className = activeClass;
+    if (tabBtnReviews) tabBtnReviews.className = activeClass;
+    if (tabBtnChat) tabBtnChat.className = inactiveClass;
+
     if (tabContentAbstract) {
       tabContentAbstract.classList.add("hidden");
       tabContentAbstract.style.display = "none";
+    }
+    if (tabContentReviews) {
+      tabContentReviews.classList.remove("hidden");
+      tabContentReviews.style.display = "block";
+    }
+    if (tabContentChat) {
+      tabContentChat.classList.add("hidden");
+      tabContentChat.style.display = "none";
+    }
+
+    if (article) renderArticleReviews(article);
+  } else if (tab === "chat") {
+    if (tabBtnAbstract) tabBtnAbstract.className = inactiveClass;
+    if (tabBtnReviews) tabBtnReviews.className = inactiveClass;
+    if (tabBtnChat) tabBtnChat.className = activeClass;
+
+    if (tabContentAbstract) {
+      tabContentAbstract.classList.add("hidden");
+      tabContentAbstract.style.display = "none";
+    }
+    if (tabContentReviews) {
+      tabContentReviews.classList.add("hidden");
+      tabContentReviews.style.display = "none";
     }
     if (tabContentChat) {
       tabContentChat.classList.remove("hidden");
       tabContentChat.style.display = "flex";
     }
 
-    const detailId = document.getElementById("detail-id")?.innerText.trim();
     if (detailId && detailId !== "-") {
       renderAiChatMessages(detailId);
     }
@@ -4177,11 +4348,18 @@ function switchDetailTab(tab) {
       document.getElementById("ai-chat-input")?.focus();
     }, 50);
   } else {
+    // Domyślnie: 'abstract'
     if (tabBtnAbstract) tabBtnAbstract.className = activeClass;
+    if (tabBtnReviews) tabBtnReviews.className = inactiveClass;
     if (tabBtnChat) tabBtnChat.className = inactiveClass;
+
     if (tabContentAbstract) {
       tabContentAbstract.classList.remove("hidden");
       tabContentAbstract.style.display = "block";
+    }
+    if (tabContentReviews) {
+      tabContentReviews.classList.add("hidden");
+      tabContentReviews.style.display = "none";
     }
     if (tabContentChat) {
       tabContentChat.classList.add("hidden");
@@ -4190,6 +4368,343 @@ function switchDetailTab(tab) {
   }
 }
 window.switchDetailTab = switchDetailTab;
+
+/**
+ * Pobiera listę recenzji akademickich dla danego artykułu (z danych artykułu oraz LocalStorage)
+ */
+function getArticleReviews(article) {
+  if (!article) return [];
+  const meta = article.meta || article.data || article;
+  let reviews = [];
+
+  if (Array.isArray(article.reviews)) {
+    reviews = [...article.reviews];
+  } else if (Array.isArray(meta.reviews)) {
+    reviews = [...meta.reviews];
+  }
+
+  // Odczyt z LocalStorage pod dedykowanym kluczem kc_reviews_[ARTICLE_ID]
+  try {
+    const local = JSON.parse(localStorage.getItem(`kc_reviews_${article.id}`) || "[]");
+    if (Array.isArray(local) && local.length > 0) {
+      local.forEach((r) => {
+        if (!reviews.find((existing) => existing.id === r.id)) {
+          reviews.push(r);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn("Błąd odczytu recenzji z LocalStorage:", e);
+  }
+
+  return reviews;
+}
+window.getArticleReviews = getArticleReviews;
+
+/**
+ * Renderuje listę recenzji akademickich w modalu artykułu
+ */
+function renderArticleReviews(article) {
+  const container = document.getElementById("detail-reviews-list");
+  const countBadge = document.getElementById("detail-reviews-count-badge");
+  if (!container) return;
+
+  const reviews = getArticleReviews(article);
+  if (countBadge) {
+    countBadge.innerText = reviews.length;
+  }
+
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2.5">
+          <svg class="w-5 h-5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+        <h5 class="text-xs font-bold text-slate-800 mb-1">Brak recenzji akademickiej dla tej publikacji</h5>
+        <p class="text-[11px] text-slate-500 max-w-sm mx-auto mb-3">Bądź pierwszą osobą z koła naukowego, która doda ustrukturyzowaną analizę metodologiczną (Critical Appraisal) lub notatkę seminaryjną.</p>
+        <button 
+          type="button" 
+          onclick="openAddReviewModal()" 
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer shadow-xs"
+        >
+          <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Napisz pierwszą recenzję</span>
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = "";
+  reviews.forEach((rev) => {
+    const safeRevId = escapeHtml(rev.id || "rev-" + Math.random().toString(36).substr(2, 5));
+    const safeArtId = escapeHtml(article.id);
+    html += `
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-indigo-200 transition-all shadow-2xs space-y-3">
+        <!-- Nagłówek recenzenta -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 pb-2.5">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
+              <svg class="w-3.5 h-3.5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-900">${escapeHtml(rev.author || "Anonim")}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9.5px] font-semibold bg-purple-100 text-purple-800">${escapeHtml(rev.affiliation || "Członek SKN")}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>${escapeHtml(rev.date || "2026")}</span>
+              </div>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="openFocusReader('${safeRevId}', '${safeArtId}')" 
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer active:scale-95 shadow-2xs"
+            title="Otwórz pełnoekranowy czytnik recenzji"
+          >
+            <svg class="w-3.5 h-3.5 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            <span>Pełna recenzja (Focus Reader)</span>
+          </button>
+        </div>
+
+        <!-- Tytuł wiodący -->
+        <h5 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-indigo-600 stroke-[1.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${escapeHtml(rev.headline || "Analiza metodologiczna")}</span>
+        </h5>
+
+        <!-- Pigułki wymiarów EBM -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+          ${rev.strengths ? `
+            <div class="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200">
+              <span class="font-bold text-emerald-900 block mb-0.5 flex items-center gap-1">
+                <svg class="w-3 h-3 text-emerald-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                Mocne strony:
+              </span>
+              <span class="text-emerald-950">${escapeHtml(rev.strengths)}</span>
+            </div>
+          ` : ""}
+          ${rev.limitations ? `
+            <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200">
+              <span class="font-bold text-amber-900 block mb-0.5 flex items-center gap-1">
+                <svg class="w-3 h-3 text-amber-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Ograniczenia:
+              </span>
+              <span class="text-amber-950">${escapeHtml(rev.limitations)}</span>
+            </div>
+          ` : ""}
+        </div>
+
+        ${rev.clinical_takeaway ? `
+          <div class="p-2.5 rounded-xl bg-purple-50/60 border border-purple-200 text-[11px]">
+            <span class="font-bold text-purple-900 block mb-0.5 flex items-center gap-1">
+              <svg class="w-3 h-3 text-purple-600 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+              Wskazówka kliniczna:
+            </span>
+            <span class="text-purple-950">${escapeHtml(rev.clinical_takeaway)}</span>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+window.renderArticleReviews = renderArticleReviews;
+
+let currentFocusFontSize = 14;
+
+function openFocusReader(reviewId, articleId) {
+  const article = AppState.articles?.find((a) => a.id === articleId) || AppState.filteredArticles?.find((a) => a.id === articleId);
+  if (!article) return;
+
+  const reviews = getArticleReviews(article);
+  const review = reviews.find((r) => r.id === reviewId) || reviews[0];
+  if (!review) return;
+
+  const modal = document.getElementById("focus-reader-modal");
+  if (!modal) return;
+
+  const meta = article.meta || article.data || article;
+  const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.name || "Publikacja");
+  const isSeminar = (article.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || article.publicationType === "seminar_presentation");
+
+  const badgeEl = document.getElementById("focus-reader-badge");
+  if (badgeEl) {
+    badgeEl.innerText = isSeminar ? "Wystąpienie Seminaryjne SKN" : "Critical Appraisal EBM";
+    badgeEl.className = isSeminar
+      ? "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-800"
+      : "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800";
+  }
+
+  const artTitleEl = document.getElementById("focus-reader-article-title");
+  if (artTitleEl) artTitleEl.innerText = titlePL;
+
+  const mainTitleEl = document.getElementById("focus-reader-main-title");
+  if (mainTitleEl) mainTitleEl.innerText = review.headline || "Analiza Krytyczna";
+
+  const headlineEl = document.getElementById("focus-reader-headline");
+  if (headlineEl) headlineEl.innerText = review.headline || "Analiza Krytyczna";
+
+  const authorEl = document.getElementById("focus-reader-author");
+  if (authorEl) authorEl.innerText = review.author || "Anonim";
+
+  const affilEl = document.getElementById("focus-reader-affiliation");
+  if (affilEl) affilEl.innerText = review.affiliation || "SKN Seksuologii";
+
+  const dateEl = document.getElementById("focus-reader-date");
+  if (dateEl) dateEl.innerText = review.date || "2026";
+
+  const strengthsEl = document.getElementById("focus-reader-strengths");
+  if (strengthsEl) strengthsEl.innerText = review.strengths || "Nie określono";
+
+  const limitsEl = document.getElementById("focus-reader-limitations");
+  if (limitsEl) limitsEl.innerText = review.limitations || "Brak uwag krytycznych";
+
+  const takeawayEl = document.getElementById("focus-reader-takeaway");
+  if (takeawayEl) takeawayEl.innerText = review.clinical_takeaway || "Brak bezpośrednich wskazówek gabinetowych";
+
+  const discEl = document.getElementById("focus-reader-discussion");
+  if (discEl) discEl.innerText = review.discussion_points || "Brak pytań do dyskusji";
+
+  const fullText = review.full_text || review.content || "Brak pełnego tekstu recenzji.";
+  const fullTextEl = document.getElementById("focus-reader-fulltext");
+  if (fullTextEl) {
+    fullTextEl.innerText = fullText;
+    currentFocusFontSize = 14;
+    fullTextEl.style.fontSize = `${currentFocusFontSize}px`;
+  }
+
+  // Estymacja czasu czytania (~180 słów/minutę)
+  const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.ceil(wordCount / 180));
+  const readTimeEl = document.getElementById("focus-reader-read-time");
+  if (readTimeEl) readTimeEl.innerText = `~${minutes} min czytania (${wordCount} słów)`;
+
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+  document.body.classList.add("overflow-hidden");
+}
+window.openFocusReader = openFocusReader;
+
+function closeFocusReader() {
+  const modal = document.getElementById("focus-reader-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+  document.body.classList.remove("overflow-hidden");
+}
+window.closeFocusReader = closeFocusReader;
+
+function adjustFocusTextSize(delta) {
+  currentFocusFontSize = Math.max(11, Math.min(22, currentFocusFontSize + delta * 1.5));
+  const fullTextEl = document.getElementById("focus-reader-fulltext");
+  if (fullTextEl) {
+    fullTextEl.style.fontSize = `${currentFocusFontSize}px`;
+  }
+}
+window.adjustFocusTextSize = adjustFocusTextSize;
+
+function printFocusReview() {
+  window.print();
+}
+window.printFocusReview = printFocusReview;
+
+function openAddReviewModal() {
+  const modal = document.getElementById("add-review-modal");
+  if (!modal) return;
+  const form = document.getElementById("add-review-form");
+  if (form) form.reset();
+
+  // Autouzupełnienie danych zalogowanego członka
+  const user = AppState.currentUser || (AppState.currentRole === "ADMIN" ? { name: "Administrator SKN" } : null);
+  const authorInput = document.getElementById("review-input-author");
+  if (authorInput && user?.name) {
+    authorInput.value = user.name;
+  }
+
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+}
+window.openAddReviewModal = openAddReviewModal;
+
+function closeAddReviewModal() {
+  const modal = document.getElementById("add-review-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+}
+window.closeAddReviewModal = closeAddReviewModal;
+
+function handleSaveNewReview(e) {
+  if (e) e.preventDefault();
+  const detailId = document.getElementById("detail-id")?.innerText.trim();
+  if (!detailId || detailId === "-") return;
+
+  const article = AppState.articles?.find((a) => a.id === detailId) || AppState.filteredArticles?.find((a) => a.id === detailId);
+  if (!article) return;
+
+  const author = document.getElementById("review-input-author")?.value.trim();
+  const affiliation = document.getElementById("review-input-affiliation")?.value.trim();
+  const headline = document.getElementById("review-input-headline")?.value.trim();
+  const strengths = document.getElementById("review-input-strengths")?.value.trim();
+  const limitations = document.getElementById("review-input-limitations")?.value.trim();
+  const clinical_takeaway = document.getElementById("review-input-takeaway")?.value.trim();
+  const discussion_points = document.getElementById("review-input-discussion")?.value.trim();
+  const full_text = document.getElementById("review-input-fulltext")?.value.trim();
+
+  if (!author || !headline || !full_text) {
+    if (typeof showToast === "function") showToast("Wypełnij wymagane pola (Autor, Tytuł, Pełna treść).", "error");
+    return;
+  }
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const newReview = {
+    id: "rev-" + Date.now(),
+    author,
+    affiliation: affiliation || "SKN Seksuologii",
+    date: dateStr,
+    headline,
+    strengths,
+    limitations,
+    clinical_takeaway,
+    discussion_points,
+    full_text
+  };
+
+  // 1. Zapis w pamięci artykułu
+  if (!Array.isArray(article.reviews)) article.reviews = [];
+  article.reviews.unshift(newReview);
+
+  // 2. Zapis w LocalStorage
+  try {
+    const key = `kc_reviews_${article.id}`;
+    const local = JSON.parse(localStorage.getItem(key) || "[]");
+    local.unshift(newReview);
+    localStorage.setItem(key, JSON.stringify(local));
+    saveArticlesToCache(AppState.articles);
+  } catch (err) {
+    console.error("Błąd zapisu recenzji:", err);
+  }
+
+  closeAddReviewModal();
+  renderArticleReviews(article);
+  switchDetailTab("reviews");
+  filterAndRenderArticles();
+
+  if (typeof showToast === "function") {
+    showToast("Autorska recenzja akademicka została pomyślnie zapisana! ✓", "success");
+  }
+}
+window.handleSaveNewReview = handleSaveNewReview;
 
 /**
  * Renderowanie wiadomości czatu Journal Club dla danego artykułu
@@ -4939,6 +5454,7 @@ function openArticleDetail(articleId) {
     `;
   }
 
+  renderArticleReviews(article);
   showModalElement("detailModal");
 }
 
