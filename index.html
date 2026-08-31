@@ -911,8 +911,9 @@
             <span id="detail-doi-label" class="font-semibold text-slate-800 shrink-0"><i class="fas fa-link text-indigo-500 text-[10px] mr-1"></i>DOI:</span>
             <a id="detail-doi-link" href="#" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline font-mono text-[11px] truncate font-semibold"></a>
           </div>
-          <button type="button" id="detail-doi-copy-btn" onclick="copyDoiFromDetail()" class="px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1 cursor-pointer shadow-2xs" title="Kopiuj link DOI">
-            <span>📋 Kopiuj DOI</span>
+          <button type="button" id="detail-doi-copy-btn" onclick="copyDoiFromDetail()" class="px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Kopiuj link DOI">
+            <i class="fas fa-copy text-indigo-500 text-[11px]"></i>
+            <span>Kopiuj DOI</span>
           </button>
         </div>
       </div>
@@ -925,23 +926,25 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" id="btn-copy-apa" onclick="copyCitationFromDetail('APA7')" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-sm cursor-pointer" title="Kopiuj sformatowane cytowanie w standardzie APA 7th">
-            <i class="fas fa-clipboard text-indigo-500"></i>
-            <span>📋 Kopiuj cytowanie (APA 7)</span>
+            <i class="fas fa-clipboard text-indigo-500 text-xs"></i>
+            <span>Kopiuj cytowanie APA 7</span>
           </button>
           <button type="button" id="btn-copy-bibtex" onclick="copyCitationFromDetail('BIBTEX')" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-sm cursor-pointer" title="Kopiuj rekord BibTeX (Zotero, Mendeley, LaTeX)">
-            <i class="fas fa-tag text-purple-500"></i>
-            <span>🏷 Kopiuj BibTeX</span>
+            <i class="fas fa-tag text-purple-500 text-xs"></i>
+            <span>Kopiuj BibTeX</span>
           </button>
         </div>
       </div>
 
-      <!-- Przełącznik Zakładek: [ 📄 Streszczenie & Dane ] | [ 🤖 Dyskutuj z AI ] -->
+      <!-- Przełącznik Zakładek: [ Streszczenie & Dane ] | [ AI ] -->
       <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-4 w-full">
         <button type="button" id="tab-btn-abstract" onclick="switchDetailTab('abstract')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap truncate transition-all bg-white text-indigo-700 shadow-xs border border-slate-200 cursor-pointer">
-          <span class="truncate text-xs font-semibold">📄 Streszczenie & Dane</span>
+          <i class="fas fa-file-lines text-indigo-600 text-xs"></i>
+          <span class="truncate text-xs font-semibold">Streszczenie & Dane</span>
         </button>
         <button type="button" id="tab-btn-chat" onclick="switchDetailTab('chat')" class="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-white/60 cursor-pointer">
-          <span class="truncate text-xs font-semibold">🤖 Dyskutuj z AI</span>
+          <i class="fas fa-robot text-purple-600 text-xs"></i>
+          <span class="truncate text-xs font-semibold">AI</span>
           <span class="shrink-0 text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-full">JC</span>
         </button>
       </div>
@@ -1007,17 +1010,21 @@
         <!-- Szybkie Szablony Pytań (Quick Chips) -->
         <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span class="text-[11px] font-semibold text-slate-500 mr-1"><i class="fas fa-sparkles text-amber-500"></i> Szybkie pytania:</span>
-          <button type="button" onclick="sendAiQuickQuestion('Jaka była próba badawcza, kryteria doboru i metodologia badania?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer font-medium">
-            🔬 Próba i metodologia
+          <button type="button" onclick="sendAiQuickQuestion('Jaka była próba badawcza, kryteria doboru i metodologia badania?')" class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer font-medium">
+            <i class="fas fa-microscope text-indigo-500 text-xs"></i>
+            <span>Próba i metodologia</span>
           </button>
-          <button type="button" onclick="sendAiQuickQuestion('Jakie są kluczowe wnioski i implikacje dla praktyki klinicznej / seksuologicznej?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition cursor-pointer font-medium">
-            💡 Wnioski kliniczne
+          <button type="button" onclick="sendAiQuickQuestion('Jakie są kluczowe wnioski i implikacje dla praktyki klinicznej / seksuologicznej?')" class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition cursor-pointer font-medium">
+            <i class="fas fa-lightbulb text-purple-500 text-xs"></i>
+            <span>Wnioski kliniczne</span>
           </button>
-          <button type="button" onclick="sendAiQuickQuestion('Jakie ograniczenia badania (limitations) oraz kwestie metodologiczne należy wziąć pod uwagę?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer font-medium">
-            ⚠️ Ograniczenia badania
+          <button type="button" onclick="sendAiQuickQuestion('Jakie ograniczenia badania (limitations) oraz kwestie metodologiczne należy wziąć pod uwagę?')" class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer font-medium">
+            <i class="fas fa-triangle-exclamation text-amber-600 text-xs"></i>
+            <span>Ograniczenia badania</span>
           </button>
-          <button type="button" onclick="sendAiQuickQuestion('Podsumuj w 3 kluczowych punktach najważniejsze odkrycia tej publikacji.')" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition cursor-pointer font-medium">
-            🎯 Główne tezy
+          <button type="button" onclick="sendAiQuickQuestion('Podsumuj w 3 kluczowych punktach najważniejsze odkrycia tej publikacji.')" class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition cursor-pointer font-medium">
+            <i class="fas fa-bullseye text-emerald-600 text-xs"></i>
+            <span>Główne tezy</span>
           </button>
         </div>
 
@@ -1044,11 +1051,11 @@
 
       <div class="pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4">
         <button type="button" id="detail-btn-original" onclick="openSecureViewerFromDetail('original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-red-500"></i> 📄 Czytaj Oryginał
+          <i class="fas fa-file-pdf text-rose-500 text-xs"></i> <span>Oryginał</span>
         </button>
         <div id="detail-translation-btn-wrapper" class="w-full flex">
-          <button type="button" id="detail-btn-translation" onclick="openSecureViewerFromDetail('translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fas fa-language text-indigo-100"></i> 🇵🇱 Czytaj Tłumaczenie PL
+          <button type="button" id="detail-btn-translation" onclick="openSecureViewerFromDetail('translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fas fa-brain text-emerald-100 text-xs"></i> <span>Raport</span>
           </button>
         </div>
       </div>
@@ -1087,12 +1094,12 @@
       <!-- Pasek akcji (Kopiuj APA, Drukuj PDF itp.) -->
       <div class="flex flex-wrap items-center gap-2 my-3 pt-2 border-t border-slate-100">
         <button type="button" id="report-btn-copy-apa" onclick="copyCitationFromReportModal('APA7')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 hover:border-emerald-300 transition shadow-2xs cursor-pointer" title="Kopiuj cytowanie w standardzie APA 7th">
-          <i class="fas fa-clipboard text-emerald-600"></i>
-          <span>📋 Kopiuj cytowanie APA 7</span>
+          <i class="fas fa-clipboard text-emerald-600 text-xs"></i>
+          <span>Kopiuj cytowanie APA 7</span>
         </button>
         <button type="button" onclick="printClinicalReport()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-300 hover:border-indigo-300 transition shadow-2xs cursor-pointer" title="Drukuj lub zapisz jako PDF">
-          <i class="fas fa-print text-indigo-600"></i>
-          <span>🖨️ Drukuj / PDF</span>
+          <i class="fas fa-print text-indigo-600 text-xs"></i>
+          <span>Drukuj / PDF</span>
         </button>
       </div>
 
@@ -1147,7 +1154,7 @@
       <!-- Dolny pasek akcji modalu -->
       <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 mt-6">
         <button type="button" id="report-btn-original" onclick="openSecureViewerFromReportModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition flex items-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-red-500"></i> <span>Zobacz Oryginał PDF</span>
+          <i class="fas fa-file-pdf text-rose-500"></i> <span>Oryginał</span>
         </button>
         <button type="button" onclick="closeClinicalReportModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-md transition cursor-pointer">
           Zamknij Raport

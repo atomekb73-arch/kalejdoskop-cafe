@@ -1918,7 +1918,7 @@ function renderArticleCards(articles) {
       ? `<span class="text-[10.5px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
       : "";
 
-    // Dolny pasek akcji (Czysta stopka karty: Oryginał oraz Raport PL)
+    // Dolny pasek akcji (Czysta stopka karty: Oryginał oraz Raport)
     let bottomButtonsHtml = "";
     if (isInternal) {
       if (isWatermarking) {
@@ -1931,7 +1931,7 @@ function renderArticleCards(articles) {
         bottomButtonsHtml = `
           <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-xl transition-all shadow-sm truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
             <i class="fas fa-file-shield text-xs shrink-0"></i>
-            <span class="truncate">🔒 Czytaj ze stemplem</span>
+            <span class="truncate">Czytaj ze stemplem</span>
           </button>`;
       }
     } else if (isWeb) {
@@ -1948,13 +1948,13 @@ function renderArticleCards(articles) {
           </button>
         ` : hasReport ? `
           <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <span class="text-xs shrink-0">📊</span>
-            <span class="truncate">Raport PL</span>
+            <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
           </button>
         ` : `
           <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <span class="text-xs shrink-0">🧠</span>
-            <span class="truncate">Raport PL</span>
+            <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
           </button>
         `}`;
     } else {
@@ -1970,13 +1970,13 @@ function renderArticleCards(articles) {
           </button>
         ` : hasReport ? `
           <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <span class="text-xs shrink-0">📊</span>
-            <span class="truncate">Raport PL</span>
+            <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
           </button>
         ` : `
           <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <span class="text-xs shrink-0">🧠</span>
-            <span class="truncate">Raport PL</span>
+            <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
           </button>
         `}`;
     }
@@ -4542,7 +4542,7 @@ function openArticleDetail(articleId) {
       doiLabel.innerHTML = `<i class="fas fa-link text-indigo-500 text-[10px] mr-1"></i>DOI:`;
     }
     if (doiCopyBtn) {
-      doiCopyBtn.innerHTML = `<span>📋 Kopiuj DOI</span>`;
+      doiCopyBtn.innerHTML = `<i class="fas fa-copy text-indigo-500 text-[11px] mr-1"></i><span>Kopiuj DOI</span>`;
       doiCopyBtn.onclick = () => copyDoiFromDetail();
       doiCopyBtn.title = "Kopiuj link DOI do schowka";
     }
@@ -4560,7 +4560,7 @@ function openArticleDetail(articleId) {
       doiLabel.innerHTML = `<i class="fas fa-globe text-sky-500 text-[10px] mr-1"></i>Źródło:`;
     }
     if (doiCopyBtn) {
-      doiCopyBtn.innerHTML = `<span>📋 Kopiuj Link</span>`;
+      doiCopyBtn.innerHTML = `<i class="fas fa-link text-sky-500 text-[11px] mr-1"></i><span>Kopiuj Link</span>`;
       doiCopyBtn.onclick = () => copyLinkFromDetail(sourceUrl);
       doiCopyBtn.title = "Kopiuj link źródłowy do schowka";
     }
@@ -4621,10 +4621,10 @@ function openArticleDetail(articleId) {
       buttonsContainer.className = "pt-4 border-t border-slate-200 flex gap-2.5 mt-4";
       buttonsContainer.innerHTML = `
         <button type="button" onclick="openSecureViewer('${article.id}', 'original')" class="flex-1 text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-eye text-rose-400"></i> 🔒 Czytaj w Bezpiecznym Czytniku
+          <i class="fas fa-file-pdf text-rose-400"></i> <span>Czytaj w Bezpiecznym Czytniku</span>
         </button>
         <button type="button" onclick="downloadWatermarkedPdf('${article.id}')" class="flex-1 text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-shield text-sm"></i> Pobierz ze stemplem
+          <i class="fas fa-file-shield text-sm"></i> <span>Pobierz ze stemplem</span>
         </button>
       `;
     }
@@ -4632,10 +4632,10 @@ function openArticleDetail(articleId) {
     buttonsContainer.className = "pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4";
     const originalBtnMarkup = isWeb
       ? `<a href="${safeUrl(article.sourceUrl || article.url || article.urlOriginal || "#")}" target="_blank" rel="noopener noreferrer" id="detail-btn-original" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-          <i class="fas fa-globe text-sky-600"></i> 🌐 Otwórz źródło ↗
+          <i class="fas fa-globe text-sky-600"></i> <span>Źródło ↗</span>
         </a>`
       : `<button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-red-500"></i> 📄 Czytaj Oryginał
+          <i class="fas fa-file-pdf text-rose-500 text-xs"></i> <span>Oryginał</span>
         </button>`;
 
     buttonsContainer.innerHTML = `
@@ -4648,11 +4648,11 @@ function openArticleDetail(articleId) {
           </button>
         ` : hasReport ? `
           <button type="button" id="detail-btn-report" onclick="openClinicalReportModal('${article.id}')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz czytnik raportu klinicznego SKN">
-            <i class="fas fa-brain text-emerald-100"></i> 📊 Raport Kliniczny PL
+            <i class="fas fa-brain text-emerald-100 text-xs"></i> <span>Raport</span>
           </button>
         ` : `
           <button type="button" onclick="generateClinicalReport('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-emerald-600"></i> 🧠 Generuj Raport PL
+            <i class="fas fa-brain text-emerald-600 text-xs"></i> <span>Generuj Raport</span>
           </button>
         `}
       </div>
