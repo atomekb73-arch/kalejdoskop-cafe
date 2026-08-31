@@ -3994,13 +3994,13 @@ async function handleConfirmDelete() {
           resetDeleteButton();
           closeDeleteModal();
           applyLocalDeletion(articleId);
-          if (typeof showToast === "function") showToast("Publikacja oraz powiązane pliki zostały przeniesione do kosza.", "info");
+          if (typeof showToast === "function") showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
         })
         .withFailureHandler((err) => {
           resetDeleteButton();
           closeDeleteModal();
           applyLocalDeletion(articleId);
-          if (typeof showToast === "function") showToast("Usunięto publikację z widoku lokalnego.", "info");
+          if (typeof showToast === "function") showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
         })
         .apiDeleteArticle(articleId, AppState.currentPin);
     } else if (AppState.appsScriptUrl && !isWebOrLocal) {
@@ -4013,7 +4013,7 @@ async function handleConfirmDelete() {
         closeDeleteModal();
         applyLocalDeletion(articleId);
         if (typeof showToast === "function") {
-          showToast("Publikacja została pomyślnie przeniesiona do kosza.", "info");
+          showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
         }
       } catch (remoteErr) {
         console.warn("Zdalne usuwanie z Dysku nie powiodło się, zastosowano usunięcie lokalne:", remoteErr);
@@ -4021,7 +4021,7 @@ async function handleConfirmDelete() {
         closeDeleteModal();
         applyLocalDeletion(articleId);
         if (typeof showToast === "function") {
-          showToast("Publikacja została usunięta ze zbioru.", "info");
+          showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
         }
       }
     } else {
@@ -4030,7 +4030,7 @@ async function handleConfirmDelete() {
       closeDeleteModal();
       applyLocalDeletion(articleId);
       if (typeof showToast === "function") {
-        showToast("Publikacja została usunięta ze zbioru.", "info");
+        showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
       }
     }
   } catch (error) {
@@ -4039,7 +4039,7 @@ async function handleConfirmDelete() {
     closeDeleteModal();
     applyLocalDeletion(articleId);
     if (typeof showToast === "function") {
-      showToast("Publikacja została usunięta ze zbioru.", "info");
+      showToast("Publikacja została przeniesiona do Kosza (dostępna przez 30 dni).", "info");
     }
   }
 }

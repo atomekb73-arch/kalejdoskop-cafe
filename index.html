@@ -878,33 +878,58 @@
     </div>
   </div>
 
-  <!-- MODAL: Potwierdzenie Usunięcia (Kosz / Soft Delete) -->
+  <!-- MODAL: Potwierdzenie Usunięcia (Kosz / Soft Delete na 30 dni) -->
   <div id="deleteModal" onclick="handleBackdropClick(event, 'deleteModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-white border border-rose-200 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+    <div class="bg-white border border-rose-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <!-- Nagłówek Modala -->
       <div class="flex items-center gap-3.5 mb-4">
-        <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center text-lg">
-          <i class="fas fa-trash-can"></i>
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
         </div>
         <div>
-          <h3 class="text-base font-bold text-slate-900">Przenieść artykuł do Kosza?</h3>
-          <p class="text-xs text-slate-500">Procedura Soft Delete (Google Drive & Baza)</p>
+          <h3 class="text-base font-bold text-slate-900 leading-tight">Przenieść publikację do Kosza?</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Procedura Soft Delete (Zabezpieczenie na 30 dni)</p>
         </div>
       </div>
 
-      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 my-4 text-xs text-slate-700 space-y-2">
-        <p class="font-semibold text-slate-900 leading-relaxed" id="delete-modal-article-title"></p>
-        <p class="text-[11px] text-slate-500">
-          <i class="fas fa-info-circle text-rose-500 mr-1"></i>
-          Pliki oryginału i tłumaczenia zostaną przeniesione do <strong>Kosza Google Drive</strong> (gdzie pozostaną przez 30 dni z możliwością przywrócenia), a wpis zostanie wycofany z wyników biblioteki.
+      <!-- Treść komunikatu -->
+      <div class="space-y-3 my-4">
+        <p class="text-xs text-slate-700 leading-relaxed">
+          Czy na pewno chcesz usunąć publikację <strong id="delete-modal-article-title" class="text-slate-900 block mt-1"></strong>
         </p>
+
+        <!-- Dyskretny boks informacyjny Soft Delete -->
+        <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-2.5">
+          <div class="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <p class="text-[11.5px] text-emerald-950 leading-relaxed">
+            Plik zostanie bezpiecznie przeniesiony do Kosza na Dysku Google, gdzie będzie przechowywany przez <strong>30 dni</strong>. W tym czasie można go w każdej chwili przywrócić.
+          </p>
+        </div>
       </div>
 
-      <div class="flex gap-2.5 pt-2">
-        <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300 transition cursor-pointer">
+      <!-- Przyciski Akcji -->
+      <div class="flex items-center gap-2.5 pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300 transition cursor-pointer">
           Anuluj
         </button>
-        <button type="button" id="confirm-delete-btn" onclick="handleConfirmDelete()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-trash-can"></i> Przenieś do Kosza
+        <button type="button" id="confirm-delete-btn" onclick="handleConfirmDelete()" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+          <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+          <span>Przenieś do Kosza</span>
         </button>
       </div>
     </div>
