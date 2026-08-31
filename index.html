@@ -1401,6 +1401,31 @@
             </select>
           </div>
         </div>
+
+        <!-- Dedykowana Stopka Akcji Formularza -->
+        <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onclick="closeUploadModal()"
+            class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+          >
+            Anuluj
+          </button>
+          <button
+            type="button"
+            id="start-upload-btn"
+            onclick="handlePipelineStart()"
+            disabled
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-semibold rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+              <path d="M12 12v9"/>
+              <path d="m16 16-4-4-4 4"/>
+            </svg>
+            <span id="start-upload-btn-text">Zapisz i dodaj publikację</span>
+          </button>
+        </div>
       </div>
 
       <!-- Progress Container -->
@@ -1450,11 +1475,6 @@
             </svg>
             <span>Sprawdź URL Apps Script</span>
           </button>
-          <button type="button" onclick="resetUploadForm()" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-xs text-slate-700 rounded-lg border border-slate-300 transition cursor-pointer">
-            Spróbuj ponownie
-          </button>
-        </div>
-      </div>
           <button type="button" onclick="resetUploadForm()" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-xs text-slate-700 rounded-lg border border-slate-300 transition cursor-pointer">
             Spróbuj ponownie
           </button>

@@ -5738,7 +5738,14 @@ function switchUploadTab(tabType) {
     const webUrlInput = document.getElementById("web-article-url");
     const hasUrl = Boolean(webUrlInput && webUrlInput.value.trim().length > 5);
     if (startBtn) {
-      startBtn.innerHTML = `<i class="fas fa-globe"></i> <span>Zarejestruj Artykuł Web & Analizuj</span>`;
+      startBtn.innerHTML = `
+        <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <span>Zapisz i dodaj publikację</span>
+      `;
       if (hasUrl) {
         startBtn.removeAttribute("disabled");
       } else {
@@ -5775,7 +5782,14 @@ function switchUploadTab(tabType) {
       contentWeb.style.setProperty("display", "none", "important");
     }
     if (startBtn) {
-      startBtn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> <span>Zapisz na Dysku Google & Analizuj</span>`;
+      startBtn.innerHTML = `
+        <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+          <path d="M12 12v9"/>
+          <path d="m16 16-4-4-4 4"/>
+        </svg>
+        <span>Zapisz i dodaj publikację</span>
+      `;
       if (AppState.selectedUploadFile) {
         startBtn.removeAttribute("disabled");
       } else {
@@ -5826,8 +5840,15 @@ function resetUploadForm() {
   if (startBtn) {
     startBtn.setAttribute("disabled", "true");
     startBtn.classList.remove("hidden");
-    startBtn.style.setProperty("display", "flex", "important");
-    startBtn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> <span>Zapisz na Dysku Google & Analizuj</span>`;
+    startBtn.style.setProperty("display", "inline-flex", "important");
+    startBtn.innerHTML = `
+      <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+        <path d="M12 12v9"/>
+        <path d="m16 16-4-4-4 4"/>
+      </svg>
+      <span>Zapisz i dodaj publikację</span>
+    `;
   }
   if (progressContainer) {
     progressContainer.classList.add("hidden");
