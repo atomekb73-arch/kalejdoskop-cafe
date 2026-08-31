@@ -36,6 +36,16 @@ function doGet(e) {
           message: err.message
         })).setMimeType(ContentService.MimeType.JSON);
       }
+    } else if (action === "trash_article" || action === "trash" || action === "deleteArticle") {
+      try {
+        const trashRes = trashArticleGlobally(e.parameter.id || e.parameter.articleId, e.parameter.fileId, e.parameter.title);
+        return ContentService.createTextOutput(JSON.stringify(trashRes)).setMimeType(ContentService.MimeType.JSON);
+      } catch (err) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: err.message
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
     }
   }
 
@@ -373,40 +383,55 @@ function apiDeleteArticle(articleId, adminPin, explicitFileId) {
     throw new Error("Brak uprawnień administratora do usunięcia artykułu.");
   }
 
-  const trashInfo = SheetService.markArticleAsTrashed(articleId);
+  return trashArticleGlobally(articleId, explicitFileId);
+}
 
-  const fileIdToTrash = explicitFileId || trashInfo.fileIdOriginal;
-  let driveResult = null;
+/**
+ * Globalne oznaczanie artykułu jako TRASHED w arkuszu Baza_Artykulow
+ */
+function trashArticleGlobally(recordId, fileId, title) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Precyzyjna nazwa zakładki:
+    var sheet = ss.getSheetByName('Baza_Artykulow') || ss.getSheetByName('Baza_Wiedzy') || ss.getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    
+    // Szukamy indeksu kolumny Status
+    var statusColIdx = headers.findIndex(function(h) { 
+      return String(h).trim().toLowerCase() === 'status'; 
+    });
+    if (statusColIdx === -1) statusColIdx = 14; // Domyślnie kolumna Status
 
-  if (fileIdToTrash) {
-    try {
-      const file = DriveApp.getFileById(fileIdToTrash);
-      if (file) {
-        file.setTrashed(true);
-        driveResult = "TRASHED";
+    var marked = false;
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var rowId = String(row[0] || '').trim();
+      var rowTitle = String(row[2] || '').trim().toLowerCase(); // Tytul_PL
+      var rowOrigTitle = String(row[3] || '').trim().toLowerCase(); // Tytul_Oryginalny
+      var rowFileId = String(row[12] || '').trim(); // FileID_Oryginal
+      
+      if (
+        (recordId && (rowId === String(recordId).trim() || rowFileId === String(recordId).trim())) || 
+        (title && (rowTitle === String(title).trim().toLowerCase() || rowOrigTitle === String(title).trim().toLowerCase()))
+      ) {
+        sheet.getRange(i + 1, statusColIdx + 1).setValue('TRASHED');
+        marked = true;
+        break;
       }
-    } catch (e) {
-      console.warn("Błąd przenoszenia pliku do kosza:", e);
     }
-  }
 
-  if (trashInfo.fileIdTranslation) {
-    try {
-      const transFile = DriveApp.getFileById(trashInfo.fileIdTranslation);
-      if (transFile) {
-        transFile.setTrashed(true);
-      }
-    } catch (e) {
-      console.warn("Błąd przenoszenia pliku tłumaczenia do kosza:", e);
+    // Jeśli to plik z Dysku Google, usuń do kosza Drive
+    if (fileId && fileId.indexOf('KC-') === -1 && fileId !== 'ACTIVE' && fileId !== '#') {
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (e) {}
     }
-  }
 
-  return {
-    success: true,
-    status: "success",
-    articleId: articleId,
-    driveTrashStatus: driveResult || "OK"
-  };
+    return { status: "success", message: "Artykuł oznaczony jako TRASHED", marked: marked };
+  } catch (err) {
+    return { status: "error", message: err.toString() };
+  }
 }
 
 /**

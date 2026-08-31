@@ -738,15 +738,13 @@ function loadArticles() {
         showLoadingSpinner(false);
         const trashedIds = getTrashedIds();
         const rawList = response.articles || response.files || (response.data && (response.data.articles || response.data.files)) || [];
-        const list = (Array.isArray(rawList) ? rawList : []).filter((item) => 
-          !trashedIds.includes(item.id) && 
-          !trashedIds.includes(item.fileId) && 
-          !trashedIds.includes(item.fileIdOriginal) && 
-          !item.trashed && 
-          !item.deleted && 
-          item.status !== "TRASHED" && 
-          item.status !== "DELETED"
-        );
+        const list = (Array.isArray(rawList) ? rawList : []).filter((item) => {
+          const status = String(item.Status || item.status || item.STATUS || "").trim().toUpperCase();
+          return status !== "TRASHED" && status !== "DELETED" && !item.trashed && !item.deleted &&
+            !trashedIds.includes(item.id) && 
+            !trashedIds.includes(item.fileId) && 
+            !trashedIds.includes(item.fileIdOriginal);
+        });
         if (Array.isArray(list) && list.length > 0) {
           AppState.articles = [];
           updateLibraryWithRealDriveFiles(list);
@@ -798,15 +796,13 @@ function loadArticles() {
 
         const trashedIds = getTrashedIds();
         const rawList = data.articles || data.files || (data.data && (data.data.articles || data.data.files)) || [];
-        const list = (Array.isArray(rawList) ? rawList : []).filter((item) => 
-          !trashedIds.includes(item.id) && 
-          !trashedIds.includes(item.fileId) && 
-          !trashedIds.includes(item.fileIdOriginal) && 
-          !item.trashed && 
-          !item.deleted && 
-          item.status !== "TRASHED" && 
-          item.status !== "DELETED"
-        );
+        const list = (Array.isArray(rawList) ? rawList : []).filter((item) => {
+          const status = String(item.Status || item.status || item.STATUS || "").trim().toUpperCase();
+          return status !== "TRASHED" && status !== "DELETED" && !item.trashed && !item.deleted &&
+            !trashedIds.includes(item.id) && 
+            !trashedIds.includes(item.fileId) && 
+            !trashedIds.includes(item.fileIdOriginal);
+        });
 
         showLoadingSpinner(false);
 
@@ -4072,28 +4068,25 @@ async function handleConfirmTrash() {
     showToast("Publikacja została przeniesiona do Kosza.");
   }
 
-  // 3. Wysłanie dyspozycji w tle (Fire & Forget, bez blokowania interfejsu)
+  // 3. Wysłanie dyspozycji w tle (GET z parametrami URL, Fire & Forget)
   try {
     const appsScriptUrl = getAppsScriptUrl();
-    const payload = {
+    const params = new URLSearchParams({
       action: "trash_article",
-      id: articleToDelete.id,
-      fileId: articleToDelete.drive_file_id || articleToDelete.fileId || articleToDelete.fileIdOriginal || null,
-      title: articleToDelete.titlePL || articleToDelete.title || articleToDelete.titleOriginal || ""
-    };
+      id: articleToDelete.id || "",
+      fileId: articleToDelete.drive_file_id || articleToDelete.fileId || articleToDelete.fileIdOriginal || "",
+      title: articleToDelete.title || articleToDelete.titlePL || articleToDelete.Tytul_PL || ""
+    });
 
     if (AppState.isGasEnvironment) {
       google.script.run
         .withSuccessHandler((res) => console.log("GAS: Sukces usunięcia w tle:", res))
         .withFailureHandler((err) => console.warn("GAS: Błąd usunięcia:", err))
-        .apiDeleteArticle(articleToDelete.id, AppState.currentPin || "2026", payload.fileId);
+        .trashArticleGlobally(articleToDelete.id, params.get("fileId"), params.get("title"));
     } else if (appsScriptUrl) {
-      fetch(appsScriptUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }).catch((err) => console.warn("Błąd wysyłki kosza do Apps Script:", err));
+      fetch(`${appsScriptUrl}?${params.toString()}`, { mode: "no-cors" })
+        .then(() => console.log("Globalne żądanie przeniesienia do kosza (GET) wysłane pomyślnie."))
+        .catch((err) => console.warn("Błąd wysyłki kosza do Apps Script:", err));
     }
   } catch (err) {
     console.error("Błąd podczas operacji soft-delete:", err);
