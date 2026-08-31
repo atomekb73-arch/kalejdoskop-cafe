@@ -6037,22 +6037,69 @@ async function handleUploadPipeline() {
 
       animateStep(5, "5/5: Zapisywanie w bazie chmurowej (Google Sheets & Apps Script)...");
 
+      const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja Internetowa");
+      const finalAuthors = enteredAuthors || "Autor nieznany";
+      const finalYear = year || String(new Date().getFullYear());
+      const finalCategory = category || "Edukacja Seksualna";
+      const finalAbstract = enteredAbstract || "Brak streszczenia. Publikacja dodana przez link zewnętrzny.";
+
+      const articleData = {
+        id: generatedId,
+        type: "WEB",
+        isWeb: true,
+        titlePL: finalTitle,
+        titleOriginal: finalTitle,
+        titleEN: finalTitle,
+        authors: finalAuthors,
+        year: finalYear,
+        category: finalCategory,
+        journal: finalJournal,
+        abstractPL: finalAbstract,
+        sourceUrl: rawUrl,
+        url: rawUrl,
+        urlOriginal: rawUrl,
+        urlTranslation: rawUrl,
+        external_url: rawUrl,
+        pdf_url: "",
+        doi: extractedDoi || "",
+        keywords: ["Artykuł Web", "Open Access", finalCategory],
+        tags: ["Artykuł Web", "Open Access", finalCategory],
+        accessLevel: accessLevel,
+        isInternal: accessLevel === "MEMBERS",
+        SKN_INTERNAL: accessLevel === "MEMBERS",
+        fileIdOriginal: generatedId,
+        hasPolishTranslation: true,
+        hasReport: false,
+        publication_type: "external_link",
+        publicationType: "external_link",
+        status: "ACTIVE",
+        dateAdded: new Date().toISOString().split("T")[0]
+      };
+
       const payload = {
         action: "saveWebArticle",
         type: "WEB",
-        titlePL: articleData.titlePL || articleData.titleOriginal || "Publikacja Internetowa",
-        titleEN: articleData.titleEN || "",
-        authors: articleData.authors || "Autor nieznany",
-        year: articleData.year || String(new Date().getFullYear()),
-        category: articleData.category || "Edukacja Seksualna",
-        abstractPL: articleData.abstractPL || "",
-        sourceUrl: articleData.sourceUrl || rawUrl,
-        url: articleData.sourceUrl || rawUrl,
-        urlOriginal: articleData.sourceUrl || rawUrl,
-        urlTranslation: articleData.sourceUrl || rawUrl,
-        doi: articleData.doi || "",
-        keywords: articleData.keywords || ["Artykuł Web", "Open Access", articleData.category || "Edukacja Seksualna"],
-        accessLevel: accessLevel,
+        title: articleData.titlePL,
+        titlePL: articleData.titlePL,
+        titleOriginal: articleData.titleOriginal,
+        original_title: articleData.titleOriginal,
+        titleEN: articleData.titleEN,
+        authors: articleData.authors,
+        year: articleData.year,
+        category: articleData.category,
+        abstract_pl: articleData.abstractPL,
+        abstractPL: articleData.abstractPL,
+        sourceUrl: articleData.sourceUrl,
+        url: articleData.sourceUrl,
+        urlOriginal: articleData.sourceUrl,
+        external_url: articleData.sourceUrl,
+        pdf_url: "",
+        urlTranslation: articleData.sourceUrl,
+        doi: articleData.doi,
+        keywords: articleData.keywords,
+        tags: articleData.tags,
+        accessLevel: articleData.accessLevel,
+        publication_type: "external_link",
         adminPin: AppState.currentPin || "2026"
       };
 

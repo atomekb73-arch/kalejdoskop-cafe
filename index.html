@@ -1300,11 +1300,21 @@
       <!-- Przełącznik Źródła Publikacji (Tabs: PDF vs Link URL) -->
       <div class="flex items-center p-1 bg-slate-100/90 rounded-xl mb-4 text-xs font-semibold">
         <button type="button" id="tab-upload-pdf" onclick="switchUploadTab('PDF')" class="flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-xs">
-          <i class="fas fa-file-pdf text-red-500"></i>
+          <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
           <span>1. Plik PDF (Dysk)</span>
         </button>
         <button type="button" id="tab-upload-web" onclick="switchUploadTab('WEB')" class="flex-1 py-2 px-3 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
-          <i class="fas fa-globe text-sky-500"></i>
+          <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
           <span>2. Link URL / Web</span>
         </button>
       </div>
@@ -1317,14 +1327,21 @@
             <input type="file" id="file-input" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
             
             <div id="drop-prompt">
-              <i class="fas fa-file-pdf text-3xl text-indigo-500 mb-2"></i>
+              <svg class="w-8 h-8 text-indigo-500 mx-auto mb-2 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                <path d="M12 12v9"/>
+                <path d="m16 16-4-4-4 4"/>
+              </svg>
               <p class="text-xs sm:text-sm font-bold text-slate-800">Przeciągnij i upuść plik PDF artykułu</p>
               <p class="text-[11px] text-slate-500 mt-1">lub kliknij, aby wybrać z dysku (Maks. 20MB)</p>
             </div>
 
             <div id="selected-file-info" class="hidden" style="display: none;">
               <div class="flex items-center justify-center gap-3 text-left bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <i class="fas fa-file-pdf text-2xl text-red-500"></i>
+                <svg class="w-6 h-6 text-rose-500 shrink-0 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
                 <div class="overflow-hidden">
                   <p id="selected-file-name" class="text-xs font-bold text-slate-900 truncate"></p>
                   <p id="selected-file-size" class="text-[10px] text-slate-500"></p>
@@ -1338,7 +1355,7 @@
         <div id="upload-tab-content-web" class="hidden space-y-3" style="display: none;">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">
-              <i class="fas fa-link text-sky-500 mr-1"></i> Link do artykułu naukowego (URL / DOI) <span class="text-rose-500">*</span>
+              Link do artykułu naukowego (URL / DOI) <span class="text-rose-500">*</span>
             </label>
             <input type="url" id="web-article-url" placeholder="https://doi.org/... lub https://journal.org/article-123" class="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
           </div>
@@ -1380,7 +1397,7 @@
               <option value="Tożsamość & Gender">Tożsamość & Gender</option>
               <option value="Edukacja Seksualna">Edukacja Seksualna</option>
               <option value="Psychometria & Metodologia">Psychometria & Metodologia</option>
-              <option value="Materiały Własne SKN">🔒 Materiały Własne SKN (Strefa Wewnętrzna)</option>
+              <option value="Materiały Własne SKN">Materiały Własne SKN (Strefa Wewnętrzna)</option>
             </select>
           </div>
         </div>
@@ -1418,13 +1435,26 @@
 
       <!-- Pipeline Error Box -->
       <div id="pipeline-error-box" class="hidden text-center py-4 bg-rose-50 border border-rose-200 rounded-2xl p-4 my-3" style="display: none;">
-        <i class="fas fa-triangle-exclamation text-3xl text-rose-600 mb-2"></i>
+        <svg class="w-8 h-8 text-rose-600 mx-auto mb-2 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
         <h4 class="text-sm font-bold text-slate-900">Błąd Połączenia z Google Drive</h4>
         <p id="pipeline-error-text" class="text-xs text-rose-700 mt-1 whitespace-pre-line"></p>
         <div class="mt-3 flex gap-2 justify-center">
-          <button type="button" onclick="openConfigModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-xs text-white font-semibold rounded-lg shadow-sm transition cursor-pointer">
-            <i class="fas fa-plug mr-1"></i> Sprawdź URL Apps Script
+          <button type="button" onclick="openConfigModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-xs text-white font-semibold rounded-lg shadow-sm transition cursor-pointer flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Sprawdź URL Apps Script</span>
           </button>
+          <button type="button" onclick="resetUploadForm()" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-xs text-slate-700 rounded-lg border border-slate-300 transition cursor-pointer">
+            Spróbuj ponownie
+          </button>
+        </div>
+      </div>
           <button type="button" onclick="resetUploadForm()" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-xs text-slate-700 rounded-lg border border-slate-300 transition cursor-pointer">
             Spróbuj ponownie
           </button>
