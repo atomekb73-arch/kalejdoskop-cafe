@@ -811,10 +811,16 @@ function updateLibraryWithRealDriveFiles(files) {
   const reportsCache = getReportsCache();
   const webArticles = getWebArticlesCache();
 
-  // 1. Zawsze dołącz i zachowaj artykuły WEB
-  webArticles.forEach((wa) => {
-    if (!AppState.articles.some((a) => a.id === wa.id)) {
-      AppState.articles.unshift(wa);
+  // 1. Zawsze dołącz i zachowaj artykuły WEB oraz prezentacje seminaryjne
+  const persistentSources = [...webArticles, ...DEFAULT_SEMINAR_ARTICLES];
+  persistentSources.forEach((item) => {
+    const meta = item.meta || item.data || item;
+    const title = item.titlePL || item.title || meta.titlePL || meta.title || item.name;
+    const hasSource = item.pdf_url || item.fileId || item.fileIdOriginal || item.url || item.urlOriginal || item.external_url || item.sourceUrl || item.source_url || item.abstractPL || item.abstract || meta.abstractPL || meta.abstract;
+    const isValid = Boolean(title && hasSource);
+
+    if (isValid && !AppState.articles.some((a) => a.id === item.id)) {
+      AppState.articles.unshift(item);
     }
   });
 
@@ -837,9 +843,9 @@ function updateLibraryWithRealDriveFiles(files) {
     } else if (Array.isArray(file.tags)) {
       tags = file.tags;
     } else if (typeof meta.keywords === "string") {
-      tags = meta.keywords.split(",").map(t => t.trim());
+      tags = meta.keywords.split(",").map((t) => t.trim());
     } else if (typeof file.Slowa_Kluczowe === "string") {
-      tags = file.Slowa_Kluczowe.split(",").map(t => t.trim());
+      tags = file.Slowa_Kluczowe.split(",").map((t) => t.trim());
     } else {
       tags = [];
     }
@@ -861,7 +867,7 @@ function updateLibraryWithRealDriveFiles(files) {
     );
 
     const abstractPL = meta.abstractPL || file.abstractPL || file.Abstrakt_PL || "Brak abstraktu.";
-    const directUrl = file.sourceUrl || file.url || meta.sourceUrl || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
+    const directUrl = file.sourceUrl || file.url || meta.sourceUrl || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || file.external_url || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
     const transUrl = meta.translationUrl || file.translationUrl || meta.urlTranslation || file.urlTranslation || file.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || file.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv || "";
     const fileIdTrans = file.fileIdTranslation || meta.fileIdTranslation || file.FileID_Tlumaczenie || file.FileID_Tlumaczenia_PL || file.ID_Pliku_PL || extractDriveFileId(transUrl) || "";
     const hasTranslation = Boolean(
@@ -882,6 +888,14 @@ function updateLibraryWithRealDriveFiles(files) {
       cachedData != null ||
       hasTranslation
     );
+
+    // Uniwersalna walidacja publikacji (zarówno z plikiem PDF jak i linkiem URL / abstraktem)
+    const isValid = Boolean(
+      (polishTitle || rawOrigTitle || file.title || meta.title) &&
+      (file.fileId || file.fileIdOriginal || directUrl !== "#" || file.pdf_url || file.external_url || abstractPL !== "Brak abstraktu.")
+    );
+
+    if (!isValid) return;
 
     const existingIdx = AppState.articles.findIndex((a) => a.id === id || (file.fileId && a.fileIdOriginal === file.fileId));
 
@@ -934,6 +948,21 @@ function updateLibraryWithRealDriveFiles(files) {
       };
     } else {
       AppState.articles.unshift(articleObj);
+    }
+  });
+
+  // Dodatkowe zabezpieczenie obecności prezentacji seminaryjnych po synchronizacji
+  DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
+    const existingIdx = AppState.articles.findIndex((a) => a.id === sa.id);
+    if (existingIdx === -1) {
+      AppState.articles.push(sa);
+    } else {
+      const existing = AppState.articles[existingIdx];
+      if (!existing.reviews || existing.reviews.length === 0) existing.reviews = sa.reviews;
+      if (!existing.publication_type) {
+        existing.publication_type = sa.publication_type;
+        existing.publicationType = sa.publicationType;
+      }
     }
   });
 
