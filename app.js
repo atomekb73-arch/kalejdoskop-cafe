@@ -765,7 +765,7 @@ function setSyncStatus(status, customText) {
   }
 
   if (status === "syncing") {
-    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-3 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 p-0 sm:px-3 sm:py-0.5 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
     if (icon) {
       icon.innerHTML = `<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2] text-emerald-600 animate-spin sync-spinning shrink-0";
@@ -778,13 +778,12 @@ function setSyncStatus(status, customText) {
     if (text) {
       text.innerText = customText || "Synchronizacja...";
       text.className = "hidden sm:inline text-[11px] font-medium whitespace-nowrap leading-none transition-all duration-300";
-      text.classList.remove("hidden");
     }
     indicator.style.display = "inline-flex";
   } else if (status === "synced") {
     AppState.isOffline = false;
     window.isOffline = false;
-    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 p-0 sm:px-2.5 sm:py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
     if (icon) {
       icon.innerHTML = `<path d="M20 6 9 17l-5-5"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2.5] text-emerald-600 shrink-0";
@@ -797,7 +796,7 @@ function setSyncStatus(status, customText) {
     }
     indicator.style.display = "inline-flex";
   } else if (status === "offline") {
-    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 p-0 sm:px-2.5 sm:py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
     if (icon) {
       icon.innerHTML = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2] text-amber-600 shrink-0";
