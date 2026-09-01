@@ -10,18 +10,21 @@ const AppState = {
   filteredArticles: [],
   currentRole: "PUBLIC",
   currentPin: "",
-  activeCategory: "Wszystko",
+  activeCategory: "Wszystkie materiały",
+  viewMode: localStorage.getItem("kc_view_mode") || "list",
   searchQuery: "",
   isGasEnvironment: typeof google !== "undefined" && typeof google.script !== "undefined",
   appsScriptUrl: DEFAULT_EXEC_URL,
   categories: [
-    "Wszystko",
-    "Relacje i Bliskość",
-    "Biologia & Psychofizjologia",
-    "Tożsamość & Gender",
-    "Edukacja Seksualna",
-    "Psychometria & Metodologia",
-    "Materiały Własne SKN"
+    "Wszystkie materiały",
+    "01. Fundamenty & Rozwój Psychoseksualny",
+    "02. Diagnostyka, Psychometria & Metodologia",
+    "03. Seksuologia Kliniczna & Psychoterapia",
+    "04. Somatoseksuologia & Farmakoterapia",
+    "05. Tożsamość, Różnorodność Płciowa & Relacje",
+    "06. Seksuologia Sądowa & Wiktymologia",
+    "07. Edukacja, Zdrowie Publiczne & Profilaktyka",
+    "08. Repozytorium Badawcze SKN"
   ],
   selectedUploadFile: null,
   uploadBase64: null,
@@ -98,6 +101,7 @@ function initApp() {
   localStorage.setItem("APPS_SCRIPT_WEBAPP_URL", DEFAULT_EXEC_URL);
   restoreAuthSession();
   renderCategoryPills();
+  setViewMode(AppState.viewMode);
   setupGlobalListeners();
   updateGasStatusIndicator();
   loadArticles();
@@ -215,14 +219,42 @@ function setupGlobalListeners() {
 }
 
 const CATEGORY_ICONS = {
+  "Wszystkie materiały": "fas fa-shapes text-indigo-500",
   "Wszystko": "fas fa-shapes text-indigo-500",
-  "Relacje i Bliskość": "fas fa-folder text-amber-500",
-  "Biologia & Psychofizjologia": "fas fa-dna text-emerald-500",
-  "Tożsamość & Gender": "fas fa-venus-mars text-purple-500",
-  "Edukacja Seksualna": "fas fa-book-open text-blue-500",
-  "Psychometria & Metodologia": "fas fa-chart-pie text-cyan-500",
-  "Materiały Własne SKN": "fas fa-lock text-rose-500"
+  "01. Fundamenty & Rozwój Psychoseksualny": "fas fa-seedling text-emerald-500",
+  "02. Diagnostyka, Psychometria & Metodologia": "fas fa-chart-pie text-cyan-500",
+  "03. Seksuologia Kliniczna & Psychoterapia": "fas fa-heart-pulse text-rose-500",
+  "04. Somatoseksuologia & Farmakoterapia": "fas fa-capsules text-amber-500",
+  "05. Tożsamość, Różnorodność Płciowa & Relacje": "fas fa-venus-mars text-purple-500",
+  "06. Seksuologia Sądowa & Wiktymologia": "fas fa-scale-balanced text-slate-500",
+  "07. Edukacja, Zdrowie Publiczne & Profilaktyka": "fas fa-book-open text-blue-500",
+  "08. Repozytorium Badawcze SKN": "fas fa-microscope text-indigo-600"
 };
+
+/**
+ * Przełączanie trybu widoku (Zwarta Lista 'list' / Siatka Kafelków 'grid')
+ */
+function setViewMode(mode) {
+  AppState.viewMode = mode === "grid" ? "grid" : "list";
+  try {
+    localStorage.setItem("kc_view_mode", AppState.viewMode);
+  } catch (e) {}
+
+  const listBtn = document.getElementById("view-mode-list-btn");
+  const gridBtn = document.getElementById("view-mode-grid-btn");
+  if (listBtn && gridBtn) {
+    if (AppState.viewMode === "list") {
+      listBtn.className = "p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer bg-white text-indigo-600 shadow-xs";
+      gridBtn.className = "p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer text-slate-500 hover:text-slate-800";
+    } else {
+      listBtn.className = "p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer text-slate-500 hover:text-slate-800";
+      gridBtn.className = "p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer bg-white text-indigo-600 shadow-xs";
+    }
+  }
+
+  filterAndRenderArticles();
+}
+window.setViewMode = setViewMode;
 
 /**
  * Pigułki kategorii w lewym panelu bocznym oraz mobilnym Drawerze
@@ -247,7 +279,7 @@ function renderCategoryPills() {
     mobileCountBadge.textContent = `${currentCategoryCount} prac`;
   }
   if (drawerCount) {
-    drawerCount.textContent = `Aktywna: ${AppState.activeCategory} (${currentCategoryCount} prac)`;
+    drawerCount.textContent = `Aktywny: ${AppState.activeCategory} (${currentCategoryCount} prac)`;
   }
 
   // Funkcja pomocnicza do tworzenia przycisku kategorii
@@ -258,27 +290,27 @@ function renderCategoryPills() {
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `w-full text-left px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer active:scale-98 ${
+    btn.className = `w-full text-left ${isMobileDrawer ? 'px-3 py-2 rounded-xl' : 'px-2.5 py-1 rounded-lg'} transition-all duration-150 flex items-center justify-between gap-1.5 cursor-pointer active:scale-98 ${
       isActive
-        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 font-semibold scale-[1.01]"
+        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm font-semibold scale-[1.01]"
         : "bg-white hover:bg-indigo-50/70 text-slate-700 hover:text-indigo-900 border border-slate-200/80 shadow-xs"
     }`;
 
     btn.innerHTML = `
-      <div class="flex items-center gap-2.5 min-w-0 flex-1">
-        <div class="w-6 h-6 rounded-lg ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-indigo-600"} flex items-center justify-center shrink-0">
-          <i class="${iconClass} text-xs ${isActive ? "!text-white" : ""}"></i>
+      <div class="flex items-center gap-1.5 min-w-0 flex-1">
+        <div class="${isMobileDrawer ? 'w-5 h-5 rounded-lg' : 'w-4 h-4 rounded-md'} ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-indigo-600"} flex items-center justify-center shrink-0">
+          <i class="${iconClass} ${isMobileDrawer ? 'text-[11px]' : 'text-[10px]'} ${isActive ? "!text-white" : ""}"></i>
         </div>
-        <span class="text-[12.5px] font-medium leading-[1.25] text-left break-words whitespace-normal flex-1">${category}</span>
+        <span class="${isMobileDrawer ? 'text-[11.5px]' : 'text-[11px]'} font-medium leading-tight text-left break-words whitespace-normal flex-1">${category}</span>
       </div>
-      <span class="px-2 py-0.5 rounded-full text-[11px] font-mono shrink-0 ${
+      <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono shrink-0 ${
         isActive ? "bg-white/25 text-white font-bold" : "bg-slate-100 text-slate-600 border border-slate-200/60"
       }">${count}</span>
     `;
 
     btn.addEventListener("click", () => {
-      if (category === "Materiały Własne SKN" && AppState.currentRole === "PUBLIC") {
-        showToast("Strefa Materiałów Własnych SKN wymaga autoryzacji. Zaloguj się kodem PIN członka/administratora.", "info");
+      if ((category === "08. Repozytorium Badawcze SKN" || category === "Materiały Własne SKN") && AppState.currentRole === "PUBLIC") {
+        showToast("Strefa Repozytorium SKN wymaga autoryzacji. Zaloguj się kodem PIN członka/administratora.", "info");
         if (isMobileDrawer) closeCategoryDrawer();
         openLoginModal();
         return;
@@ -403,11 +435,51 @@ const normalizeCategories = (categoryStr) => {
 window.normalizeCategories = normalizeCategories;
 
 /**
- * Sprawdza czy artykuł należy do danej kategorii (obsługa wielu kategorii)
+ * Mapowanie dowolnej nazwy kategorii/tagu na jeden z 8 oficjalnych Działów Wiedzy SKN
+ */
+function mapToAcademicDepartment(rawCat) {
+  if (!rawCat) return "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+  const c = String(rawCat).toLowerCase().trim();
+  if (c.startsWith("01") || c.includes("fundament") || c.includes("rozwoj") || c.includes("rozwój") || c.includes("ewolucj") || c.includes("biologia") || c.includes("psychofizjologia")) {
+    return "01. Fundamenty & Rozwój Psychoseksualny";
+  }
+  if (c.startsWith("02") || c.includes("diagnostyk") || c.includes("psychometri") || c.includes("metodolog") || c.includes("dsm") || c.includes("icd") || c.includes("wytyczne") || c.includes("klasyfikacj")) {
+    return "02. Diagnostyka, Psychometria & Metodologia";
+  }
+  if (c.startsWith("03") || c.includes("klinicz") || c.includes("psychoterap") || c.includes("dysfunkcj") || c.includes("zaburzen") || c.includes("terapi")) {
+    return "03. Seksuologia Kliniczna & Psychoterapia";
+  }
+  if (c.startsWith("04") || c.includes("somato") || c.includes("farmako") || c.includes("lekow") || c.includes("medycyn") || c.includes("hormon") || c.includes("urolog") || c.includes("ginekolog")) {
+    return "04. Somatoseksuologia & Farmakoterapia";
+  }
+  if (c.startsWith("05") || c.includes("tozsamosc") || c.includes("tożsamość") || c.includes("gender") || c.includes("relacj") || c.includes("bliskosc") || c.includes("bliskość") || c.includes("lgbt") || c.includes("orientacj") || c.includes("dysfori")) {
+    return "05. Tożsamość, Różnorodność Płciowa & Relacje";
+  }
+  if (c.startsWith("06") || c.includes("sadow") || c.includes("sądow") || c.includes("wiktymolog") || c.includes("przestepcz") || c.includes("parafili") || c.includes("przemoc")) {
+    return "06. Seksuologia Sądowa & Wiktymologia";
+  }
+  if (c.startsWith("08") || c.includes("repozytorium") || c.includes("badawcz") || c.includes("własne skn") || c.includes("wlasne skn") || c.includes("materiały własne") || c.includes("seminar") || c.includes("skn")) {
+    return "08. Repozytorium Badawcze SKN";
+  }
+  if (c.startsWith("07") || c.includes("edukacj") || c.includes("zdrowie") || c.includes("profilaktyk")) {
+    return "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+  }
+  return "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+}
+window.mapToAcademicDepartment = mapToAcademicDepartment;
+
+/**
+ * Sprawdza czy artykuł należy do danego działu wiedzy / kategorii
  */
 function articleHasCategory(article, targetCategory) {
   if (!article || !targetCategory) return false;
-  if (targetCategory === "Wszystko") return true;
+  if (targetCategory === "Wszystkie materiały" || targetCategory === "Wszystko") return true;
+
+  const isSeminar = (article.publication_type === "seminar_presentation" || article.meta?.publication_type === "seminar_presentation" || article.publicationType === "seminar_presentation");
+  if (targetCategory === "08. Repozytorium Badawcze SKN" && (isSeminar || isInternalArticle(article))) {
+    return true;
+  }
+
   const meta = article.meta || article.data || article;
   const rawCats = [
     article.category,
@@ -417,6 +489,9 @@ function articleHasCategory(article, targetCategory) {
     article.Kategoria,
     meta.Kategoria
   ].filter(Boolean);
+
+  const mappedDept = mapToAcademicDepartment(rawCats.join(", "));
+  if (mappedDept === targetCategory) return true;
 
   const normalized = rawCats.flatMap(c => normalizeCategories(c));
   const targetLower = targetCategory.toLowerCase().trim();
@@ -429,14 +504,14 @@ function articleHasCategory(article, targetCategory) {
 window.articleHasCategory = articleHasCategory;
 
 function getCategoryCount(category) {
-  if (category === "Wszystko") {
+  if (category === "Wszystkie materiały" || category === "Wszystko") {
     if (AppState.currentRole === "PUBLIC") {
       return AppState.articles.filter((a) => !isInternalArticle(a)).length;
     }
     return AppState.articles.length;
   }
   return AppState.articles.filter((a) => {
-    if (AppState.currentRole === "PUBLIC" && isInternalArticle(a) && category !== "Materiały Własne SKN") {
+    if (AppState.currentRole === "PUBLIC" && isInternalArticle(a) && category !== "08. Repozytorium Badawcze SKN" && category !== "Materiały Własne SKN") {
       return false;
     }
     return articleHasCategory(a, category);
@@ -598,27 +673,49 @@ window.addDeletedArticleId = markAsTrashed;
 
 function isArticleTrashed(article) {
   if (!article) return false;
+  if (typeof article === "string") {
+    const trashed = getTrashedIds();
+    return trashed.includes(article);
+  }
+  const status = String(article.Status || article.status || article.STATUS || "").trim().toUpperCase();
+  if (status === "TRASHED" || status === "DELETED" || status === "KOSZ" || status === "USUNIETY" || status === "USUNIĘTY" || article.trashed === true || article.deleted === true) {
+    return true;
+  }
   const trashed = getTrashedIds();
-  if (trashed.length === 0) return false;
-  if (typeof article === "string") return trashed.includes(article);
-  const id = article.id || article.ID_Artykulu || article.fileId || article.fileIdOriginal;
-  if (id && trashed.includes(id)) return true;
-  if (article.id && trashed.includes(article.id)) return true;
-  if (article.fileId && trashed.includes(article.fileId)) return true;
-  if (article.fileIdOriginal && trashed.includes(article.fileIdOriginal)) return true;
-  if (article.FileID_Oryginal && trashed.includes(article.FileID_Oryginal)) return true;
+  if (trashed.length > 0) {
+    const id = article.id || article.ID_Artykulu || article.fileId || article.fileIdOriginal;
+    if (id && trashed.includes(id)) return true;
+    if (article.id && trashed.includes(article.id)) return true;
+    if (article.fileId && trashed.includes(article.fileId)) return true;
+    if (article.fileIdOriginal && trashed.includes(article.fileIdOriginal)) return true;
+    if (article.FileID_Oryginal && trashed.includes(article.FileID_Oryginal)) return true;
+  }
   return false;
 }
 window.isArticleTrashed = isArticleTrashed;
 
 function getCachedArticles() {
   try {
-    const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem("skn_articles_cache");
+    const raw = localStorage.getItem(CACHE_KEY) || 
+                localStorage.getItem("cached_articles") || 
+                localStorage.getItem("kalejdoskop_articles") || 
+                localStorage.getItem("skn_articles_cache");
     let articles = [];
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) articles = parsed;
+      if (Array.isArray(parsed)) {
+        // Natychmiastowe odrzucenie TRASHED/DELETED już na poziomie startu
+        articles = parsed.filter((item) => {
+          if (!item) return false;
+          const status = String(item.Status || item.status || item.STATUS || "").trim().toUpperCase();
+          if (status === "TRASHED" || status === "DELETED" || status === "KOSZ" || status === "USUNIETY" || status === "USUNIĘTY" || item.trashed === true || item.deleted === true) {
+            return false;
+          }
+          return !isArticleTrashed(item);
+        });
+      }
     }
+
     const webArticles = getWebArticlesCache();
     webArticles.forEach((wa) => {
       if (!isArticleTrashed(wa) && !articles.some((a) => a.id === wa.id)) {
@@ -626,41 +723,28 @@ function getCachedArticles() {
       }
     });
 
-    // Dołączenie prezentacji seminaryjnych SKN
-    DEFAULT_SEMINAR_ARTICLES.forEach((sa) => {
-      if (isArticleTrashed(sa)) return;
-      const existing = articles.find((a) => a.id === sa.id);
-      if (!existing) {
-        articles.unshift(sa);
-      } else {
-        if (!existing.reviews || existing.reviews.length === 0) {
-          existing.reviews = sa.reviews;
-        }
-        if (!existing.publication_type) {
-          existing.publication_type = sa.publication_type;
-          existing.publicationType = sa.publicationType;
-        }
-      }
-    });
-
     articles = articles.filter((a) => !isArticleTrashed(a));
-    return articles.length > 0 ? articles : DEFAULT_SEMINAR_ARTICLES.filter((a) => !isArticleTrashed(a));
+    return articles;
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
-    return DEFAULT_SEMINAR_ARTICLES.filter((a) => !isArticleTrashed(a));
+    return [];
   }
 }
 
 function saveArticlesToCache(articles) {
   try {
-    if (Array.isArray(articles) && articles.length > 0) {
+    if (Array.isArray(articles)) {
+      const cleanArticles = articles.filter((a) => !isArticleTrashed(a));
       // Upewnij się, że artykuły WEB są także trwale zachowane w dedykowanym kluczu
-      articles.forEach((a) => {
+      cleanArticles.forEach((a) => {
         if (a.type === "WEB" || a.isWeb === true) {
           saveWebArticleToCache(a);
         }
       });
-      localStorage.setItem(CACHE_KEY, JSON.stringify(articles));
+      const serialized = JSON.stringify(cleanArticles);
+      localStorage.setItem(CACHE_KEY, serialized);
+      localStorage.setItem("cached_articles", serialized);
+      localStorage.setItem("kalejdoskop_articles", serialized);
       localStorage.setItem(CACHE_TIME_KEY, new Date().toISOString());
     }
   } catch (e) {
@@ -681,32 +765,41 @@ function setSyncStatus(status, customText) {
   }
 
   if (status === "syncing") {
-    indicator.className = "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300";
-    if (icon) icon.className = "fas fa-arrows-rotate text-indigo-600 animate-spin text-[11px]";
-    if (text) text.innerText = customText || "Synchronizuję z bazą...";
+    indicator.className = "inline-flex items-center gap-1.5 px-3 py-0.5 h-6 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
+    if (icon) {
+      icon.innerHTML = `<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>`;
+      icon.className = "w-3.5 h-3.5 stroke-[2] text-emerald-600 animate-spin shrink-0";
+      icon.style.animation = "spin 1s linear infinite";
+    }
+    if (text) {
+      text.innerText = customText || "Synchronizacja...";
+      text.classList.remove("hidden");
+    }
     indicator.style.display = "inline-flex";
-    indicator.style.opacity = "1";
   } else if (status === "synced") {
     AppState.isOffline = false;
     window.isOffline = false;
-    indicator.className = "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all duration-300";
-    if (icon) icon.className = "fas fa-arrows-rotate text-emerald-600 text-[11px]";
-    if (text) text.innerText = customText || "✓ Baza aktualna";
+    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    if (icon) {
+      icon.innerHTML = `<path d="M20 6 9 17l-5-5"/>`;
+      icon.className = "w-3.5 h-3.5 stroke-[2.5] text-emerald-600 shrink-0";
+      icon.style.animation = "none";
+    }
+    if (text) {
+      text.innerText = customText || "Aktualna";
+    }
     indicator.style.display = "inline-flex";
-    indicator.style.opacity = "1";
-
-    syncTimeout = setTimeout(() => {
-      indicator.style.opacity = "0.9";
-      indicator.className = "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all duration-500";
-      if (icon) icon.className = "fas fa-arrows-rotate text-emerald-600 text-[10px]";
-      if (text) text.innerText = "✓ Baza aktualna";
-    }, 2500);
   } else if (status === "offline") {
-    indicator.className = "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs transition-all duration-300";
-    if (icon) icon.className = "fas fa-cloud text-amber-600 text-[11px]";
-    if (text) text.innerText = customText || "Tryb offline (cache)";
+    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    if (icon) {
+      icon.innerHTML = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>`;
+      icon.className = "w-3.5 h-3.5 stroke-[2] text-amber-600 shrink-0";
+      icon.style.animation = "none";
+    }
+    if (text) {
+      text.innerText = customText || "Tryb offline";
+    }
     indicator.style.display = "inline-flex";
-    indicator.style.opacity = "1";
   } else {
     indicator.style.display = "none";
   }
@@ -725,10 +818,10 @@ function loadArticles() {
     AppState.articles = [];
     updateLibraryWithRealDriveFiles(cachedList);
     showLoadingSpinner(false);
-    setSyncStatus("syncing", "Synchronizuję z bazą...");
+    setSyncStatus("syncing", "Synchronizacja...");
   } else {
     showLoadingSpinner(true);
-    setSyncStatus("syncing", "Pobieram bazę publikacji...");
+    setSyncStatus("syncing", "Pobieranie bazy...");
   }
 
   // Cicha synchronizacja z backendem Google Apps Script (Background Fetch)
@@ -1049,8 +1142,8 @@ function filterAndRenderArticles() {
   AppState.articles = (AppState.articles || []).filter((a) => !isArticleTrashed(a));
   let list = [...AppState.articles];
 
-  // 1. Kategoria (obsługa wielu kategorii rozdzielonych |, ,, /)
-  if (AppState.activeCategory !== "Wszystko") {
+  // 1. Kategoria (8 Działów Wiedzy SKN)
+  if (AppState.activeCategory !== "Wszystkie materiały" && AppState.activeCategory !== "Wszystko") {
     list = list.filter((a) => articleHasCategory(a, AppState.activeCategory));
   } else {
     if (AppState.currentRole === "PUBLIC") {
@@ -1953,10 +2046,10 @@ function openCategoryChangeModal(articleId) {
 
   const optionsContainer = document.getElementById("cat-modal-options");
   if (optionsContainer) {
-    const availableCategories = AppState.categories.filter((c) => c !== "Wszystko");
+    const availableCategories = AppState.categories.filter((c) => c !== "Wszystko" && c !== "Wszystkie materiały");
     optionsContainer.innerHTML = availableCategories
       .map((cat) => {
-        const isSelected = cat === currentCat;
+        const isSelected = cat === currentCat || cat === mapToAcademicDepartment(currentCat);
         return `
           <button type="button" onclick="changeArticleCategory('${articleId}', '${escapeHtml(cat)}')" class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition flex items-center justify-between cursor-pointer active:scale-95 ${
             isSelected
@@ -2051,7 +2144,7 @@ async function changeArticleCategory(articleId, newCategory) {
 window.changeArticleCategory = changeArticleCategory;
 
 /**
- * Renderowanie kart artykułów (Light Academic Theme - Przestronny i Elegancki Układ Tablet/Desktop)
+ * Renderowanie publikacji (Domyślny widok zwartej listy 'list' lub siatka kafelków 'grid')
  */
 function renderArticleCards(articles) {
   const grid = document.getElementById("articles-grid") || document.getElementById("articlesGrid");
@@ -2068,6 +2161,13 @@ function renderArticleCards(articles) {
 
   if (emptyState) emptyState.classList.add("hidden");
   grid.classList.remove("hidden");
+
+  const isListView = (AppState.viewMode === "list");
+  if (isListView) {
+    grid.className = "flex flex-col gap-2 w-full mt-2";
+  } else {
+    grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 w-full mt-2";
+  }
 
   const isAdmin = (AppState.currentRole === "ADMIN");
 
@@ -2096,7 +2196,7 @@ function renderArticleCards(articles) {
     }
 
     const deleteBtnHtml = isAdmin
-      ? `<button onclick="openDeleteModal('${art.id}', event)" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer ml-auto shrink-0" title="Usuń / Przenieś do kosza">
+      ? `<button onclick="openDeleteModal('${art.id}', event)" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer ml-auto shrink-0" title="Usuń / Przenieś do kosza">
           <i class="fas fa-trash-can text-xs"></i>
         </button>`
       : "";
@@ -2105,16 +2205,14 @@ function renderArticleCards(articles) {
     const displayTitleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || meta.titleOriginal || art.titleEN || art.titleOriginal || art.originalTitle || "");
     const displayAuthors = cleanDisplayText(meta.authors || art.authors || "Autor nieznany");
     const displayYear = meta.year || art.year || "";
-    const displayCategory = meta.category || art.category || "Edukacja Seksualna";
+    const rawCategory = meta.category || art.category || "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+    const mappedCategory = mapToAcademicDepartment(rawCategory);
     const displayAbstract = cleanAbstractText(meta.abstractPL || art.abstractPL);
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
-    const catList = normalizeCategories(displayCategory);
-    const categoryBadgeHtml = (catList.length > 0 ? catList : ["Edukacja Seksualna"]).map(cat => {
-      return isAdmin
-        ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić kategorię publikacji"><span>${escapeHtml(cat)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
-        : `<span class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0">${escapeHtml(cat)}</span>`;
-    }).join(" ");
+    const categoryBadgeHtml = isAdmin
+      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić dział publikacji"><span>${escapeHtml(mappedCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
+      : `<span class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0">${escapeHtml(mappedCategory)}</span>`;
 
     const tagsHtml = keywordsList
       .map(
@@ -2127,64 +2225,120 @@ function renderArticleCards(articles) {
       ? `<span class="text-[10.5px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
       : "";
 
-    // Dolny pasek akcji (Czysta stopka karty: Oryginał oraz Raport)
+    // Przyciski akcji (Oryginał, Czytaj, Raport)
     let bottomButtonsHtml = "";
+    let listButtonsHtml = "";
+
     if (isInternal) {
       if (isWatermarking) {
         bottomButtonsHtml = `
-          <button disabled class="col-span-2 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-wait truncate">
+          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-wait truncate">
             <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
+            <span class="truncate">Znakowanie...</span>
+          </button>`;
+        listButtonsHtml = `
+          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-md cursor-wait truncate">
+            <i class="fas fa-circle-notch fa-spin text-rose-600 text-[10px] shrink-0"></i>
             <span class="truncate">Znakowanie...</span>
           </button>`;
       } else {
         bottomButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="col-span-2 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-xl transition-all shadow-sm truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-xl transition-all shadow-sm truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
             <i class="fas fa-file-shield text-xs shrink-0"></i>
             <span class="truncate">Czytaj ze stemplem</span>
+          </button>`;
+        listButtonsHtml = `
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
+            <i class="fas fa-file-shield text-[10px] shrink-0"></i>
+            <span class="truncate">Czytaj</span>
           </button>`;
       }
     } else if (isWeb) {
       const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
       bottomButtonsHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
           <i class="fas fa-globe text-sky-500 text-xs shrink-0"></i>
           <span class="truncate">Źródło ↗</span>
         </a>
         ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
+          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
             <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
             <span class="truncate">Raport...</span>
           </button>
         ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
             <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
         ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
             <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
+          </button>
+        `}`;
+
+      listButtonsHtml = `
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
+          <i class="fas fa-globe text-sky-500 text-[10px] shrink-0"></i>
+          <span class="truncate">Źródło ↗</span>
+        </a>
+        ${isTranslating ? `
+          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-md cursor-wait truncate">
+            <i class="fas fa-circle-notch fa-spin text-purple-600 text-[10px] shrink-0"></i>
+            <span class="truncate">Raport...</span>
+          </button>
+        ` : hasReport ? `
+          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+            <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
+            <span class="truncate">Raport</span>
+          </button>
+        ` : `
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+            <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
         `}`;
     } else {
       bottomButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik oryginału">
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz czytnik oryginału">
           <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i>
-          <span class="truncate">Oryginał</span>
+          <span class="truncate">Czytaj →</span>
         </button>
         ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
+          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
             <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
             <span class="truncate">Raport...</span>
           </button>
         ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
             <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
         ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
             <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
+            <span class="truncate">Raport</span>
+          </button>
+        `}`;
+
+      listButtonsHtml = `
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz czytnik oryginału">
+          <i class="fas fa-file-pdf text-rose-500 text-[10px] shrink-0"></i>
+          <span class="truncate">Czytaj →</span>
+        </button>
+        ${isTranslating ? `
+          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-md cursor-wait truncate">
+            <i class="fas fa-circle-notch fa-spin text-purple-600 text-[10px] shrink-0"></i>
+            <span class="truncate">Raport...</span>
+          </button>
+        ` : hasReport ? `
+          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+            <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
+            <span class="truncate">Raport</span>
+          </button>
+        ` : `
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+            <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
         `}`;
@@ -2202,58 +2356,117 @@ function renderArticleCards(articles) {
 
     const card = document.createElement("div");
     card.id = `card-${art.id}`;
-    card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-4 shadow-sm hover:shadow-md transition-all duration-200 select-text";
 
-    card.innerHTML = `
-      <div class="w-full flex-1">
-        <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła + Kosz -->
-        <div class="flex items-center justify-between gap-1.5 mb-2">
-          <div class="flex flex-wrap items-center gap-1.5">
-            ${categoryBadgeHtml}
-            ${seminarBadge}
-            ${reviewsBadge}
-            ${webSourceBadge}
-            ${accessBadge}
+    if (isListView) {
+      // 1. WIDOK ZWARTEJ LISTY (Compact List Row - Standard Mikro-Etykiet h-6 text-[11px] font-semibold)
+      const listDeleteBtn = isAdmin
+        ? `<button onclick="openDeleteModal('${art.id}', event)" class="h-6 w-6 p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Usuń / Przenieś do kosza">
+            <i class="fas fa-trash-can text-[10px]"></i>
+          </button>`
+        : "";
+
+      card.className = "w-full bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl py-2.5 px-4 shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1";
+      card.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <!-- Lewa część: Kategoria + Tytuł + Autorzy (Bez hashtagów w liście) -->
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+              ${categoryBadgeHtml}
+              ${seminarBadge}
+              ${reviewsBadge}
+              ${webSourceBadge}
+              ${accessBadge}
+            </div>
+
+            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+              ${escapeHtml(displayTitlePL)}
+            </h3>
+
+            ${displayTitleEN && displayTitleEN !== displayTitlePL ? `<p class="text-[12px] text-slate-500 italic mb-0.5 line-clamp-1 truncate" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
+
+            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600">
+              <span><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
+              ${displayYear ? `<span><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
+            </div>
           </div>
-          ${deleteBtnHtml}
-        </div>
 
-        <!-- 2. Tytuł polski (czytelny, pogrubiony) -->
-        <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
-          ${escapeHtml(displayTitlePL)}
-        </h3>
-
-        <!-- 3. Tytuł oryginalny (kursywa) -->
-        ${displayTitleEN ? `<p class="text-xs text-slate-500 italic mb-2 line-clamp-1 break-all" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
-
-        <!-- 4. Autorzy i rok (z ikonami) -->
-        <div class="text-xs text-slate-600 mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-          <span><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
-          ${displayYear ? `<span><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
-        </div>
-
-        <!-- 5. Sekcja abstraktu (zintegrowana na jasnoszarym tle) -->
-        <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/80 hover:border-indigo-300 rounded-xl p-2.5 text-xs text-slate-600 leading-relaxed max-h-[96px] overflow-y-auto abstract-scrollbar mb-2.5 transition-all duration-200 cursor-pointer shadow-2xs" onclick="toggleCardAbstract('${art.id}', event)">
-          <p id="card-abstract-text-${art.id}" class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
-          <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/60 text-[10.5px]">
-            <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
-              <span id="card-abstract-btn-${art.id}">Rozwiń ▾</span>
+          <!-- Prawa część: Przyciski akcji (h-6, text-[11px] font-semibold mikro-standard) -->
+          <div class="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-end">
+            <button type="button" onclick="toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1 px-2 py-0.5 h-6 rounded-md text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition cursor-pointer shrink-0" title="Pokaż streszczenie / abstrakt">
+              <span id="card-abstract-btn-${art.id}">Streszczenie ▾</span>
             </button>
-            <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-slate-400 hover:text-slate-700 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer">
-              <span>Szczegóły →</span>
-            </button>
+
+            <div class="flex items-center gap-1.5">
+              ${listButtonsHtml}
+              ${listDeleteBtn}
+            </div>
           </div>
         </div>
 
-        <!-- 6. Tagi (Słowa kluczowe) -->
-        ${tagsHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>` : ""}
-      </div>
+        <!-- Rozwijany Abstrakt wiersza -->
+        <div id="card-abstract-${art.id}" class="card-abstract-container hidden bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 text-xs text-slate-700 leading-relaxed transition-all duration-200 shadow-2xs mt-1">
+          <p id="card-abstract-text-${art.id}">${escapeHtml(displayAbstract)}</p>
+          <div class="flex justify-end mt-1.5 pt-1 border-t border-slate-200/60">
+            <button type="button" onclick="openArticleDetail('${art.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs inline-flex items-center gap-1 hover:underline cursor-pointer">
+              <span>Przejdź do pełnej analizy & szczegółów →</span>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      // 2. WIDOK SIATKI KAFELKÓW (Academic Card Grid)
+      card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-4 shadow-sm hover:shadow-md transition-all duration-200 select-text";
+      card.innerHTML = `
+        <div class="w-full flex-1">
+          <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła + Kosz -->
+          <div class="flex items-center justify-between gap-1.5 mb-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              ${categoryBadgeHtml}
+              ${seminarBadge}
+              ${reviewsBadge}
+              ${webSourceBadge}
+              ${accessBadge}
+            </div>
+            ${deleteBtnHtml}
+          </div>
 
-      <!-- 7. Dolny pasek akcji (Czysta stopka karty: Oryginał & Raport PL) -->
-      <div class="grid grid-cols-2 gap-2 mt-auto pt-2.5 border-t border-slate-100 w-full">
-        ${bottomButtonsHtml}
-      </div>
-    `;
+          <!-- 2. Tytuł polski -->
+          <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+            ${escapeHtml(displayTitlePL)}
+          </h3>
+
+          <!-- 3. Tytuł oryginalny -->
+          ${displayTitleEN ? `<p class="text-xs text-slate-500 italic mb-2 line-clamp-1 break-all" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
+
+          <!-- 4. Autorzy i rok -->
+          <div class="text-xs text-slate-600 mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+            <span><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
+            ${displayYear ? `<span><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
+          </div>
+
+          <!-- 5. Sekcja abstraktu -->
+          <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/80 hover:border-indigo-300 rounded-xl p-2.5 text-xs text-slate-600 leading-relaxed max-h-[96px] overflow-y-auto abstract-scrollbar mb-2.5 transition-all duration-200 cursor-pointer shadow-2xs" onclick="toggleCardAbstract('${art.id}', event)">
+            <p id="card-abstract-text-${art.id}" class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
+            <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/60 text-[10.5px]">
+              <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
+                <span id="card-abstract-btn-${art.id}">Rozwiń ▾</span>
+              </button>
+              <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-slate-400 hover:text-slate-700 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer">
+                <span>Szczegóły →</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 6. Tagi -->
+          ${tagsHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>` : ""}
+        </div>
+
+        <!-- 7. Dolny pasek akcji -->
+        <div class="grid grid-cols-2 gap-2 mt-auto pt-2.5 border-t border-slate-100 w-full">
+          ${bottomButtonsHtml}
+        </div>
+      `;
+    }
 
     grid.appendChild(card);
   });
@@ -2395,27 +2608,31 @@ function updateAuthUI() {
       roleBadge.style.setProperty("display", "none", "important");
     }
     if (userSessionPill) {
+      userSessionPill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 bg-white border border-slate-200 rounded-md text-[11px] font-medium shrink-0";
       userSessionPill.classList.remove("hidden");
       userSessionPill.style.setProperty("display", "inline-flex", "important");
     }
     if (userDisplayName) {
-      userDisplayName.innerText = AppState.currentUser.name || (AppState.currentRole === "ADMIN" ? "Administrator" : "Członek SKN");
+      userDisplayName.innerText = AppState.currentUser.name || (AppState.currentRole === "ADMIN" ? "Atomekb73" : "Członek SKN");
     }
     if (userDisplayRole) {
       userDisplayRole.innerText = AppState.currentRole === "ADMIN" ? "Administrator" : "Członek SKN";
-      userDisplayRole.className = AppState.currentRole === "ADMIN" ? "font-bold text-amber-800 text-[11px]" : "font-semibold text-indigo-700 text-[11px]";
+      userDisplayRole.className = AppState.currentRole === "ADMIN" 
+        ? "hidden sm:inline font-semibold text-amber-700 text-[10.5px] bg-amber-50 border border-amber-200 px-1 py-0.5 rounded leading-none" 
+        : "hidden sm:inline font-semibold text-indigo-700 text-[10.5px] bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded leading-none";
     }
     if (loginNavBtn) {
       loginNavBtn.classList.add("hidden");
       loginNavBtn.style.setProperty("display", "none", "important");
     }
     if (logoutNavBtn) {
+      logoutNavBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-medium border border-slate-200 transition cursor-pointer active:scale-95 shrink-0";
       logoutNavBtn.classList.remove("hidden");
       logoutNavBtn.style.setProperty("display", "inline-flex", "important");
     }
   } else {
     if (roleBadge) {
-      roleBadge.innerHTML = `<span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap"><i class="fas fa-eye text-slate-400 text-xs"></i> <span>Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
+      roleBadge.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0"><svg class="w-3 h-3 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span>Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
       roleBadge.classList.remove("hidden");
       roleBadge.style.setProperty("display", "inline-block", "important");
     }
@@ -5649,19 +5866,33 @@ function toggleCardAbstract(articleId, event) {
   const cardAbstract = document.getElementById(`card-abstract-${articleId}`);
   const textEl = document.getElementById(`card-abstract-text-${articleId}`);
   const btnEl = document.getElementById(`card-abstract-btn-${articleId}`);
-  if (!cardAbstract || !textEl) return;
+  if (!cardAbstract) return;
 
-  const isExpanded = textEl.classList.contains("line-clamp-none");
-  if (isExpanded) {
-    textEl.classList.remove("line-clamp-none");
-    textEl.classList.add("line-clamp-3");
-    cardAbstract.style.maxHeight = "96px";
-    if (btnEl) btnEl.innerText = "Rozwiń ▾";
-  } else {
-    textEl.classList.remove("line-clamp-3");
-    textEl.classList.add("line-clamp-none");
-    cardAbstract.style.maxHeight = "360px";
+  if (cardAbstract.classList.contains("hidden")) {
+    cardAbstract.classList.remove("hidden");
     if (btnEl) btnEl.innerText = "Zwiń ▴";
+    return;
+  }
+
+  if (AppState.viewMode === "list" && !cardAbstract.classList.contains("hidden")) {
+    cardAbstract.classList.add("hidden");
+    if (btnEl) btnEl.innerText = "Streszczenie ▾";
+    return;
+  }
+
+  if (textEl) {
+    const isExpanded = textEl.classList.contains("line-clamp-none");
+    if (isExpanded) {
+      textEl.classList.remove("line-clamp-none");
+      textEl.classList.add("line-clamp-3");
+      cardAbstract.style.maxHeight = "96px";
+      if (btnEl) btnEl.innerText = "Rozwiń ▾";
+    } else {
+      textEl.classList.remove("line-clamp-3");
+      textEl.classList.add("line-clamp-none");
+      cardAbstract.style.maxHeight = "360px";
+      if (btnEl) btnEl.innerText = "Zwiń ▴";
+    }
   }
 }
 window.toggleCardAbstract = toggleCardAbstract;

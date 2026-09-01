@@ -183,3 +183,17 @@ html, body {
   background: #818cf8;
 }
 
+/* Gwarantowana animacja obrotu 360deg dla synchronizacji */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite !important;
+}
+

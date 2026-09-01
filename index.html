@@ -172,272 +172,262 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Sticky Glassmorphic Light Navbar -->
-  <header class="sticky top-0 z-40 light-header px-3 sm:px-8 py-2 sm:py-3.5 flex items-center justify-between transition-all gap-1.5 sm:gap-2">
-    <div class="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink-0 overflow-visible">
-      <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-sm shrink-0 border border-purple-200/50 bg-white/80 p-0.5 flex items-center justify-center">
+  <!-- Sticky Glassmorphic Light Navbar (3-Kolumnowy Układ z Tytułem Biblioteki) -->
+  <header class="sticky top-0 z-40 light-header px-3 sm:px-8 py-2 sm:py-2.5 flex items-center justify-between transition-all gap-2 sm:gap-4">
+    <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0 overflow-visible">
+      <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm shrink-0 border border-purple-200/50 bg-white/80 p-0.5 flex items-center justify-center">
         <img 
           src="/logo.png" 
           alt="Kalejdoskop Café Logo" 
-          class="w-9 h-9 md:w-10 md:h-10 rounded-xl object-contain shadow-sm bg-white/80 p-0.5"
+          class="w-9 h-9 rounded-xl object-contain shadow-sm bg-white/80 p-0.5"
         />
       </div>
       <div class="overflow-visible whitespace-nowrap">
-        <h1 class="text-sm sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-1 sm:gap-2 overflow-visible whitespace-nowrap">
+        <h1 class="text-sm sm:text-base md:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1 sm:gap-1.5 overflow-visible whitespace-nowrap">
           <span>Kalejdoskop</span>
-          <span class="text-gradient-kaleidoscope italic pr-0.5 sm:pr-1 overflow-visible inline-block">Café</span>
+          <span class="text-gradient-kaleidoscope italic pr-0.5 overflow-visible inline-block">Café</span>
         </h1>
         <p class="hidden sm:block text-[11px] text-slate-500 font-medium tracking-wide uppercase">SKN Seksuologii • Baza Wiedzy & AI</p>
       </div>
     </div>
 
-    <!-- Right Controls: Sync Indicator, Role Badge & Action Buttons -->
-    <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-      <!-- Pulsujący Wskaźnik Synchronizacji w Tle (Stale-While-Revalidate) -->
-      <div id="bg-sync-indicator" class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50/90 text-indigo-700 border border-indigo-200 shadow-2xs transition-all duration-300" title="Status połączenia z bazą">
-        <i id="bg-sync-icon" class="fas fa-arrows-rotate text-indigo-600 animate-spin text-[11px]"></i>
-        <span id="bg-sync-text" class="hidden md:inline">Synchronizuję z bazą...</span>
+    <!-- Środek: Inteligentna Biblioteka SKN Seksuologii + Standardy (1:1 skala z logo) -->
+    <div class="hidden md:flex flex-col items-center justify-center text-center px-2">
+      <h2 class="text-sm sm:text-base md:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+        <span>Inteligentna Biblioteka</span>
+        <span class="text-gradient-kaleidoscope font-extrabold">SKN Seksuologii</span>
+      </h2>
+      <p class="text-[11px] text-slate-500 font-medium tracking-wide uppercase whitespace-nowrap">
+        Standard DSM-5-TR & ICD-11 • 8 Akademickich Działów Wiedzy • Soft Delete
+      </p>
+    </div>
+
+    <!-- Prawa strona: Mikro-Etykiety Statusu i Użytkownika (h-6 text-[11px]) -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <!-- Przycisk Instalacji PWA (widoczny gdy instalacja jest dostępna) -->
+      <button id="pwa-install-btn" type="button" onclick="triggerPwaInstall()" class="hidden items-center justify-center px-2 py-0.5 h-6 rounded-md bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 border border-slate-200 text-[11px] font-medium transition-all cursor-pointer active:scale-95 shrink-0" title="Zainstaluj aplikację PWA na urządzeniu">
+        <svg class="w-3 h-3 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
+          <path d="M12 18h.01"/>
+          <path d="m9 10 3 3 3-3"/>
+          <path d="M12 6v7"/>
+        </svg>
+      </button>
+
+      <!-- Wskaźnik Synchronizacji w Tle (h-6 text-[11px] mikro-etykieta z płynnym przejściem) -->
+      <div id="bg-sync-indicator" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0" title="Status synchronizacji bazy">
+        <svg id="bg-sync-icon" class="w-3.5 h-3.5 stroke-[2] text-emerald-600 shrink-0 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        <span id="bg-sync-text" class="text-[11px] font-medium whitespace-nowrap leading-none transition-all duration-300">Aktualna</span>
       </div>
 
       <!-- Badge Roli / Status Sesji -->
       <div id="auth-role-badge">
-        <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
-          <i class="fas fa-eye text-slate-400 text-xs"></i>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0">
+          <svg class="w-3 h-3 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
           <span>Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span>
         </span>
       </div>
 
       <!-- Pigułka Zalogowanego Użytkownika -->
-      <div id="user-session-pill" class="hidden items-center gap-1.5 sm:gap-2 bg-indigo-50/90 border border-indigo-200 rounded-xl px-2 sm:px-3 py-1 text-xs shadow-xs" style="display: none;">
-        <span class="font-bold text-slate-900 flex items-center gap-1 sm:gap-1.5">
-          <i class="fas fa-user-circle text-indigo-600 text-sm"></i>
-          <span id="user-display-name" class="max-w-[80px] sm:max-w-none truncate">Członek SKN</span>
+      <div id="user-session-pill" class="hidden items-center gap-1.5 px-2.5 py-0.5 h-6 bg-white border border-slate-200 rounded-md text-[11px] font-medium shrink-0" style="display: none;">
+        <span class="font-semibold text-slate-900 flex items-center gap-1.5">
+          <svg class="w-3 h-3 stroke-[2] text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span id="user-display-name" class="max-w-[120px] truncate text-[11px] font-medium text-slate-900 leading-none">Atomekb73</span>
         </span>
-        <span class="text-indigo-300 hidden sm:inline">•</span>
-        <span id="user-display-role" class="hidden sm:inline font-semibold text-indigo-700 text-[11px]">Członek SKN</span>
-        <button type="button" onclick="handleLogout()" class="ml-0.5 text-slate-400 hover:text-rose-600 p-0.5 rounded transition cursor-pointer" title="Wyloguj z sesji">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
+        <span id="user-display-role" class="hidden sm:inline font-semibold text-amber-700 text-[10.5px] bg-amber-50 border border-amber-200 px-1 py-0.5 rounded leading-none">Administrator</span>
       </div>
 
-      <!-- Przycisk Instalacji PWA (Pojawia się gdy przeglądarka wspiera instalację) -->
-      <button id="pwa-install-btn" type="button" onclick="triggerPwaInstall()" class="hidden items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-95" title="Zainstaluj aplikację na telefonie lub komputerze">
-        <i class="fas fa-download text-xs text-purple-600"></i>
-        <span class="hidden sm:inline">Zainstaluj App</span>
+      <!-- Przycisk Strefy Członkowskiej -->
+      <button id="btnLoginOpen" onclick="openLoginModal()" class="px-2.5 py-0.5 h-6 rounded-md bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 border border-slate-200 text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shrink-0">
+        <svg class="w-3 h-3 stroke-[2] text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span class="leading-none">Strefa Członkowska</span>
       </button>
 
-      <!-- Przycisk Logowania Członka -->
-      <button id="btnLoginOpen" onclick="openLoginModal()" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 transition flex items-center gap-1 sm:gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap">
-        <i class="fas fa-id-badge text-xs"></i>
-        <span class="md:hidden">Logowanie</span>
-        <span class="hidden md:inline">Logowanie Członka</span>
-      </button>
-
-      <!-- Przycisk Wyloguj (Zapasowy / Mobile) -->
-      <button id="logout-btn" onclick="handleLogout()" style="display: none;" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-medium border border-slate-200 transition flex items-center gap-1 cursor-pointer" title="Wyloguj">
-        <i class="fas fa-sign-out-alt"></i>
-        <span class="hidden sm:inline">Wyloguj</span>
+      <!-- Przycisk Wyloguj (Spójna wysokość h-6, ten sam styl i mikro-rozmiar) -->
+      <button id="logout-btn" onclick="handleLogout()" style="display: none;" class="px-2.5 py-0.5 h-6 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-medium border border-slate-200 transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0" title="Wyloguj z konta">
+        <svg class="w-3 h-3 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="leading-none">Wyloguj</span>
       </button>
     </div>
   </header>
 
-  <!-- Hero Header Section -->
-  <section class="w-full text-center pt-2 sm:pt-5 pb-1 sm:pb-2 px-3 sm:px-4 max-w-5xl mx-auto">
-    <div class="hidden md:inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50/80 border border-indigo-100 text-[11px] sm:text-xs text-indigo-700 font-medium mb-2 shadow-sm">
-      <i class="fas fa-sparkles text-amber-500"></i> Standard DSM-5-TR & ICD-11 • Magazyn: Dysk SKN (Bezpieczny) • Soft Delete
-    </div>
-    <h2 class="text-base sm:text-lg md:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight my-1 sm:mb-1.5 text-center leading-tight">
-      Inteligentna Biblioteka <span class="text-gradient-kaleidoscope">Seksuologii</span>
-    </h2>
-    <p class="hidden md:block text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
-      Dwuwarstwowe repozytorium publikacji naukowych, abstraktów klinicznych oraz tłumaczeń akademickich SKN.
-    </p>
-  </section>
-
-  <!-- Główny Układ 3-Kolumnowy (Full-Width Dashboard Layout: 250px 1fr 260px) -->
-  <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 flex-1 safe-area-bottom">
-    <div class="grid grid-cols-1 lg:grid-cols-[250px_1fr] xl:grid-cols-[250px_1fr_260px] gap-4 items-start">
+  <!-- Główny Układ 2-Kolumnowy (Podciągnięty bezpośrednio pod nawigację: pt-2) -->
+  <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 pt-2 pb-4 flex-1 safe-area-bottom">
+    <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
       
-      <!-- 1. LEWY PANEL BOCZNY (Kategorie & Filtry Tematyczne - Tylko Desktop) -->
-      <aside class="hidden lg:block sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
-        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <i class="fas fa-shapes text-indigo-600"></i>
-            <span>Kategorie Wiedzy</span>
+      <!-- 1. LEWY PANEL BOCZNY (8 Działów Wiedzy & Narzędzia Zarządzania - Auto-Fit Viewport bez scrollbara) -->
+      <aside class="hidden lg:block sticky top-16 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-sm space-y-2">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+          <h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+              <path d="M6 6h10"/>
+              <path d="M6 10h10"/>
+            </svg>
+            <span>Działy Wiedzy</span>
           </h3>
-          <span id="total-categories-badge" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">0 prac</span>
+          <span id="total-categories-badge" class="px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">0 prac</span>
         </div>
 
-        <nav id="categories-container" class="space-y-1.5">
-          <!-- Dynamicznie renderowane pigułki w układzie pionowym przez renderCategoryPills() w app.js -->
+        <nav id="categories-container" class="space-y-0.5">
+          <!-- Dynamicznie renderowane 8 Działów Wiedzy przez renderCategoryPills() w app.js -->
         </nav>
 
-        <div class="pt-2.5 border-t border-slate-100 text-[10.5px] text-slate-400 leading-relaxed">
+        <!-- Narzędzia Administratora (Tylko dla ADMIN) -->
+        <div id="admin-actions-container" class="space-y-1.5 pt-2 border-t border-slate-100" style="display: none;">
+          <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Panel Administratora</h4>
+          <button id="open-upload-btn" onclick="openUploadModal()" class="w-full py-1.5 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Dodaj publikację</span>
+          </button>
+          
+          <button id="btn-sync-drive" onclick="handleSyncDriveFolder()" class="w-full py-1.5 px-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+            <span>Skanuj Dysk Google</span>
+          </button>
+
+          <button id="btn-stats-dashboard" onclick="openStatsModal()" class="w-full py-1.5 px-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 stroke-[2] text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            <span>Statystyki Bazy</span>
+          </button>
+          
+          <button id="btn-config-drive" onclick="openConfigModal()" class="w-full py-1.5 px-2.5 bg-white hover:bg-slate-50 text-slate-500 text-xs font-medium rounded-lg border border-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Ustawienia API</span>
+          </button>
+        </div>
+
+        <!-- Narzędzia Członka SKN -->
+        <div id="member-actions-container" class="space-y-1.5 pt-2 border-t border-slate-100" style="display: none;">
+          <button type="button" onclick="sendArticleProposal()" class="w-full py-1.5 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>Zaproponuj publikację</span>
+          </button>
+        </div>
+
+        <div class="pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 leading-tight">
           <p><i class="fas fa-sparkles text-amber-500 mr-1"></i> Standardy DSM-5-TR / ICD-11</p>
         </div>
       </aside>
 
-      <!-- 2. ŚRODKOWA KOLUMNA GŁÓWNA (Wyszukiwarka & Siatka Publikacji) -->
-      <main class="w-full min-w-0 flex flex-col gap-3.5">
+      <!-- 2. GŁÓWNA PRZESTRZEŃ ARTYKUŁÓW (Pełna szerokość) -->
+      <main class="w-full min-w-0 flex flex-col gap-2.5">
         <!-- Mobilny pasek wyboru kategorii (widoczny tylko na ekranach <= 1024px) -->
         <div class="lg:hidden flex items-center justify-between gap-2 p-2 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs">
           <button type="button" onclick="openCategoryDrawer()" class="flex-1 flex items-center justify-between px-3 py-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-xs font-bold transition active:scale-98 cursor-pointer">
             <span class="flex items-center gap-2 truncate">
-              <i class="fas fa-folder-open text-indigo-600 text-sm shrink-0"></i>
-              <span class="text-slate-500 font-normal">Kategoria:</span>
-              <span id="mobile-active-category-label" class="text-indigo-900 font-bold truncate">Wszystko</span>
+              <svg class="w-4 h-4 stroke-[2] text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+              <span class="text-slate-500 font-normal">Dział:</span>
+              <span id="mobile-active-category-label" class="text-indigo-900 font-bold truncate">Wszystkie materiały</span>
             </span>
             <span id="mobile-category-count-badge" class="ml-2 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-white text-indigo-700 border border-indigo-200 shadow-xs shrink-0">0 prac</span>
           </button>
-          <button type="button" onclick="openCategoryDrawer()" class="p-2.5 bg-white hover:bg-slate-50 text-indigo-600 border border-slate-200 rounded-xl text-xs transition cursor-pointer shadow-xs active:scale-95 flex items-center justify-center shrink-0" title="Otwórz menu kategorii">
-            <i class="fas fa-sliders text-sm"></i>
+          <button type="button" onclick="openCategoryDrawer()" class="p-2.5 bg-white hover:bg-slate-50 text-indigo-600 border border-slate-200 rounded-xl text-xs transition cursor-pointer shadow-xs active:scale-95 flex items-center justify-center shrink-0" title="Otwórz menu działów">
+            <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
           </button>
         </div>
 
-        <!-- Dyskretny pasek wyszukiwarki z zaawansowanym sortowaniem i filtrami -->
-        <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-3 space-y-2.5">
-          <div class="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-3 py-1.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100">
-            <i class="fas fa-search text-slate-400 text-sm ml-1"></i>
+        <!-- Jednoliniowy, spójny pasek wyszukiwarki i filtrów (Wyszukiwarka + Sortowanie + Tłumaczenia PL + Przełącznik Widoku) -->
+        <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-2 sm:p-2.5 flex flex-wrap items-center gap-2">
+          <!-- Wyszukiwarka (elastyczna) -->
+          <div class="relative flex-1 min-w-[200px] flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-2.5 py-0.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100 h-8">
+            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input 
               type="text" 
               id="search-input" 
               placeholder="Szukaj po tytule, autorze, abstrakcie, tagach..." 
-              class="w-full bg-transparent border-0 text-slate-800 placeholder-slate-400 px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-0"
+              class="w-full bg-transparent border-0 text-slate-800 placeholder-slate-400 px-2 py-0 text-xs focus:outline-none focus:ring-0"
             >
-            <button id="clear-search-btn" class="hidden text-slate-400 hover:text-slate-600 px-2 py-1 text-sm cursor-pointer" onclick="clearSearchInput()">
-              <i class="fas fa-times"></i>
+            <button id="clear-search-btn" class="hidden text-slate-400 hover:text-slate-600 px-1 text-xs cursor-pointer" onclick="clearSearchInput()">
+              ✕
             </button>
           </div>
 
-          <!-- Pasek Opcji: Sortowanie + Szybki Przełącznik Tłumaczeń + Aktywny Tag -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100/80">
-            <div class="flex flex-wrap items-center gap-2">
-              <!-- Dropdown Sortowania -->
-              <div class="flex items-center gap-1.5 text-xs text-slate-600">
-                <i class="fas fa-arrow-down-short-wide text-indigo-500 text-xs"></i>
-                <label for="sort-select" class="font-medium text-[11.5px]">Sortuj:</label>
-                <select id="sort-select" onchange="handleSortChange(this.value)" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer transition">
-                  <option value="date_desc">Najnowsze dodane (domyślnie)</option>
-                  <option value="year_desc">Rok publikacji: od najnowszych (↓)</option>
-                  <option value="year_asc">Rok publikacji: od najstarszych (↑)</option>
-                  <option value="title_asc">Tytuł alfabetycznie (A-Z)</option>
-                  <option value="authors_asc">Autorzy alfabetycznie (A-Z)</option>
-                </select>
-              </div>
+          <!-- Selektor Sortowania -->
+          <div class="flex items-center shrink-0">
+            <select id="sort-select" onchange="handleSortChange(this.value)" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-2.5 h-8 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer transition">
+              <option value="date_desc">Najnowsze dodane</option>
+              <option value="year_desc">Rok publikacji: od najnowszych (↓)</option>
+              <option value="year_asc">Rok publikacji: od najstarszych (↑)</option>
+              <option value="title_asc">Tytuł alfabetycznie (A-Z)</option>
+              <option value="authors_asc">Autorzy alfabetycznie (A-Z)</option>
+            </select>
+          </div>
 
-              <!-- Szybki Przełącznik Tłumaczeń PL -->
-              <button type="button" id="filter-translation-toggle" onclick="toggleTranslationFilter()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-sm" title="Pokaż tylko artykuły z gotowym tłumaczeniem PL">
-                <i class="fas fa-language text-purple-600"></i>
-                <span id="filter-translation-label">🇵🇱 Tylko z tłumaczeniem PL</span>
-              </button>
-            </div>
+          <!-- Szybki Przełącznik Tłumaczeń PL -->
+          <button type="button" id="filter-translation-toggle" onclick="toggleTranslationFilter()" class="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-2xs shrink-0" title="Pokaż tylko artykuły z gotowym tłumaczeniem PL">
+            <span>🇵🇱</span>
+            <span id="filter-translation-label">Tylko z tłumaczeniem PL</span>
+          </button>
 
-            <!-- Aktywny Tag / Filtr Chip -->
-            <div id="active-tag-chip" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-purple-50 text-purple-800 border border-purple-200 font-medium">
-              <i class="fas fa-tag text-[10px] text-purple-600"></i>
-              <span id="active-tag-label">#tag</span>
-              <button type="button" onclick="clearTagFilter()" class="text-purple-400 hover:text-purple-800 ml-1 cursor-pointer font-bold" title="Usuń filtr tagu">
-                ✕
-              </button>
-            </div>
+          <!-- Aktywny Tag / Filtr Chip (jeśli aktywny) -->
+          <div id="active-tag-chip" class="hidden items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs bg-purple-50 text-purple-800 border border-purple-200 font-medium shrink-0">
+            <svg class="w-3 h-3 stroke-[2] text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+            <span id="active-tag-label">#tag</span>
+            <button type="button" onclick="clearTagFilter()" class="text-purple-400 hover:text-purple-800 ml-0.5 cursor-pointer font-bold" title="Usuń filtr tagu">✕</button>
+          </div>
+
+          <!-- Przełącznik Widoku: Zwarta Lista vs Siatka Kafelków (bezpośrednio obok filtrów) -->
+          <div class="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 h-8 shrink-0">
+            <button type="button" id="view-mode-list-btn" onclick="setViewMode('list')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer bg-white text-indigo-600 shadow-xs" title="Domyślny widok zwartej listy">
+              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </button>
+            <button type="button" id="view-mode-grid-btn" onclick="setViewMode('grid')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer text-slate-500 hover:text-slate-800" title="Widok siatki kafelków">
+              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="7" height="7" x="3" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="14" rx="1"/>
+                <rect width="7" height="7" x="3" y="14" rx="1"/>
+              </svg>
+            </button>
           </div>
         </div>
 
         <!-- Pasek wyników i statusu -->
         <div class="flex items-center justify-between text-xs text-slate-500 px-1">
           <div class="flex items-center gap-2">
-            <i class="fas fa-layer-group text-indigo-600"></i>
+            <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.9a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
             <span>Znalezionych publikacji: <strong id="results-count" class="text-slate-900 font-bold">0</strong></span>
           </div>
           <div id="loading-spinner" class="hidden flex items-center gap-2 text-indigo-600 font-medium">
-            <i class="fas fa-circle-notch fa-spin"></i>
-            <span>Łączenie z Dyskiem Google...</span>
+            <svg class="w-3.5 h-3.5 stroke-[2] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            <span>Łączenie z bazą...</span>
           </div>
         </div>
 
-        <!-- Siatka Kart Publikacji (Max 3 kolumny na dużych ekranach) -->
-        <div id="articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 w-full mt-2"></div>
+        <!-- Główny Kontener Publikacji (Domyślnie Zwarta Lista lub Siatka) -->
+        <div id="articles-grid" class="flex flex-col gap-2.5 w-full mt-2"></div>
 
         <!-- Empty State -->
         <div id="empty-state" class="hidden text-center py-16 px-4 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm">
           <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-4 text-2xl">
-            <i class="fas fa-book-reader"></i>
+            <svg class="w-8 h-8 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
           </div>
-          <h3 class="text-base font-bold text-slate-800 mb-1.5">Brak wyników w tej kategorii</h3>
+          <h3 class="text-base font-bold text-slate-800 mb-1.5">Brak wyników w tym dziale</h3>
           <p class="text-xs text-slate-500 max-w-md mx-auto">
-            Nie znaleziono publikacji odpowiadających Twoim kryteriom wyszukiwania. Spróbuj zmienić zapytanie lub przełączyć kategorię.
+            Nie znaleziono publikacji odpowiadających Twoim kryteriom wyszukiwania. Spróbuj zmienić zapytanie lub przełączyć dział wiedzy.
           </p>
         </div>
       </main>
-
-      <!-- 3. PRAWY PANEL BOCZNY (Zarządzanie & Dysk Google) -->
-      <aside class="sticky top-20 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
-        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <i class="fas fa-cloud-arrow-up text-indigo-600"></i>
-            <span>Integracja & Narzędzia</span>
-          </h3>
-        </div>
-
-        <!-- Sekcja 1: Status Połączenia (Czysty pionowy flexbox bez nakładania) -->
-        <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex flex-col items-start gap-1.5">
-          <div class="flex items-center gap-2 text-slate-900 font-bold text-xs">
-            <i class="fab fa-google-drive text-emerald-600 text-base shrink-0"></i>
-            <span>Dysk Google</span>
-          </div>
-          <span id="gas-status-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 w-fit max-w-full leading-tight static">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
-            <span id="gas-status-text" class="truncate">Połączono z Google Apps Script</span>
-          </span>
-          <p id="gas-status-subtext" class="text-[10px] text-slate-500">Apps Script Backend</p>
-        </div>
-
-        <!-- Dedykowany Przycisk Instalacji PWA (Gradient fioletowo-różowy) -->
-        <div id="pwa-sidebar-install-container" class="space-y-2">
-          <button id="pwa-sidebar-install-btn" type="button" onclick="triggerPwaInstall()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-bold rounded-xl shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95" title="Zainstaluj Kalejdoskop Café na telefonie lub komputerze">
-            <span class="text-sm">📱</span>
-            <span>Zainstaluj Aplikację</span>
-          </button>
-        </div>
-
-        <!-- Sekcja 2A: Przyciski Administratora (Tylko ADMIN) -->
-        <div id="admin-actions-container" class="space-y-2">
-          <button id="open-upload-btn" onclick="openUploadModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-            <i class="fas fa-file-circle-plus text-sm"></i>
-            <span>Dodaj dokument</span>
-          </button>
-          
-          <button id="btn-sync-drive" onclick="handleSyncDriveFolder()" class="w-full py-2.5 px-3.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-            <i class="fas fa-arrows-rotate text-indigo-600"></i>
-            <span>Skanuj Folder Dysku</span>
-          </button>
-
-          <button id="btn-stats-dashboard" onclick="openStatsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-            <i class="fas fa-chart-pie text-sm"></i>
-            <span>Statystyki Repozytorium</span>
-          </button>
-          
-          <button id="btn-config-drive" onclick="openConfigModal()" class="w-full py-2 px-3 bg-white hover:bg-slate-100 text-slate-600 text-xs font-medium rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
-            <i class="fas fa-gear text-slate-500"></i>
-            <span>Ustawienia API</span>
-          </button>
-        </div>
-
-        <!-- Sekcja 2B: Przycisk dla Członka SKN (Zaproponuj publikację) -->
-        <div id="member-actions-container" class="hidden space-y-2" style="display: none;">
-          <button type="button" onclick="sendArticleProposal()" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-            <i class="fas fa-paper-plane text-xs"></i>
-            <span>✉ Zaproponuj publikację do bazy</span>
-          </button>
-        </div>
-
-        <!-- Sekcja 3: Dyskretna informacja systemowa (Tylko ADMIN) -->
-        <div id="admin-system-info" class="border-t border-slate-100 pt-3 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
-          <p class="flex items-center gap-1.5"><i class="fas fa-folder text-amber-500"></i><span>Folder:</span> <strong class="text-slate-700 font-mono text-[10px]">08_Kalejdoskop_Cafe</strong></p>
-          <p class="flex items-center gap-1.5"><i class="fas fa-tag text-indigo-500"></i><span>Prefiks:</span> <code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-700 font-mono text-[10px]">KC-YYYYMMDD...</code></p>
-          <p class="flex items-center gap-1.5 text-emerald-700"><i class="fas fa-shield-halved text-emerald-500"></i><span>Bezpieczny Soft Delete (Kosz)</span></p>
-        </div>
-      </aside>
 
     </div>
   </div>
@@ -1412,15 +1402,17 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Kategoria</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Dział Wiedzy / Kategoria</label>
             <select id="upload-category" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
-              <option value="AUTO">Automatyczna (Gemini AI)</option>
-              <option value="Relacje i Bliskość">Relacje i Bliskość</option>
-              <option value="Biologia & Psychofizjologia">Biologia & Psychofizjologia</option>
-              <option value="Tożsamość & Gender">Tożsamość & Gender</option>
-              <option value="Edukacja Seksualna">Edukacja Seksualna</option>
-              <option value="Psychometria & Metodologia">Psychometria & Metodologia</option>
-              <option value="Materiały Własne SKN">Materiały Własne SKN (Strefa Wewnętrzna)</option>
+              <option value="AUTO">Automatyczny dobór (Gemini AI)</option>
+              <option value="01. Fundamenty & Rozwój Psychoseksualny">01. Fundamenty & Rozwój Psychoseksualny</option>
+              <option value="02. Diagnostyka, Psychometria & Metodologia">02. Diagnostyka, Psychometria & Metodologia</option>
+              <option value="03. Seksuologia Kliniczna & Psychoterapia">03. Seksuologia Kliniczna & Psychoterapia</option>
+              <option value="04. Somatoseksuologia & Farmakoterapia">04. Somatoseksuologia & Farmakoterapia</option>
+              <option value="05. Tożsamość, Różnorodność Płciowa & Relacje">05. Tożsamość, Różnorodność Płciowa & Relacje</option>
+              <option value="06. Seksuologia Sądowa & Wiktymologia">06. Seksuologia Sądowa & Wiktymologia</option>
+              <option value="07. Edukacja, Zdrowie Publiczne & Profilaktyka">07. Edukacja, Zdrowie Publiczne & Profilaktyka</option>
+              <option value="08. Repozytorium Badawcze SKN">08. Repozytorium Badawcze SKN (Materiały Własne)</option>
             </select>
           </div>
         </div>

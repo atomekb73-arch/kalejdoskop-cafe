@@ -3,6 +3,8 @@
   "version": "2.0.0",
   "description": "Kalejdoskop Café - Wirtualna Baza Wiedzy i Potok AI dla SKN Seksuologii",
   "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
     "build": "echo 'Static build ready'"
   }
 }
