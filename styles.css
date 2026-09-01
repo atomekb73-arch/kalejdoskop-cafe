@@ -148,18 +148,28 @@ html, body {
   -ms-hyphens: auto;
 }
 
-/* Stylizacja czytnika PDF (Dwukierunkowy scroll przy zoomie) */
-#viewer-scroll-container,
+/* Stylizacja czytnika PDF (Dwukierunkowy scroll przy zoomie bez utraty lewej krawędzi) */
+#viewer-scroll-container {
+  overflow: auto !important;
+  max-height: calc(100dvh - 110px);
+  display: block !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+#viewer-canvas-wrapper {
+  display: inline-block !important;
+  vertical-align: top !important;
+  margin: 0 auto 16px auto !important;
+  transform-origin: top left !important;
+}
+
 .pdf-canvas-container,
 .pdf-viewport,
 #pdfViewerBody {
   overflow: auto !important;
-  max-height: calc(100dvh - 110px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 16px 0;
   -webkit-overflow-scrolling: touch;
 }
 

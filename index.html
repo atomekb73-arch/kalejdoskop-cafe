@@ -1686,8 +1686,8 @@
   </div>
 
   <!-- MODAL: Zabezpieczony Czytnik Dokumentów PDF (Ochrona przed wyciąganiem PDF / DevTools) -->
-  <div id="securePdfViewerModal" onclick="handleBackdropClick(event, 'securePdfViewerModal')" style="display: none;" class="fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md items-center justify-center p-2 sm:p-4 select-none" oncontextmenu="return false;" ondragstart="return false;">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none" onclick="event.stopPropagation()">
+  <div id="securePdfViewerModal" onclick="handleBackdropClick(event, 'securePdfViewerModal')" style="display: none;" class="fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md items-center justify-center p-2 sm:p-4 select-none transition-all duration-300" oncontextmenu="return false;" ondragstart="return false;">
+    <div id="secure-viewer-dialog" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none transition-all duration-300" onclick="event.stopPropagation()">
       
       <!-- Pasek Narzędzi Czytnika (Mobile 2-Row / Desktop 1-Row Layout) -->
       <div class="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-4 py-2 sm:py-2.5 flex flex-col gap-2 shrink-0">
@@ -1736,6 +1736,18 @@
             <button type="button" onclick="viewerFitWidth()" class="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-slate-700 rounded-full transition cursor-pointer" title="Dopasuj do szerokości ekranu">
               <i class="fas fa-arrows-left-right text-[10px] sm:text-xs"></i>
             </button>
+
+            <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
+
+            <!-- Tryb Pełnoekranowy (Focus Reader) -->
+            <button type="button" onclick="togglePdfFullscreen()" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-full transition cursor-pointer" title="Tryb pełnoekranowy">
+              <svg id="viewer-fullscreen-icon" class="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+            </button>
           </div>
 
           <!-- Prawa strona: Przycisk pobierania oraz przycisk zamknięcia X o identycznym okrągłym rozmiarze -->
@@ -1751,10 +1763,10 @@
         </div>
       </div>
 
-      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch & Gestures Optimized) -->
-      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-auto p-1 sm:p-4 flex flex-col items-center justify-start relative select-none" style="touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
+      <!-- Główny Obszar Wyświetlania Stron (Canvas - Touch & Gestures Optimized z płynnym obustronnym scrollem) -->
+      <div id="viewer-scroll-container" class="flex-1 bg-slate-950 overflow-auto p-2 sm:p-4 text-center relative select-none" style="touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch;" oncontextmenu="return false;">
         <!-- Pływający pasek bezpieczeństwa / stempel -->
-        <div class="sticky top-1 z-10 bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1.5 mb-1.5 select-none pointer-events-none text-center">
+        <div class="sticky top-1 z-10 inline-flex mx-auto bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[9px] sm:text-[10px] text-slate-400 px-2.5 py-0.5 rounded-full shadow-md items-center gap-1.5 mb-2 select-none pointer-events-none text-center">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>🔒 Zabezpieczony podgląd akademicki • SKN Seksuologii</span>
         </div>
@@ -1765,11 +1777,29 @@
           <span class="text-xs font-medium text-slate-300">Wczytywanie i renderowanie dokumentu...</span>
         </div>
 
-        <!-- Canvas Wyświetlający Stronę -->
-        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg border border-slate-800 select-none bg-white max-w-none transition-transform duration-75 origin-top" style="display: none;">
+        <!-- Canvas Wyświetlający Stronę (Wycentrowany, z wolną lewą krawędzią przy zoomie) -->
+        <div id="viewer-canvas-wrapper" class="hidden relative shadow-2xl rounded-lg border border-slate-800 select-none bg-white max-w-none transition-transform duration-75 origin-top-left inline-block my-2" style="display: none; vertical-align: top; margin: 0 auto; min-width: min-content;">
           <canvas id="pdf-render-canvas" class="block mx-auto" style="display: block; margin: 0 auto;"></canvas>
         </div>
       </div>
+
+      <!-- Pływający Przycisk Wyjścia z Trybu Pełnoekranowego (Floating Action Button) -->
+      <div id="pdf-fullscreen-floating-bar" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[1000000] pointer-events-auto">
+        <button
+          type="button"
+          onclick="togglePdfFullscreen(false)"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900/90 hover:bg-slate-900 text-white backdrop-blur-md rounded-full text-xs font-medium shadow-2xl transition-all active:scale-95 border border-white/20 cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 14 10 14 10 20"></polyline>
+            <polyline points="20 10 14 10 14 4"></polyline>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+          <span>Zamknij pełny ekran</span>
+        </button>
+      </div>
+
     </div>
   </div>
 

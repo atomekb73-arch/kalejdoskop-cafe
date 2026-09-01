@@ -3352,11 +3352,70 @@ function triggerFileSave(bytes, fileName) {
 
 window.downloadCurrentViewerPdf = downloadCurrentViewerPdf;
 window.downloadCurrentPdfFile = downloadCurrentViewerPdf;
-window.handlePdfDownload = downloadWatermarkedPdf;
-window.viewerDownloadWatermarked = downloadCurrentViewerPdf;
-window.downloadCurrentPdf = downloadCurrentViewerPdf;
+let isPdfFullscreen = false;
+function togglePdfFullscreen(force) {
+  const modal = document.getElementById("securePdfViewerModal");
+  const dialog = document.getElementById("secure-viewer-dialog");
+  const floatBtn = document.getElementById("pdf-fullscreen-floating-bar");
+  const icon = document.getElementById("viewer-fullscreen-icon");
+  if (!modal || !dialog) return;
+
+  if (typeof force === "boolean") {
+    isPdfFullscreen = force;
+  } else {
+    isPdfFullscreen = !isPdfFullscreen;
+  }
+
+  if (isPdfFullscreen) {
+    modal.classList.remove("p-2", "sm:p-4");
+    modal.classList.add("p-0", "m-0");
+    dialog.className = "bg-slate-900 w-screen h-screen max-w-none max-h-none rounded-none border-0 flex flex-col shadow-2xl relative text-left overflow-hidden select-none transition-all duration-300";
+    if (floatBtn) {
+      floatBtn.classList.remove("hidden");
+      floatBtn.classList.add("flex");
+    }
+    if (icon) {
+      icon.innerHTML = `<polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line>`;
+    }
+    try {
+      if (modal.requestFullscreen && !document.fullscreenElement) {
+        modal.requestFullscreen().catch(() => {});
+      } else if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (e) {
+      // Ignorujemy brak uprawnień Fullscreen API
+    }
+  } else {
+    modal.classList.remove("p-0", "m-0");
+    modal.classList.add("p-2", "sm:p-4");
+    dialog.className = "bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl relative text-left overflow-hidden select-none transition-all duration-300";
+    if (floatBtn) {
+      floatBtn.classList.add("hidden");
+      floatBtn.classList.remove("flex");
+    }
+    if (icon) {
+      icon.innerHTML = `<polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line>`;
+    }
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+  }
+}
+window.togglePdfFullscreen = togglePdfFullscreen;
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && isPdfFullscreen) {
+    togglePdfFullscreen(false);
+  }
+});
 
 function closeSecureViewer() {
+  if (isPdfFullscreen) {
+    togglePdfFullscreen(false);
+  }
   hideModalElement("securePdfViewerModal");
   ViewerState.pdfDoc = null;
   window.pdfDoc = null;
