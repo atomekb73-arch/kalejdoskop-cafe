@@ -768,9 +768,9 @@ function setSyncStatus(status, customText) {
     indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 p-0 sm:px-3 sm:py-0.5 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
     if (icon) {
       icon.innerHTML = `<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>`;
-      icon.className = "w-3.5 h-3.5 stroke-[2] text-emerald-600 animate-spin sync-spinning shrink-0";
-      icon.style.setProperty("animation", "spin 1s linear infinite", "important");
-      icon.style.setProperty("-webkit-animation", "spin 1s linear infinite", "important");
+      icon.className = "w-3.5 h-3.5 stroke-[2] text-emerald-600 animate-spin-reverse sync-spinning shrink-0";
+      icon.style.setProperty("animation", "spin-reverse 1s linear infinite", "important");
+      icon.style.setProperty("-webkit-animation", "spin-reverse 1s linear infinite", "important");
       icon.style.setProperty("transform-origin", "center center", "important");
       icon.style.setProperty("-webkit-transform-origin", "center center", "important");
       icon.style.setProperty("display", "inline-block", "important");

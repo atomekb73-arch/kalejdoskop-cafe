@@ -76,7 +76,22 @@
       from { -webkit-transform: rotate(0deg); }
       to { -webkit-transform: rotate(360deg); }
     }
-    .animate-spin, .sync-spinning {
+    @keyframes spin-reverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    @-webkit-keyframes spin-reverse {
+      from { -webkit-transform: rotate(360deg); }
+      to { -webkit-transform: rotate(0deg); }
+    }
+    .animate-spin-reverse, .sync-spinning {
+      -webkit-animation: spin-reverse 1s linear infinite !important;
+      animation: spin-reverse 1s linear infinite !important;
+      display: inline-block !important;
+      transform-origin: center center !important;
+      -webkit-transform-origin: center center !important;
+    }
+    .animate-spin {
       -webkit-animation: spin 1s linear infinite !important;
       animation: spin 1s linear infinite !important;
       display: inline-block !important;
