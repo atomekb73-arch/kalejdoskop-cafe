@@ -765,7 +765,7 @@ function setSyncStatus(status, customText) {
   }
 
   if (status === "syncing") {
-    indicator.className = "inline-flex items-center gap-1.5 px-3 py-0.5 h-6 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-3 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50/90 text-emerald-800 border border-emerald-300/80 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0 shadow-2xs";
     if (icon) {
       icon.innerHTML = `<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2] text-emerald-600 animate-spin sync-spinning shrink-0";
@@ -777,13 +777,14 @@ function setSyncStatus(status, customText) {
     }
     if (text) {
       text.innerText = customText || "Synchronizacja...";
+      text.className = "hidden sm:inline text-[11px] font-medium whitespace-nowrap leading-none transition-all duration-300";
       text.classList.remove("hidden");
     }
     indicator.style.display = "inline-flex";
   } else if (status === "synced") {
     AppState.isOffline = false;
     window.isOffline = false;
-    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
     if (icon) {
       icon.innerHTML = `<path d="M20 6 9 17l-5-5"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2.5] text-emerald-600 shrink-0";
@@ -792,10 +793,11 @@ function setSyncStatus(status, customText) {
     }
     if (text) {
       text.innerText = customText || "Aktualna";
+      text.className = "hidden sm:inline text-[11px] font-medium whitespace-nowrap leading-none transition-all duration-300";
     }
     indicator.style.display = "inline-flex";
   } else if (status === "offline") {
-    indicator.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
+    indicator.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap shrink-0";
     if (icon) {
       icon.innerHTML = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>`;
       icon.className = "w-3.5 h-3.5 stroke-[2] text-amber-600 shrink-0";
@@ -804,6 +806,7 @@ function setSyncStatus(status, customText) {
     }
     if (text) {
       text.innerText = customText || "Tryb offline";
+      text.className = "hidden sm:inline text-[11px] font-medium whitespace-nowrap leading-none transition-all duration-300";
     }
     indicator.style.display = "inline-flex";
   } else {
@@ -2217,8 +2220,8 @@ function renderArticleCards(articles) {
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
     const categoryBadgeHtml = isAdmin
-      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić dział publikacji"><span>${escapeHtml(mappedCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70"></i></button>`
-      : `<span class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0">${escapeHtml(mappedCategory)}</span>`;
+      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate" title="Administrator: Kliknij, aby zmienić dział publikacji"><span class="truncate">${escapeHtml(mappedCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0"></i></button>`
+      : `<span class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate inline-block" title="${escapeHtml(mappedCategory)}">${escapeHtml(mappedCategory)}</span>`;
 
     const tagsHtml = keywordsList
       .map(
@@ -2299,7 +2302,7 @@ function renderArticleCards(articles) {
             <span class="truncate">Raport</span>
           </button>
         ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
             <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
@@ -2321,7 +2324,7 @@ function renderArticleCards(articles) {
             <span class="truncate">Raport</span>
           </button>
         ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
             <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
@@ -2343,7 +2346,7 @@ function renderArticleCards(articles) {
             <span class="truncate">Raport</span>
           </button>
         ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
             <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
@@ -2364,19 +2367,19 @@ function renderArticleCards(articles) {
     card.id = `card-${art.id}`;
 
     if (isListView) {
-      // 1. WIDOK ZWARTEJ LISTY (Compact List Row - Standard Mikro-Etykiet h-6 text-[11px] font-semibold)
+      // 1. WIDOK ZWARTEJ LISTY (Compact List Row - Standard Mikro-Etykiet h-6 text-[11px] font-semibold z obcięciem do krawędzi)
       const listDeleteBtn = isAdmin
         ? `<button onclick="openDeleteModal('${art.id}', event)" class="h-6 w-6 p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Usuń / Przenieś do kosza">
             <i class="fas fa-trash-can text-[10px]"></i>
           </button>`
         : "";
 
-      card.className = "w-full bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl py-2.5 px-4 shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1";
+      card.className = "w-full max-w-full overflow-hidden bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl py-2.5 px-3 sm:px-4 shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1";
       card.innerHTML = `
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 w-full max-w-full overflow-hidden">
           <!-- Lewa część: Kategoria + Tytuł + Autorzy (Bez hashtagów w liście) -->
-          <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+          <div class="flex-1 min-w-0 max-w-full overflow-hidden">
+            <div class="flex flex-wrap items-center gap-1.5 mb-1 max-w-full overflow-hidden">
               ${categoryBadgeHtml}
               ${seminarBadge}
               ${reviewsBadge}
@@ -2384,25 +2387,25 @@ function renderArticleCards(articles) {
               ${accessBadge}
             </div>
 
-            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
               ${escapeHtml(displayTitlePL)}
             </h3>
 
-            ${displayTitleEN && displayTitleEN !== displayTitlePL ? `<p class="text-[12px] text-slate-500 italic mb-0.5 line-clamp-1 truncate" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
+            ${displayTitleEN && displayTitleEN !== displayTitlePL ? `<p class="text-[12px] text-slate-500 italic mb-0.5 line-clamp-1 truncate max-w-full" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
 
-            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600">
-              <span><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
-              ${displayYear ? `<span><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
+            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600 max-w-full overflow-hidden">
+              <span class="truncate"><i class="fas fa-user-friends mr-1 text-indigo-500"></i> ${escapeHtml(displayAuthors)}</span>
+              ${displayYear ? `<span class="shrink-0"><i class="fas fa-calendar-alt mr-1 text-indigo-500"></i> ${escapeHtml(displayYear)}</span>` : ""}
             </div>
           </div>
 
           <!-- Prawa część: Przyciski akcji (h-6, text-[11px] font-semibold mikro-standard) -->
-          <div class="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-end">
+          <div class="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-end overflow-hidden">
             <button type="button" onclick="toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1 px-2 py-0.5 h-6 rounded-md text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition cursor-pointer shrink-0" title="Pokaż streszczenie / abstrakt">
               <span id="card-abstract-btn-${art.id}">Streszczenie ▾</span>
             </button>
 
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 shrink-0">
               ${listButtonsHtml}
               ${listDeleteBtn}
             </div>
@@ -2614,7 +2617,7 @@ function updateAuthUI() {
       roleBadge.style.setProperty("display", "none", "important");
     }
     if (userSessionPill) {
-      userSessionPill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 bg-white border border-slate-200 rounded-md text-[11px] font-medium shrink-0";
+      userSessionPill.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 bg-white border border-slate-200 rounded-md text-[11px] font-medium shrink-0";
       userSessionPill.classList.remove("hidden");
       userSessionPill.style.setProperty("display", "inline-flex", "important");
     }
@@ -2632,13 +2635,13 @@ function updateAuthUI() {
       loginNavBtn.style.setProperty("display", "none", "important");
     }
     if (logoutNavBtn) {
-      logoutNavBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-medium border border-slate-200 transition cursor-pointer active:scale-95 shrink-0";
+      logoutNavBtn.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-medium border border-slate-200 transition cursor-pointer active:scale-95 shrink-0";
       logoutNavBtn.classList.remove("hidden");
       logoutNavBtn.style.setProperty("display", "inline-flex", "important");
     }
   } else {
     if (roleBadge) {
-      roleBadge.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 h-6 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0"><svg class="w-3 h-3 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span>Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
+      roleBadge.innerHTML = `<span class="inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0"><svg class="w-3.5 h-3.5 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span class="hidden sm:inline">Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
       roleBadge.classList.remove("hidden");
       roleBadge.style.setProperty("display", "inline-block", "important");
     }
