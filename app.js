@@ -416,7 +416,7 @@ function renderArticleDepartmentIcons(article, sizeClasses = "w-3.5 h-3.5") {
     const meta = getDepartmentMeta(dept);
     if (!meta) return "";
     const cleanName = meta.cleanName || stripCategoryPrefix(dept);
-    return `<span class="inline-flex items-center justify-center ${meta.colorText} shrink-0 hover:scale-110 transition-transform" title="${escapeHtml(cleanName)}" aria-label="${escapeHtml(cleanName)}">${getDepartmentIconSvg(dept, sizeClasses)}</span>`;
+    return `<span class="flex items-center justify-center ${meta.colorText} shrink-0 hover:scale-110 transition-transform" title="${escapeHtml(cleanName)}" aria-label="${escapeHtml(cleanName)}">${getDepartmentIconSvg(dept, sizeClasses)}</span>`;
   }).join("");
 }
 window.renderArticleDepartmentIcons = renderArticleDepartmentIcons;
@@ -2612,8 +2612,8 @@ function renderArticleCards(articles) {
               ${accessBadge}
             </div>
 
-            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full inline-flex items-center gap-1.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
-              <span class="inline-flex items-center gap-1 shrink-0 select-none">${deptIconsHtml}</span>
+            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full inline-flex items-center gap-2 sm:gap-2.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+              <span class="inline-flex items-center gap-1.5 shrink-0 select-none">${deptIconsHtml}</span>
               <span class="truncate">${escapeHtml(displayTitlePL)}</span>
             </h3>
 
@@ -2670,8 +2670,8 @@ function renderArticleCards(articles) {
           </div>
 
           <!-- 2. Tytuł polski z mikro-ikonami kategorii -->
-          <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2 inline-flex items-start gap-1.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
-            <span class="inline-flex items-center gap-1 shrink-0 mt-0.5 select-none">${deptIconsHtml}</span>
+          <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2 inline-flex items-start gap-2 sm:gap-2.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+            <span class="inline-flex items-center gap-1.5 shrink-0 mt-0.5 select-none">${deptIconsHtml}</span>
             <span>${escapeHtml(displayTitlePL)}</span>
           </h3>
 
@@ -5938,10 +5938,36 @@ function openArticleDetail(articleId) {
   const category = meta.category || article.category || "Edukacja Seksualna";
   const abstractText = cleanAbstractText(meta.abstractPL || article.abstractPL);
 
+  const catIconsEl = document.getElementById("detail-category-icons");
+  const depts = getArticleDepartments(article);
+  if (catIconsEl) {
+    if (depts && depts.length > 0) {
+      catIconsEl.innerHTML = depts.map(dept => {
+        const meta = getDepartmentMeta(dept);
+        if (!meta) return "";
+        const cleanName = meta.cleanName || stripCategoryPrefix(dept);
+        return `<span class="flex items-center justify-center ${meta.colorText} shrink-0 hover:scale-110 transition-transform" title="${escapeHtml(cleanName)}" aria-label="${escapeHtml(cleanName)}">${getDepartmentIconSvg(dept, "w-4 h-4")}</span>`;
+      }).join("");
+      catIconsEl.className = "flex items-center gap-1.5 shrink-0 mt-1 select-none";
+    } else {
+      catIconsEl.innerHTML = "";
+      catIconsEl.className = "hidden";
+    }
+  }
+
   const titlePlEl = document.getElementById("detail-title-pl");
   if (titlePlEl) {
-    const deptIconsHtml = renderArticleDepartmentIcons(article, "w-4 h-4");
-    titlePlEl.innerHTML = `<span class="inline-flex items-center gap-1 shrink-0 mt-0.5 select-none">${deptIconsHtml}</span><span>${escapeHtml(titlePL)}</span>`;
+    if (!catIconsEl && depts && depts.length > 0) {
+      const deptIconsHtml = depts.map(dept => {
+        const meta = getDepartmentMeta(dept);
+        if (!meta) return "";
+        const cleanName = meta.cleanName || stripCategoryPrefix(dept);
+        return `<span class="flex items-center justify-center ${meta.colorText} shrink-0 hover:scale-110 transition-transform" title="${escapeHtml(cleanName)}" aria-label="${escapeHtml(cleanName)}">${getDepartmentIconSvg(dept, "w-4 h-4")}</span>`;
+      }).join("");
+      titlePlEl.innerHTML = `<div class="flex items-start gap-2.5"><div class="flex items-center gap-1.5 shrink-0 mt-1 select-none">${deptIconsHtml}</div><span class="flex-1">${escapeHtml(titlePL)}</span></div>`;
+    } else {
+      titlePlEl.innerText = titlePL;
+    }
   }
 
   const titleOrigEl = document.getElementById("detail-title-orig");
