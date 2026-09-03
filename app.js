@@ -218,6 +218,209 @@ function setupGlobalListeners() {
   setupDragAndDrop();
 }
 
+const ACADEMIC_DEPARTMENTS_META = {
+  "01. Fundamenty & Rozwój Psychoseksualny": {
+    id: "01",
+    shortName: "Fundamenty & Rozwój",
+    cleanName: "Fundamenty & Rozwój Psychoseksualny",
+    colorText: "text-emerald-600",
+    colorBg: "bg-emerald-50 text-emerald-600",
+    colorBorder: "border-emerald-200",
+    badgeClasses: "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100",
+    iconName: "Sprout",
+    svgPaths: `<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>`
+  },
+  "02. Diagnostyka, Psychometria & Metodologia": {
+    id: "02",
+    shortName: "Diagnostyka & Metodologia",
+    cleanName: "Diagnostyka, Psychometria & Metodologia",
+    colorText: "text-cyan-600",
+    colorBg: "bg-cyan-50 text-cyan-600",
+    colorBorder: "border-cyan-200",
+    badgeClasses: "bg-cyan-50 text-cyan-800 border-cyan-300 hover:bg-cyan-100",
+    iconName: "Target",
+    svgPaths: `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>`
+  },
+  "03. Seksuologia Kliniczna & Psychoterapia": {
+    id: "03",
+    shortName: "Seksuologia Kliniczna",
+    cleanName: "Seksuologia Kliniczna & Psychoterapia",
+    colorText: "text-rose-600",
+    colorBg: "bg-rose-50 text-rose-600",
+    colorBorder: "border-rose-200",
+    badgeClasses: "bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100",
+    iconName: "HeartPulse",
+    svgPaths: `<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>`
+  },
+  "04. Somatoseksuologia & Farmakoterapia": {
+    id: "04",
+    shortName: "Somatoseksuologia",
+    cleanName: "Somatoseksuologia & Farmakoterapia",
+    colorText: "text-amber-600",
+    colorBg: "bg-amber-50 text-amber-600",
+    colorBorder: "border-amber-200",
+    badgeClasses: "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100",
+    iconName: "Pill",
+    svgPaths: `<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>`
+  },
+  "05. Tożsamość, Różnorodność Płciowa & Relacje": {
+    id: "05",
+    shortName: "Tożsamość & Relacje",
+    cleanName: "Tożsamość, Różnorodność Płciowa & Relacje",
+    colorText: "text-purple-600",
+    colorBg: "bg-purple-50 text-purple-600",
+    colorBorder: "border-purple-200",
+    badgeClasses: "bg-purple-50 text-purple-800 border-purple-300 hover:bg-purple-100",
+    iconName: "Users",
+    svgPaths: `<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`
+  },
+  "06. Seksuologia Sądowa & Wiktymologia": {
+    id: "06",
+    shortName: "Seksuologia Sądowa",
+    cleanName: "Seksuologia Sądowa & Wiktymologia",
+    colorText: "text-slate-600",
+    colorBg: "bg-slate-100 text-slate-600",
+    colorBorder: "border-slate-300",
+    badgeClasses: "bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200",
+    iconName: "Scale",
+    svgPaths: `<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>`
+  },
+  "07. Edukacja, Zdrowie Publiczne & Profilaktyka": {
+    id: "07",
+    shortName: "Edukacja & Zdrowie",
+    cleanName: "Edukacja, Zdrowie Publiczne & Profilaktyka",
+    colorText: "text-blue-600",
+    colorBg: "bg-blue-50 text-blue-600",
+    colorBorder: "border-blue-200",
+    badgeClasses: "bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100",
+    iconName: "BookOpen",
+    svgPaths: `<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>`
+  },
+  "08. Repozytorium Badawcze SKN": {
+    id: "08",
+    shortName: "Repozytorium SKN",
+    cleanName: "Repozytorium Badawcze SKN",
+    colorText: "text-indigo-600",
+    colorBg: "bg-indigo-50 text-indigo-600",
+    colorBorder: "border-indigo-200",
+    badgeClasses: "bg-indigo-50 text-indigo-800 border-indigo-300 hover:bg-indigo-100",
+    iconName: "Bookmark",
+    svgPaths: `<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>`
+  },
+  "Wszystkie materiały": {
+    id: "all",
+    shortName: "Wszystkie materiały",
+    cleanName: "Wszystkie materiały",
+    colorText: "text-indigo-600",
+    colorBg: "bg-indigo-50 text-indigo-600",
+    colorBorder: "border-indigo-200",
+    badgeClasses: "bg-indigo-50 text-indigo-800 border-indigo-200",
+    iconName: "Shapes",
+    svgPaths: `<path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/>`
+  }
+};
+ACADEMIC_DEPARTMENTS_META["Wszystko"] = ACADEMIC_DEPARTMENTS_META["Wszystkie materiały"];
+
+function getDepartmentMeta(rawOrMappedCategory) {
+  if (!rawOrMappedCategory) return ACADEMIC_DEPARTMENTS_META["07. Edukacja, Zdrowie Publiczne & Profilaktyka"];
+  if (ACADEMIC_DEPARTMENTS_META[rawOrMappedCategory]) {
+    return ACADEMIC_DEPARTMENTS_META[rawOrMappedCategory];
+  }
+  const mapped = mapToAcademicDepartment(rawOrMappedCategory);
+  if (ACADEMIC_DEPARTMENTS_META[mapped]) {
+    return ACADEMIC_DEPARTMENTS_META[mapped];
+  }
+  return ACADEMIC_DEPARTMENTS_META["07. Edukacja, Zdrowie Publiczne & Profilaktyka"];
+}
+window.getDepartmentMeta = getDepartmentMeta;
+
+function getDepartmentIconSvg(category, sizeClasses = "w-3.5 h-3.5", extraClasses = "") {
+  const meta = getDepartmentMeta(category);
+  const path = meta ? meta.svgPaths : `<path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/>`;
+  return `<svg class="${sizeClasses} ${extraClasses}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+}
+window.getDepartmentIconSvg = getDepartmentIconSvg;
+
+function stripCategoryPrefix(categoryName) {
+  if (!categoryName) return "";
+  return String(categoryName).replace(/^\d{1,2}\.\s*/, "").trim();
+}
+window.stripCategoryPrefix = stripCategoryPrefix;
+
+function getArticleDepartments(article) {
+  if (!article) return ["07. Edukacja, Zdrowie Publiczne & Profilaktyka"];
+  const meta = article.meta || article.data || article;
+  const rawList = [];
+
+  const addRaw = (val) => {
+    if (!val) return;
+    if (Array.isArray(val)) {
+      val.forEach(item => addRaw(item));
+    } else if (typeof val === "string") {
+      val.split(/[|,;/]/).forEach(s => {
+        const trimmed = s.trim();
+        if (trimmed) rawList.push(trimmed);
+      });
+    }
+  };
+
+  addRaw(article.category);
+  addRaw(meta.category);
+  addRaw(article.categories);
+  addRaw(meta.categories);
+  addRaw(article.Kategoria);
+  addRaw(meta.Kategoria);
+
+  const tagsList = Array.isArray(article.tags) ? article.tags : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(article.keywords) ? article.keywords : (Array.isArray(meta.keywords) ? meta.keywords : [])));
+  tagsList.forEach(t => {
+    if (typeof t === "string") {
+      const lower = t.toLowerCase();
+      if (lower.includes("fundament") || lower.includes("psychofizjolog") ||
+          lower.includes("diagnostyk") || lower.includes("psychometri") || lower.includes("metodolog") ||
+          lower.includes("klinicz") || lower.includes("psychoterap") ||
+          lower.includes("somato") || lower.includes("farmako") ||
+          lower.includes("tożsamość") || lower.includes("tozsamosc") || lower.includes("gender") ||
+          lower.includes("sądow") || lower.includes("sadow") || lower.includes("wiktymolog") ||
+          lower.includes("edukacj") || lower.includes("profilaktyk") ||
+          lower.includes("repozytorium") || lower.includes("badawcz")) {
+        rawList.push(t);
+      }
+    }
+  });
+
+  const isSeminar = (article.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || article.publicationType === "seminar_presentation");
+  if (isSeminar || isInternalArticle(article)) {
+    rawList.push("08. Repozytorium Badawcze SKN");
+  }
+
+  const deptSet = new Set();
+  rawList.forEach(raw => {
+    const dept = mapToAcademicDepartment(raw);
+    if (dept && dept !== "Wszystkie materiały" && dept !== "Wszystko") {
+      deptSet.add(dept);
+    }
+  });
+
+  if (deptSet.size === 0) {
+    deptSet.add(mapToAcademicDepartment(article.category || meta.category || ""));
+  }
+
+  return Array.from(deptSet).sort();
+}
+window.getArticleDepartments = getArticleDepartments;
+
+function renderArticleDepartmentIcons(article, sizeClasses = "w-3.5 h-3.5") {
+  const depts = getArticleDepartments(article);
+  if (!depts || depts.length === 0) return "";
+  return depts.map(dept => {
+    const meta = getDepartmentMeta(dept);
+    if (!meta) return "";
+    const cleanName = meta.cleanName || stripCategoryPrefix(dept);
+    return `<span class="inline-flex items-center justify-center ${meta.colorText} shrink-0 hover:scale-110 transition-transform" title="${escapeHtml(cleanName)}" aria-label="${escapeHtml(cleanName)}">${getDepartmentIconSvg(dept, sizeClasses)}</span>`;
+  }).join("");
+}
+window.renderArticleDepartmentIcons = renderArticleDepartmentIcons;
+
 const CATEGORY_ICONS = {
   "Wszystkie materiały": "fas fa-shapes text-indigo-500",
   "Wszystko": "fas fa-shapes text-indigo-500",
@@ -286,7 +489,12 @@ function renderCategoryPills() {
   const createCategoryButton = (category, isMobileDrawer = false) => {
     const isActive = AppState.activeCategory === category;
     const count = getCategoryCount(category);
-    const iconClass = CATEGORY_ICONS[category] || "fas fa-folder text-slate-400";
+    const deptMeta = getDepartmentMeta(category);
+    const iconSvg = getDepartmentIconSvg(
+      category,
+      isMobileDrawer ? "w-3.5 h-3.5" : "w-3 h-3",
+      isActive ? "!text-white" : (deptMeta ? deptMeta.colorText : "text-indigo-600")
+    );
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -298,8 +506,8 @@ function renderCategoryPills() {
 
     btn.innerHTML = `
       <div class="flex items-center gap-1.5 min-w-0 flex-1">
-        <div class="${isMobileDrawer ? 'w-5 h-5 rounded-lg' : 'w-4 h-4 rounded-md'} ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-indigo-600"} flex items-center justify-center shrink-0">
-          <i class="${iconClass} ${isMobileDrawer ? 'text-[11px]' : 'text-[10px]'} ${isActive ? "!text-white" : ""}"></i>
+        <div class="${isMobileDrawer ? 'w-5 h-5 rounded-lg' : 'w-4 h-4 rounded-md'} ${isActive ? "bg-white/20 text-white" : (deptMeta ? deptMeta.colorBg : "bg-slate-100 text-indigo-600")} flex items-center justify-center shrink-0">
+          ${iconSvg}
         </div>
         <span class="${isMobileDrawer ? 'text-[11.5px]' : 'text-[11px]'} font-medium leading-tight text-left break-words whitespace-normal flex-1">${category}</span>
       </div>
@@ -1237,7 +1445,7 @@ function cleanDisplayText(text) {
 }
 
 function cleanAbstractText(abstractText) {
-  if (!abstractText) return "Brak streszczenia.";
+  if (!abstractText) return "Brak abstraktu.";
   const text = String(abstractText).trim();
 
   // Wykrywanie błędów autoryzacji Google Apps Script / HTML / Exception
@@ -1404,7 +1612,7 @@ function getArticleReport(art) {
   }
 
   const title = cleanDisplayText(art.titlePL || art.polishTitle || art.titleOriginal || art.name || "Publikacja Naukowa");
-  const abstractText = cleanAbstractText(art.abstractPL || art.abstract || art.meta?.abstractPL || art.meta?.abstract || "Brak streszczenia.");
+  const abstractText = cleanAbstractText(art.abstractPL || art.abstract || art.meta?.abstractPL || art.meta?.abstract || "Brak abstraktu.");
   const journal = art.journal || art.meta?.journal || extractJournal(art) || "Źródło Internetowe / Web";
   const authors = cleanDisplayText(art.authors || art.meta?.authors || "Autor nieznany");
 
@@ -2058,6 +2266,8 @@ function openCategoryChangeModal(articleId) {
     optionsContainer.innerHTML = availableCategories
       .map((cat) => {
         const isSelected = cat === currentCat || cat === mapToAcademicDepartment(currentCat);
+        const meta = getDepartmentMeta(cat);
+        const iconSvg = getDepartmentIconSvg(cat, "w-4 h-4", meta ? meta.colorText : "text-indigo-500");
         return `
           <button type="button" onclick="changeArticleCategory('${articleId}', '${escapeHtml(cat)}')" class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition flex items-center justify-between cursor-pointer active:scale-95 ${
             isSelected
@@ -2065,7 +2275,7 @@ function openCategoryChangeModal(articleId) {
               : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
           }">
             <div class="flex items-center gap-2">
-              <i class="fas fa-folder text-indigo-500 text-xs"></i>
+              <span class="inline-flex items-center justify-center shrink-0">${iconSvg}</span>
               <span>${escapeHtml(cat)}</span>
             </div>
             ${isSelected ? '<i class="fas fa-check text-indigo-600"></i>' : '<i class="fas fa-chevron-right text-slate-300 text-[10px]"></i>'}
@@ -2219,8 +2429,22 @@ function renderArticleCards(articles) {
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
     const categoryBadgeHtml = isAdmin
-      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-300 transition cursor-pointer flex items-center gap-1 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate" title="Administrator: Kliknij, aby zmienić dział publikacji"><span class="truncate">${escapeHtml(mappedCategory)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0"></i></button>`
-      : `<span class="text-[10.5px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate inline-block" title="${escapeHtml(mappedCategory)}">${escapeHtml(mappedCategory)}</span>`;
+      ? (() => {
+          const deptMeta = getDepartmentMeta(mappedCategory);
+          const cleanCategoryName = stripCategoryPrefix(mappedCategory);
+          const deptIconSvg = getDepartmentIconSvg(mappedCategory, "w-3 h-3 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
+          const badgeColorClasses = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-300";
+          return `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border transition cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate" title="Administrator: Kliknij, aby zmienić dział publikacji">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0 ml-0.5"></i></button>`;
+        })()
+      : (() => {
+          const deptMeta = getDepartmentMeta(mappedCategory);
+          const cleanCategoryName = stripCategoryPrefix(mappedCategory);
+          const deptIconSvg = getDepartmentIconSvg(mappedCategory, "w-3 h-3 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
+          const badgeColorClasses = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-200";
+          return `<span class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate inline-flex items-center gap-1.5" title="${escapeHtml(mappedCategory)}">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span></span>`;
+        })();
+
+    const deptIconsHtml = renderArticleDepartmentIcons(art, "w-3.5 h-3.5");
 
     const tagsHtml = keywordsList
       .map(
@@ -2308,10 +2532,6 @@ function renderArticleCards(articles) {
         `}`;
     } else {
       bottomButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz czytnik oryginału">
-          <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i>
-          <span class="truncate">Czytaj →</span>
-        </button>
         ${isTranslating ? `
           <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
             <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
@@ -2327,13 +2547,14 @@ function renderArticleCards(articles) {
             <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
-        `}`;
+        `}
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all truncate cursor-pointer shadow-2xs active:scale-95" title="Otwórz oryginalny plik PDF">
+          <i class="fas fa-file-pdf text-red-500 text-xs shrink-0"></i>
+          <span class="truncate">Oryginał PDF</span>
+        </button>
+      `;
 
       listButtonsHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz czytnik oryginału">
-          <i class="fas fa-file-pdf text-rose-500 text-[10px] shrink-0"></i>
-          <span class="truncate">Czytaj →</span>
-        </button>
         ${isTranslating ? `
           <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-md cursor-wait truncate">
             <i class="fas fa-circle-notch fa-spin text-purple-600 text-[10px] shrink-0"></i>
@@ -2349,7 +2570,12 @@ function renderArticleCards(articles) {
             <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
             <span class="truncate">Raport</span>
           </button>
-        `}`;
+        `}
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz oryginalny plik PDF">
+          <i class="fas fa-file-pdf text-red-500 text-[10px] shrink-0"></i>
+          <span class="truncate">PDF</span>
+        </button>
+      `;
     }
 
     const isSeminar = (art.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || art.publicationType === "seminar_presentation");
@@ -2386,8 +2612,9 @@ function renderArticleCards(articles) {
               ${accessBadge}
             </div>
 
-            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
-              ${escapeHtml(displayTitlePL)}
+            <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full inline-flex items-center gap-1.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+              <span class="inline-flex items-center gap-1 shrink-0 select-none">${deptIconsHtml}</span>
+              <span class="truncate">${escapeHtml(displayTitlePL)}</span>
             </h3>
 
             ${displayTitleEN && displayTitleEN !== displayTitlePL ? `<p class="text-[12px] text-slate-500 italic mb-0.5 line-clamp-1 truncate max-w-full" title="${escapeHtml(displayTitleEN)}"><i class="fas fa-book-open mr-1 text-slate-400"></i> ${escapeHtml(displayTitleEN)}</p>` : ""}
@@ -2400,8 +2627,8 @@ function renderArticleCards(articles) {
 
           <!-- Prawa część: Przyciski akcji (h-6, text-[11px] font-semibold mikro-standard) -->
           <div class="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-end overflow-hidden">
-            <button type="button" onclick="toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1 px-2 py-0.5 h-6 rounded-md text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition cursor-pointer shrink-0" title="Pokaż streszczenie / abstrakt">
-              <span id="card-abstract-btn-${art.id}">Streszczenie ▾</span>
+            <button type="button" onclick="toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1 px-2 py-0.5 h-6 rounded-md text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition cursor-pointer shrink-0" title="Pokaż abstrakt publikacji">
+              <span id="card-abstract-btn-${art.id}">Abstrakt ▾</span>
             </button>
 
             <div class="flex items-center gap-1.5 shrink-0">
@@ -2413,6 +2640,10 @@ function renderArticleCards(articles) {
 
         <!-- Rozwijany Abstrakt wiersza -->
         <div id="card-abstract-${art.id}" class="card-abstract-container hidden bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 text-xs text-slate-700 leading-relaxed transition-all duration-200 shadow-2xs mt-1">
+          <div class="text-[11px] font-bold text-indigo-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Abstrakt publikacji</span>
+          </div>
           <p id="card-abstract-text-${art.id}">${escapeHtml(displayAbstract)}</p>
           <div class="flex justify-end mt-1.5 pt-1 border-t border-slate-200/60">
             <button type="button" onclick="openArticleDetail('${art.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs inline-flex items-center gap-1 hover:underline cursor-pointer">
@@ -2438,9 +2669,10 @@ function renderArticleCards(articles) {
             ${deleteBtnHtml}
           </div>
 
-          <!-- 2. Tytuł polski -->
-          <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
-            ${escapeHtml(displayTitlePL)}
+          <!-- 2. Tytuł polski z mikro-ikonami kategorii -->
+          <h3 class="text-sm md:text-base font-semibold text-slate-800 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-1 line-clamp-2 inline-flex items-start gap-1.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
+            <span class="inline-flex items-center gap-1 shrink-0 mt-0.5 select-none">${deptIconsHtml}</span>
+            <span>${escapeHtml(displayTitlePL)}</span>
           </h3>
 
           <!-- 3. Tytuł oryginalny -->
@@ -2454,6 +2686,10 @@ function renderArticleCards(articles) {
 
           <!-- 5. Sekcja abstraktu -->
           <div id="card-abstract-${art.id}" class="card-abstract-container bg-slate-50 border border-slate-200/80 hover:border-indigo-300 rounded-xl p-2.5 text-xs text-slate-600 leading-relaxed max-h-[96px] overflow-y-auto abstract-scrollbar mb-2.5 transition-all duration-200 cursor-pointer shadow-2xs" onclick="toggleCardAbstract('${art.id}', event)">
+            <div class="text-[10.5px] font-bold text-indigo-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <svg class="w-3 h-3 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Abstrakt</span>
+            </div>
             <p id="card-abstract-text-${art.id}" class="line-clamp-3">${escapeHtml(displayAbstract)}</p>
             <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/60 text-[10.5px]">
               <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
@@ -5703,7 +5939,10 @@ function openArticleDetail(articleId) {
   const abstractText = cleanAbstractText(meta.abstractPL || article.abstractPL);
 
   const titlePlEl = document.getElementById("detail-title-pl");
-  if (titlePlEl) titlePlEl.innerText = titlePL;
+  if (titlePlEl) {
+    const deptIconsHtml = renderArticleDepartmentIcons(article, "w-4 h-4");
+    titlePlEl.innerHTML = `<span class="inline-flex items-center gap-1 shrink-0 mt-0.5 select-none">${deptIconsHtml}</span><span>${escapeHtml(titlePL)}</span>`;
+  }
 
   const titleOrigEl = document.getElementById("detail-title-orig");
   if (titleOrigEl) {
@@ -5727,21 +5966,25 @@ function openArticleDetail(articleId) {
 
   const catList = normalizeCategories(category);
   const displayCatText = catList.length > 0 ? catList.join(" • ") : "Edukacja Seksualna";
+  const cleanCatText = stripCategoryPrefix(displayCatText);
+  const deptMeta = getDepartmentMeta(displayCatText);
+  const deptIcon = getDepartmentIconSvg(displayCatText, "w-3.5 h-3.5 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
+  const badgeColors = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-300";
   const catEl = document.getElementById("detail-category");
   if (catEl) {
     const isAdmin = (AppState.currentRole === "ADMIN");
     if (isInternal) {
-      catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200";
+      catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 flex items-center gap-1.5 inline-flex";
       catEl.innerHTML = `<i class="fas fa-lock mr-1"></i> Materiał Własny SKN (Strefa Wewnętrzna)`;
       catEl.onclick = null;
     } else if (isAdmin) {
-      catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-300 cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs";
-      catEl.innerHTML = `<span>${escapeHtml(displayCatText)}</span> <i class="fas fa-pen text-[8.5px] opacity-70"></i>`;
+      catEl.className = `text-[11px] font-semibold uppercase tracking-wider ${badgeColors} px-2.5 py-1 rounded-md border cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs`;
+      catEl.innerHTML = `${deptIcon}<span>${escapeHtml(cleanCatText)}</span> <i class="fas fa-pen text-[8.5px] opacity-70 ml-0.5"></i>`;
       catEl.title = "Administrator: Kliknij, aby zmienić kategorię publikacji";
       catEl.onclick = () => openCategoryChangeModal(article.id);
     } else {
-      catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200";
-      catEl.innerText = displayCatText;
+      catEl.className = `text-[11px] font-semibold uppercase tracking-wider ${badgeColors} px-2.5 py-1 rounded-md border flex items-center gap-1.5 inline-flex shadow-xs`;
+      catEl.innerHTML = `${deptIcon}<span>${escapeHtml(cleanCatText)}</span>`;
       catEl.onclick = null;
     }
   }
@@ -5943,7 +6186,7 @@ function toggleCardAbstract(articleId, event) {
 
   if (AppState.viewMode === "list" && !cardAbstract.classList.contains("hidden")) {
     cardAbstract.classList.add("hidden");
-    if (btnEl) btnEl.innerText = "Streszczenie ▾";
+    if (btnEl) btnEl.innerText = "Abstrakt ▾";
     return;
   }
 
