@@ -2687,18 +2687,19 @@ function renderArticleCards(articles) {
           </button>`
         : "";
 
-      card.className = "w-full max-w-full overflow-hidden bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl py-2.5 px-3 sm:px-4 shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1";
+      card.className = `w-full max-w-full overflow-hidden bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl ${isAdmin ? "py-2.5 px-3 sm:px-4" : "py-2 px-3.5"} shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1`;
       card.innerHTML = `
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 w-full max-w-full overflow-hidden">
-          <!-- Lewa część: Kategoria + Tytuł + Autorzy (Bez hashtagów w liście) -->
+          <!-- Lewa część: Kategoria (Admin) + Tytuł + Autorzy -->
           <div class="flex-1 min-w-0 max-w-full overflow-hidden">
-            <div class="flex flex-wrap items-center gap-1.5 mb-1 max-w-full overflow-hidden">
+            ${isAdmin ? `
+            <div class="flex flex-wrap items-center gap-1.5 mb-1.5 max-w-full overflow-hidden">
               ${categoryBadgeHtml}
               ${seminarBadge}
               ${reviewsBadge}
               ${webSourceBadge}
               ${accessBadge}
-            </div>
+            </div>` : ""}
 
             <h3 class="text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors cursor-pointer mb-0.5 line-clamp-1 truncate max-w-full inline-flex items-center gap-2 sm:gap-2.5" onclick="openArticleDetail('${art.id}')" title="${escapeHtml(displayTitlePL)}">
               <span class="inline-flex items-center gap-1.5 shrink-0 select-none">${deptIconsHtml}</span>
