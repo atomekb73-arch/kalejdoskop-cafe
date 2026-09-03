@@ -389,7 +389,7 @@ function getArticleDepartments(article) {
   });
 
   const isSeminar = (article.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || article.publicationType === "seminar_presentation");
-  if (isSeminar || isInternalArticle(article)) {
+  if (isSeminar || article.isInternal === true || article.SKN_INTERNAL === true) {
     rawList.push("08. Repozytorium Badawcze SKN");
   }
 
@@ -1353,7 +1353,23 @@ function updateLibraryWithRealDriveFiles(files) {
 function isInternalArticle(article) {
   if (!article) return false;
   if (article.isInternal === true || article.SKN_INTERNAL === true) return true;
-  return articleHasCategory(article, "Materiały Własne SKN");
+  if (article.accessLevel === "MEMBERS" || article.accessLevel === "RESTRICTED") return true;
+
+  const meta = article.meta || article.data || {};
+  const raw = [
+    article.category,
+    article.categories,
+    article.Kategoria,
+    meta.category,
+    meta.categories,
+    meta.Kategoria
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  return raw.includes("materiały własne") ||
+         raw.includes("własne skn") ||
+         raw.includes("repozytorium badawcze") ||
+         raw.includes("repozytorium skn") ||
+         raw.includes("08.");
 }
 
 function filterAndRenderArticles() {
@@ -7203,13 +7219,13 @@ window.handleLoginSubmit = handleLoginSubmit;
 window.handleLogout = handleLogout;
 window.openDeleteModal = openDeleteModal;
 window.closeDeleteModal = closeDeleteModal;
-window.handleConfirmDelete = handleConfirmDelete;
+window.handleConfirmDelete = handleConfirmTrash;
 window.openArticleDetail = openArticleDetail;
 window.closeDetailModal = closeDetailModal;
 window.openUploadModal = openUploadModal;
 window.closeUploadModal = closeUploadModal;
-window.openConfigModal = openConfigModal;
-window.closeConfigModal = closeConfigModal;
+window.openConfigModal = typeof openConfigModal !== "undefined" ? openConfigModal : (typeof window !== "undefined" && window.openConfigModal ? window.openConfigModal : () => {});
+window.closeConfigModal = typeof closeConfigModal !== "undefined" ? closeConfigModal : (typeof window !== "undefined" && window.closeConfigModal ? window.closeConfigModal : () => {});
 window.handleSaveGasConfig = handleSaveGasConfig;
 window.handleSyncDriveFolder = handleSyncDriveFolder;
 window.closeSyncModal = closeSyncModal;
@@ -7220,7 +7236,8 @@ window.filterByTag = filterByTag;
 window.toggleArticleAccessLevel = toggleArticleAccessLevel;
 window.openCategoryChangeModal = openCategoryChangeModal;
 window.closeCategoryChangeModal = closeCategoryChangeModal;
-window.changeArticleCategory = changeArticleCategory;
+window.changeArticleCategories = changeArticleCategories;
+window.changeArticleCategory = (id, cat) => changeArticleCategories(id, [cat]);
 window.openClinicalReportModal = openClinicalReportModal;
 window.closeClinicalReportModal = closeClinicalReportModal;
 window.copyCitationFromReportModal = copyCitationFromReportModal;
