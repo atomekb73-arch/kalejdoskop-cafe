@@ -688,6 +688,9 @@ function articleHasCategory(article, targetCategory) {
     return true;
   }
 
+  const depts = getArticleDepartments(article);
+  if (depts.includes(targetCategory)) return true;
+
   const meta = article.meta || article.data || article;
   const rawCats = [
     article.category,
@@ -698,13 +701,12 @@ function articleHasCategory(article, targetCategory) {
     meta.Kategoria
   ].filter(Boolean);
 
-  const mappedDept = mapToAcademicDepartment(rawCats.join(", "));
-  if (mappedDept === targetCategory) return true;
-
   const normalized = rawCats.flatMap(c => normalizeCategories(c));
   const targetLower = targetCategory.toLowerCase().trim();
 
   return normalized.some(cat => {
+    const catMapped = mapToAcademicDepartment(cat);
+    if (catMapped === targetCategory) return true;
     const catLower = cat.toLowerCase().trim();
     return catLower === targetLower || catLower.includes(targetLower) || targetLower.includes(catLower);
   });
@@ -2239,8 +2241,66 @@ async function toggleArticleAccessLevel(articleId) {
 }
 window.toggleArticleAccessLevel = toggleArticleAccessLevel;
 
+let currentModalSelectedCategories = new Set();
+let currentModalArticleId = null;
+
+function renderCategoryChangeOptions() {
+  const optionsContainer = document.getElementById("cat-modal-options");
+  const countEl = document.getElementById("cat-modal-selected-count");
+  if (countEl) {
+    const cnt = currentModalSelectedCategories.size;
+    countEl.textContent = `${cnt} ${cnt === 1 ? "zaznaczony" : (cnt >= 2 && cnt <= 4 ? "zaznaczone" : "zaznaczonych")}`;
+  }
+  if (!optionsContainer) return;
+  const availableCategories = AppState.categories.filter((c) => c !== "Wszystko" && c !== "Wszystkie materiały");
+  optionsContainer.innerHTML = availableCategories
+    .map((cat) => {
+      const isSelected = currentModalSelectedCategories.has(cat);
+      const meta = getDepartmentMeta(cat);
+      const iconSvg = getDepartmentIconSvg(cat, "w-4 h-4", isSelected ? "text-violet-700" : (meta ? meta.colorText : "text-slate-500"));
+      const cleanName = stripCategoryPrefix(cat);
+      return `
+        <button type="button" onclick="toggleModalCategory('${escapeHtml(cat)}')" class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer active:scale-[0.99] select-none ${
+          isSelected
+            ? "bg-violet-50/80 border-violet-300 text-violet-900 shadow-xs ring-1 ring-violet-200"
+            : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700"
+        }">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-7 h-7 rounded-lg ${isSelected ? 'bg-violet-100/90 text-violet-700' : 'bg-slate-100 text-slate-500'} flex items-center justify-center shrink-0 transition-colors">
+              ${iconSvg}
+            </div>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="font-semibold text-slate-800 leading-snug truncate">${escapeHtml(cleanName)}</span>
+              <span class="text-[10px] text-slate-400 font-mono leading-none mt-0.5">${cat.substring(0, 3)} Dział Wiedzy</span>
+            </div>
+          </div>
+          <div class="w-4 h-4 rounded border flex items-center justify-center shrink-0 ml-2 transition-all ${
+            isSelected
+              ? "bg-violet-600 border-violet-600 text-white shadow-xs"
+              : "bg-white border-slate-300 text-transparent"
+          }">
+            <svg class="w-3.5 h-3.5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function toggleModalCategory(catName) {
+  if (currentModalSelectedCategories.has(catName)) {
+    currentModalSelectedCategories.delete(catName);
+  } else {
+    currentModalSelectedCategories.add(catName);
+  }
+  renderCategoryChangeOptions();
+}
+window.toggleModalCategory = toggleModalCategory;
+
 /**
- * Otwarcie modalu zmiany kategorii publikacji dla Administratora
+ * Otwarcie modalu zmiany kategorii publikacji dla Administratora (Tryb Multi-Select)
  */
 function openCategoryChangeModal(articleId) {
   if (AppState.currentRole !== "ADMIN") {
@@ -2251,7 +2311,7 @@ function openCategoryChangeModal(articleId) {
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
 
-  const currentCat = article.category || article.meta?.category || "Edukacja Seksualna";
+  currentModalArticleId = articleId;
   const title = article.titlePL || article.polishTitle || article.name || "Publikacja";
 
   const titleEl = document.getElementById("cat-modal-art-title");
@@ -2260,51 +2320,51 @@ function openCategoryChangeModal(articleId) {
   const inputId = document.getElementById("cat-modal-article-id");
   if (inputId) inputId.value = articleId;
 
-  const optionsContainer = document.getElementById("cat-modal-options");
-  if (optionsContainer) {
-    const availableCategories = AppState.categories.filter((c) => c !== "Wszystko" && c !== "Wszystkie materiały");
-    optionsContainer.innerHTML = availableCategories
-      .map((cat) => {
-        const isSelected = cat === currentCat || cat === mapToAcademicDepartment(currentCat);
-        const meta = getDepartmentMeta(cat);
-        const iconSvg = getDepartmentIconSvg(cat, "w-4 h-4", meta ? meta.colorText : "text-indigo-500");
-        return `
-          <button type="button" onclick="changeArticleCategory('${articleId}', '${escapeHtml(cat)}')" class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition flex items-center justify-between cursor-pointer active:scale-95 ${
-            isSelected
-              ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-xs"
-              : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
-          }">
-            <div class="flex items-center gap-2">
-              <span class="inline-flex items-center justify-center shrink-0">${iconSvg}</span>
-              <span>${escapeHtml(cat)}</span>
-            </div>
-            ${isSelected ? '<i class="fas fa-check text-indigo-600"></i>' : '<i class="fas fa-chevron-right text-slate-300 text-[10px]"></i>'}
-          </button>
-        `;
-      })
-      .join("");
-  }
+  const currentDepts = getArticleDepartments(article);
+  currentModalSelectedCategories = new Set(currentDepts);
 
+  renderCategoryChangeOptions();
   showModalElement("categoryChangeModal");
 }
 window.openCategoryChangeModal = openCategoryChangeModal;
 
 function closeCategoryChangeModal() {
   hideModalElement("categoryChangeModal");
+  currentModalSelectedCategories.clear();
+  currentModalArticleId = null;
 }
 window.closeCategoryChangeModal = closeCategoryChangeModal;
 
+async function saveArticleCategories() {
+  if (!currentModalArticleId) return;
+  const selectedArr = Array.from(currentModalSelectedCategories);
+  if (selectedArr.length === 0) {
+    showToast("Wybierz przynajmniej jeden dział wiedzy.", "warning");
+    return;
+  }
+  await changeArticleCategories(currentModalArticleId, selectedArr);
+}
+window.saveArticleCategories = saveArticleCategories;
+
 /**
- * Zmiana kategorii publikacji w backendzie Google Apps Script
+ * Zmiana kategorii publikacji w backendzie Google Apps Script (Wielo-działowa)
  */
-async function changeArticleCategory(articleId, newCategory) {
-  if (AppState.currentRole !== "ADMIN" || !newCategory) return;
+async function changeArticleCategories(articleId, newCategories) {
+  if (AppState.currentRole !== "ADMIN" || !newCategories || newCategories.length === 0) return;
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
 
+  const saveBtn = document.getElementById("cat-modal-save-btn");
+  const originalBtnHtml = saveBtn ? saveBtn.innerHTML : "";
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin text-xs"></i> <span>Zapisywanie...</span>`;
+  }
+
+  const categoryStr = newCategories.join(", ");
   const currentAccessLevel = article.accessLevel || (article.isPublic ? "PUBLIC" : "RESTRICTED");
 
-  showToast(`Aktualizacja kategorii na «${newCategory}»...`, "info");
+  showToast(`Aktualizacja działów (${newCategories.length})...`, "info");
 
   try {
     const payload = {
@@ -2312,7 +2372,8 @@ async function changeArticleCategory(articleId, newCategory) {
       recordId: article.id,
       articleId: article.id,
       accessLevel: currentAccessLevel,
-      category: newCategory,
+      category: categoryStr,
+      categories: newCategories,
       adminPin: AppState.currentPin || "2026"
     };
 
@@ -2329,12 +2390,20 @@ async function changeArticleCategory(articleId, newCategory) {
     }
 
     if (res && (res.status === "success" || res.success)) {
-      article.category = newCategory;
-      if (article.meta) article.meta.category = newCategory;
+      article.category = newCategories[0] || categoryStr;
+      article.categories = newCategories;
+      if (article.meta) {
+        article.meta.category = newCategories[0] || categoryStr;
+        article.meta.categories = newCategories;
+      }
       const mainArt = AppState.articles.find((a) => a.id === article.id);
       if (mainArt && mainArt !== article) {
-        mainArt.category = newCategory;
-        if (mainArt.meta) mainArt.meta.category = newCategory;
+        mainArt.category = newCategories[0] || categoryStr;
+        mainArt.categories = newCategories;
+        if (mainArt.meta) {
+          mainArt.meta.category = newCategories[0] || categoryStr;
+          mainArt.meta.categories = newCategories;
+        }
       }
 
       closeCategoryChangeModal();
@@ -2350,16 +2419,22 @@ async function changeArticleCategory(articleId, newCategory) {
         }
       }
 
-      showToast(`Kategoria została pomyślnie zmieniona na: «${newCategory}»`, "success");
+      showToast(`Pomyślnie zaktualizowano przypisanie działów publikacji (${newCategories.length}).`, "success");
     } else {
       throw new Error(res?.message || res?.error || "Nie udało się zaktualizować kategorii.");
     }
   } catch (err) {
     console.error("Błąd zmiany kategorii:", err);
     showToast("Błąd zmiany kategorii: " + (err.message || err), "error");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnHtml;
+    }
   }
 }
-window.changeArticleCategory = changeArticleCategory;
+window.changeArticleCategories = changeArticleCategories;
+window.changeArticleCategory = (id, cat) => changeArticleCategories(id, [cat]);
 
 /**
  * Renderowanie publikacji (Domyślny widok zwartej listy 'list' lub siatka kafelków 'grid')
@@ -2428,21 +2503,18 @@ function renderArticleCards(articles) {
     const displayAbstract = cleanAbstractText(meta.abstractPL || art.abstractPL);
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
-    const categoryBadgeHtml = isAdmin
-      ? (() => {
-          const deptMeta = getDepartmentMeta(mappedCategory);
-          const cleanCategoryName = stripCategoryPrefix(mappedCategory);
-          const deptIconSvg = getDepartmentIconSvg(mappedCategory, "w-3 h-3 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
-          const badgeColorClasses = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-300";
-          return `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border transition cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate" title="Administrator: Kliknij, aby zmienić dział publikacji">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0 ml-0.5"></i></button>`;
-        })()
-      : (() => {
-          const deptMeta = getDepartmentMeta(mappedCategory);
-          const cleanCategoryName = stripCategoryPrefix(mappedCategory);
-          const deptIconSvg = getDepartmentIconSvg(mappedCategory, "w-3 h-3 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
-          const badgeColorClasses = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-200";
-          return `<span class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] md:max-w-none truncate inline-flex items-center gap-1.5" title="${escapeHtml(mappedCategory)}">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span></span>`;
-        })();
+    const artDepts = getArticleDepartments(art);
+    const categoryBadgeHtml = artDepts.map(dept => {
+      const deptMeta = getDepartmentMeta(dept);
+      const cleanCategoryName = stripCategoryPrefix(dept);
+      const deptIconSvg = getDepartmentIconSvg(dept, "w-3 h-3 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
+      const badgeColorClasses = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-200";
+      if (isAdmin) {
+        return `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border transition cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] truncate" title="Administrator: Kliknij, aby zmienić działy publikacji">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0 ml-0.5"></i></button>`;
+      } else {
+        return `<span class="text-[10.5px] font-semibold uppercase tracking-wider ${badgeColorClasses} px-2 py-0.5 rounded-md border shadow-2xs shrink-0 max-w-[220px] sm:max-w-[340px] truncate inline-flex items-center gap-1.5" title="${escapeHtml(dept)}">${deptIconSvg}<span class="truncate">${escapeHtml(cleanCategoryName)}</span></span>`;
+      }
+    }).join(" ");
 
     const deptIconsHtml = renderArticleDepartmentIcons(art, "w-3.5 h-3.5");
 
@@ -5990,12 +6062,6 @@ function openArticleDetail(articleId) {
   const isInternal = isInternalArticle(article);
   const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(article.id);
 
-  const catList = normalizeCategories(category);
-  const displayCatText = catList.length > 0 ? catList.join(" • ") : "Edukacja Seksualna";
-  const cleanCatText = stripCategoryPrefix(displayCatText);
-  const deptMeta = getDepartmentMeta(displayCatText);
-  const deptIcon = getDepartmentIconSvg(displayCatText, "w-3.5 h-3.5 shrink-0", deptMeta ? deptMeta.colorText : "text-indigo-600");
-  const badgeColors = deptMeta ? deptMeta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-300";
   const catEl = document.getElementById("detail-category");
   if (catEl) {
     const isAdmin = (AppState.currentRole === "ADMIN");
@@ -6003,14 +6069,20 @@ function openArticleDetail(articleId) {
       catEl.className = "text-[11px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 flex items-center gap-1.5 inline-flex";
       catEl.innerHTML = `<i class="fas fa-lock mr-1"></i> Materiał Własny SKN (Strefa Wewnętrzna)`;
       catEl.onclick = null;
-    } else if (isAdmin) {
-      catEl.className = `text-[11px] font-semibold uppercase tracking-wider ${badgeColors} px-2.5 py-1 rounded-md border cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs`;
-      catEl.innerHTML = `${deptIcon}<span>${escapeHtml(cleanCatText)}</span> <i class="fas fa-pen text-[8.5px] opacity-70 ml-0.5"></i>`;
-      catEl.title = "Administrator: Kliknij, aby zmienić kategorię publikacji";
-      catEl.onclick = () => openCategoryChangeModal(article.id);
     } else {
-      catEl.className = `text-[11px] font-semibold uppercase tracking-wider ${badgeColors} px-2.5 py-1 rounded-md border flex items-center gap-1.5 inline-flex shadow-xs`;
-      catEl.innerHTML = `${deptIcon}<span>${escapeHtml(cleanCatText)}</span>`;
+      const badgesHtml = depts.map(dept => {
+        const cleanName = stripCategoryPrefix(dept);
+        const meta = getDepartmentMeta(dept);
+        const icon = getDepartmentIconSvg(dept, "w-3.5 h-3.5 shrink-0", meta ? meta.colorText : "text-indigo-600");
+        const colors = meta ? meta.badgeClasses : "bg-indigo-50 text-indigo-700 border-indigo-300";
+        if (isAdmin) {
+          return `<button type="button" onclick="openCategoryChangeModal('${article.id}')" class="text-[11px] font-semibold uppercase tracking-wider ${colors} px-2.5 py-1 rounded-md border cursor-pointer transition flex items-center gap-1.5 inline-flex shadow-xs" title="Administrator: Kliknij, aby zmienić działy publikacji">${icon}<span>${escapeHtml(cleanName)}</span> <i class="fas fa-pen text-[8.5px] opacity-70 ml-0.5"></i></button>`;
+        } else {
+          return `<span class="text-[11px] font-semibold uppercase tracking-wider ${colors} px-2.5 py-1 rounded-md border flex items-center gap-1.5 inline-flex shadow-xs">${icon}<span>${escapeHtml(cleanName)}</span></span>`;
+        }
+      }).join(" ");
+      catEl.className = "flex flex-wrap items-center gap-1.5";
+      catEl.innerHTML = badgesHtml;
       catEl.onclick = null;
     }
   }
@@ -6527,7 +6599,7 @@ function readFileAsBase64(file) {
 /**
  * Bezpieczna konwersja i przesyłanie pliku PDF do Google Apps Script & analiza Gemini
  */
-async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne SKN") {
+async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne SKN", selectedCategories = []) {
   const { dataUrl, base64 } = await readFileAsBase64(file);
 
   if (!base64 || base64.trim().length === 0) {
@@ -6548,6 +6620,7 @@ async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne 
   const cleanAuthors = (authorsInput && authorsInput.value.trim()) || "SKN Seksuologii";
   const cleanYear = (yearInput && yearInput.value.trim()) || new Date().getFullYear().toString();
   const cleanCategory = selectedCategory || "Materiały Własne SKN";
+  const finalCategories = selectedCategories.length > 0 ? selectedCategories : [cleanCategory];
   const cleanJournal = (journalInput && journalInput.value.trim()) || "Repozytorium SKN";
   const cleanAbstract = (abstractTextarea && abstractTextarea.value.trim()) || "";
   const hasTranslation = hasTranslationCheckbox ? Boolean(hasTranslationCheckbox.checked) : false;
@@ -6557,6 +6630,7 @@ async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne 
     authors: cleanAuthors,
     year: cleanYear,
     category: cleanCategory,
+    categories: finalCategories,
     journal: cleanJournal,
     abstract: cleanAbstract,
     hasPolishTranslation: hasTranslation
@@ -6572,6 +6646,7 @@ async function uploadAndAnalyzePDF(file, selectedCategory = "Materiały Własne 
     name: file.name,
     mimeType: file.type || "application/pdf",
     category: cleanCategory,
+    categories: finalCategories,
     adminPin: adminPin,
     pin: adminPin,
     metadata: metadata,
@@ -6608,8 +6683,18 @@ async function handleUploadPipeline() {
   }
 
   const accessLevel = document.getElementById("upload-access-level")?.value || "PUBLIC";
-  const categoryOverride = document.getElementById("upload-category")?.value || "";
-  const selectedCategory = categoryOverride === "AUTO" ? null : categoryOverride;
+  const categorySelect = document.getElementById("upload-category");
+  let uploadSelectedCategories = [];
+  if (categorySelect) {
+    if (categorySelect.selectedOptions && categorySelect.selectedOptions.length > 0) {
+      uploadSelectedCategories = Array.from(categorySelect.selectedOptions)
+        .map((opt) => opt.value)
+        .filter((v) => v !== "AUTO");
+    } else if (categorySelect.value && categorySelect.value !== "AUTO") {
+      uploadSelectedCategories = [categorySelect.value];
+    }
+  }
+  const selectedCategory = uploadSelectedCategories.length > 0 ? uploadSelectedCategories.join(", ") : null;
 
   const uploadFormInputs = document.getElementById("upload-form-inputs");
   const startBtn = document.getElementById("start-upload-btn");
@@ -6677,8 +6762,8 @@ async function handleUploadPipeline() {
 
       const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja bez tytułu");
       const finalAuthors = enteredAuthors || "Autor nieznany";
-      const finalYear = new Date().getFullYear();
-      const finalCategory = (categoryOverride === "AUTO" || !categoryOverride) ? "Biologia & Psychofizjologia" : categoryOverride;
+      const finalCategory = selectedCategory || "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+      const finalCategories = uploadSelectedCategories.length > 0 ? uploadSelectedCategories : [finalCategory];
       const finalAbstract = enteredAbstract || "";
       const finalJournal = enteredJournal || (extractedDoi ? extractJournal({ doi: extractedDoi, name: enteredTitle }) : "Źródło internetowe");
 
@@ -6693,6 +6778,7 @@ async function handleUploadPipeline() {
         journal: finalJournal,
         year: finalYear,
         category: finalCategory,
+        categories: finalCategories,
         abstract_pl: finalAbstract,
         abstractPL: finalAbstract,
         url: rawUrl,
@@ -6739,6 +6825,8 @@ async function handleUploadPipeline() {
         keywords: articleData.keywords,
         tags: articleData.tags,
         accessLevel: articleData.accessLevel,
+        category: articleData.category,
+        categories: articleData.categories,
         publication_type: "external_link",
         adminPin: AppState.currentPin || "2026"
       };
@@ -6815,7 +6903,8 @@ async function handleUploadPipeline() {
         authors: enteredAuthors || "Autor nieznany",
         journal: enteredJournal || "Źródło internetowe",
         year: new Date().getFullYear(),
-        category: (categoryOverride === "AUTO" || !categoryOverride) ? "Biologia & Psychofizjologia" : categoryOverride,
+        category: finalCategory,
+        categories: finalCategories,
         abstract_pl: enteredAbstract || "",
         abstractPL: enteredAbstract || "",
         url: rawUrl,
@@ -6898,6 +6987,7 @@ async function handleUploadPipeline() {
         mimeType: AppState.selectedUploadFile.type || "application/pdf",
         base64Data: AppState.uploadBase64,
         category: selectedCategory,
+        categories: uploadSelectedCategories.length > 0 ? uploadSelectedCategories : (selectedCategory ? [selectedCategory] : []),
         accessLevel: accessLevel,
         articleId: generatedId,
         targetDriveName: targetDriveName,
@@ -6907,7 +6997,7 @@ async function handleUploadPipeline() {
     animateStep(2, "2/5: Przesyłanie strumienia PDF do bezpiecznego magazynu Google Drive...");
 
     try {
-      const resData = await uploadAndAnalyzePDF(AppState.selectedUploadFile, selectedCategory || "Edukacja Seksualna");
+      const resData = await uploadAndAnalyzePDF(AppState.selectedUploadFile, selectedCategory || "Edukacja Seksualna", uploadSelectedCategories);
 
       if (resData.status !== "success" && !resData.success) {
         throw new Error(resData.message || resData.error || "Błąd zapisu na koncie Google Drive.");
