@@ -10,6 +10,9 @@ const CONFIG = {
   // WSPÓŁDZIELONY FOLDER UCZELNIANY (Dual Cloud Storage Sync)
   FOLDER_UNIVERSITY_ID: "1Wc6F-rYstNtmOkBpRdgtEPTIIrT4ghl5", // Wstaw ID dysku uczelni
 
+  // ID DOCELOWEGO ARKUSZA GOOGLE (Baza_Artykulow)
+  SPREADSHEET_ID: "1O_PbmKe8Dy8g1YeuUNmSgqsFBVZTdoVFIciJxQ0Ta_w",
+
   // NAZWA ARKUSZA BAZODANOWEGO
   SHEET_NAME: "Baza_Artykulow",
   WHITELIST_SHEET_NAME: "BialaLista",

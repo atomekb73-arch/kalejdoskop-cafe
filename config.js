@@ -8,6 +8,7 @@ const APP_CONFIG = {
   VERSION: "2.1.1",
   API_URL: "https://script.google.com/macros/s/AKfycbxVb1YA8iFutidhRyhOIZr32V9XD3ETTa8_BjjOgdhstnz2bfXIYJ2RGX8wNH-Aq0hm/exec",
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxVb1YA8iFutidhRyhOIZr32V9XD3ETTa8_BjjOgdhstnz2bfXIYJ2RGX8wNH-Aq0hm/exec",
+  SPREADSHEET_ID: "1O_PbmKe8Dy8g1YeuUNmSgqsFBVZTdoVFIciJxQ0Ta_w",
   DRIVE_BASE_VIEW: "https://drive.google.com/file/d/",
   ADMIN_PIN: "2026",
   MEMBER_DEFAULT_PIN: "2026",

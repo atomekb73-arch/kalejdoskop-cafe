@@ -26,7 +26,22 @@ const SheetService = {
    * Inicjalizacja arkusza lub pobranie istniejącego
    */
   getOrCreateSheet: function() {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let ss = null;
+    try {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    } catch (e) {
+      ss = null;
+    }
+    if (!ss && CONFIG.SPREADSHEET_ID) {
+      try {
+        ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      } catch (e) {
+        console.warn("Błąd otwarcia arkusza po ID:", e);
+      }
+    }
+    if (!ss) {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    }
     let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
     if (!sheet) {
       sheet = ss.insertSheet(CONFIG.SHEET_NAME);
