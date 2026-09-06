@@ -6552,20 +6552,26 @@ async function saveEditingArticleTitle() {
 
   // 2. Zdalna synchronizacja z Google Apps Script w tle
   try {
+    const categoriesValue = Array.isArray(article.categories) 
+      ? article.categories.join(", ") 
+      : (article.category || (article.meta && (article.meta.category || (Array.isArray(article.meta.categories) && article.meta.categories.join(", ")))) || "");
+
     const payload = {
       action: "updateArticle",
+      id: article.id,
       recordId: article.id,
       articleId: article.id,
-      id: article.id,
-      fileId: article.fileIdOriginal || article.fileId,
-      titlePL: newTitlePL,
       title: newTitlePL,
       titlePl: newTitlePL,
+      titlePL: newTitlePL,
       polishTitle: newTitlePL,
-      titleEN: newTitleEN,
       titleEn: newTitleEN,
+      titleEN: newTitleEN,
       titleOriginal: newTitleEN,
       originalTitle: newTitleEN,
+      categories: categoriesValue,
+      category: categoriesValue,
+      tags: Array.isArray(article.tags) ? article.tags.join(", ") : (article.tags || ""),
       adminPin: AppState.currentPin || "2026"
     };
 
@@ -6599,6 +6605,7 @@ async function saveEditingArticleTitle() {
   }
 }
 window.saveEditingArticleTitle = saveEditingArticleTitle;
+window.updateTitle = saveEditingArticleTitle;
 
 /**
  * Przełączanie rozwijania i zwijania pełnego tekstu abstraktu w modalu szczegółów

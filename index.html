@@ -68,6 +68,25 @@
   <link rel="stylesheet" href="styles.css">
 
   <style>
+    /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
+    vercel-live-feedback,
+    [data-vercel-toolbar],
+    [data-vercel-edit-mode],
+    #vercel-toolbar,
+    .vercel-toolbar,
+    .__vercel-toolbar {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      left: -99999px !important;
+      top: -99999px !important;
+      z-index: -9999 !important;
+    }
+
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }

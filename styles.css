@@ -18,6 +18,25 @@ body, input, button, select, textarea, p, h1, h2, h3, h4, h5, h6, span:not([clas
   font-family: var(--font-family);
 }
 
+/* Wyłączenie Vercel Toolbar (zapobieganie konfliktom z polskimi znakami AltGr) */
+vercel-live-feedback,
+[data-vercel-toolbar],
+[data-vercel-edit-mode],
+#vercel-toolbar,
+.vercel-toolbar,
+.__vercel-toolbar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -99999px !important;
+  top: -99999px !important;
+  z-index: -9999 !important;
+}
+
 /* Ochrona i ostre renderowanie glifów FontAwesome */
 .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands, [class^="fa-"], [class*=" fa-"] {
   font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "FontAwesome" !important;
