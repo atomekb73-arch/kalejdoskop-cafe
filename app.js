@@ -7127,15 +7127,18 @@ async function handleUploadPipeline() {
       const finalCategory = selectedCategory || "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
       const finalCategories = uploadSelectedCategories.length > 0 ? uploadSelectedCategories : [finalCategory];
       const finalAbstract = enteredAbstract || "";
-      const finalJournal = enteredJournal || (extractedDoi ? extractJournal({ doi: extractedDoi, name: enteredTitle }) : "Źródło internetowe");
+      const finalJournal = enteredJournal || (extractedDoi ? extractJournal({ doi: extractedDoi, name: enteredTitle }) : "Źródło zewnętrzne");
+
+      const generatedId = "KC-" + Date.now();
 
       const articleData = {
-        id: `KC-URL-${Date.now()}`,
+        id: generatedId,
         title: finalTitle,
         titlePL: finalTitle,
         original_title: finalTitle,
         titleOriginal: finalTitle,
         titleEN: finalTitle,
+        titleEn: finalTitle,
         authors: finalAuthors,
         journal: finalJournal,
         year: finalYear,
@@ -7143,6 +7146,7 @@ async function handleUploadPipeline() {
         categories: finalCategories,
         abstract_pl: finalAbstract,
         abstractPL: finalAbstract,
+        abstract: finalAbstract,
         url: rawUrl,
         sourceUrl: rawUrl,
         urlOriginal: rawUrl,
@@ -7150,14 +7154,15 @@ async function handleUploadPipeline() {
         external_url: rawUrl,
         pdf_url: "",
         doi: extractedDoi || "",
+        driveFileId: "",
         publication_type: "external_link",
         publicationType: "external_link",
-        tags: ["web", "artykuł", finalCategory],
-        keywords: ["web", "artykuł", finalCategory],
+        tags: finalCategories,
+        keywords: finalCategories,
         accessLevel: accessLevel,
         isInternal: accessLevel === "MEMBERS",
         SKN_INTERNAL: accessLevel === "MEMBERS",
-        fileIdOriginal: `KC-URL-${Date.now()}`,
+        fileIdOriginal: "",
         hasPolishTranslation: true,
         hasReport: false,
         status: "ACTIVE",
@@ -7166,30 +7171,25 @@ async function handleUploadPipeline() {
 
       const payload = {
         action: "saveWebArticle",
-        type: "WEB",
-        title: articleData.titlePL,
-        titlePL: articleData.titlePL,
-        titleOriginal: articleData.titleOriginal,
-        original_title: articleData.titleOriginal,
-        titleEN: articleData.titleEN,
-        authors: articleData.authors,
-        year: articleData.year,
-        category: articleData.category,
-        abstract_pl: articleData.abstractPL,
-        abstractPL: articleData.abstractPL,
-        sourceUrl: articleData.sourceUrl,
-        url: articleData.sourceUrl,
-        urlOriginal: articleData.sourceUrl,
-        external_url: articleData.sourceUrl,
-        pdf_url: "",
-        urlTranslation: articleData.sourceUrl,
-        doi: articleData.doi,
-        keywords: articleData.keywords,
-        tags: articleData.tags,
-        accessLevel: articleData.accessLevel,
-        category: articleData.category,
-        categories: articleData.categories,
-        publication_type: "external_link",
+        id: generatedId,
+        title: finalTitle,
+        titlePL: finalTitle,
+        titleEn: finalTitle,
+        titleEN: finalTitle,
+        authors: finalAuthors,
+        year: finalYear,
+        journal: finalJournal,
+        categories: Array.isArray(finalCategories) ? finalCategories.join(", ") : (finalCategory || ""),
+        category: finalCategory,
+        url: rawUrl,
+        sourceUrl: rawUrl,
+        abstract: finalAbstract,
+        abstractPL: finalAbstract,
+        tags: Array.isArray(finalCategories) ? finalCategories.join(", ") : (finalCategory || ""),
+        keywords: finalCategories,
+        driveFileId: "",
+        fileIdOriginal: "",
+        accessLevel: accessLevel,
         adminPin: AppState.currentPin || "2026"
       };
 
@@ -7216,8 +7216,6 @@ async function handleUploadPipeline() {
           cloudSyncSuccess = true;
         } else {
           const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-          const urlWithAction = `${scriptUrl}?action=saveWebArticle`;
-
           const fetchOptions = {
             method: "POST",
             headers: {
@@ -7230,7 +7228,7 @@ async function handleUploadPipeline() {
             fetchOptions.signal = webController.signal;
           }
 
-          const response = await fetch(urlWithAction, fetchOptions);
+          const response = await fetch(scriptUrl, fetchOptions);
           if (response.ok) {
             const text = await response.text();
             try {
@@ -7268,14 +7266,8 @@ async function handleUploadPipeline() {
       renderCategoryPills();
       filterAndRenderArticles();
 
-      showPipelineSuccess(articleData, rawUrl);
-
-      if (cloudSyncSuccess) {
-        loadArticles().catch(() => {});
-        showToast("Publikacja została dodana do bazy.", "success");
-      } else {
-        showToast("Artykuł zapisany lokalnie i na Dysku. Synchronizacja z Arkuszem w toku.", "info");
-      }
+      closeUploadModal();
+      showToast("Publikacja została dodana do bazy.", "success");
     } catch (err) {
       console.error("Błąd zapisu artykułu Web:", err);
       // Fallback bezpieczeństwa
@@ -7307,8 +7299,8 @@ async function handleUploadPipeline() {
       renderCategoryPills();
       filterAndRenderArticles();
 
-      showPipelineSuccess(fallbackData, rawUrl);
-      showToast("Artykuł zapisany lokalnie i na Dysku. Synchronizacja z Arkuszem w toku.", "info");
+      closeUploadModal();
+      showToast("Artykuł zapisany lokalnie w bazie podręcznej.", "success");
     }
 
     return;

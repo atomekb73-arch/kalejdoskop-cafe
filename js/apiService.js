@@ -190,6 +190,33 @@ export async function saveWebArticle(articleData, adminPin = "2026") {
   return result;
 }
 
+/**
+ * Trwały zapis edycji artykułu (Tytuł, Kategorie, Tagi)
+ */
+export async function updateArticle(articleId, updateData = {}, adminPin = "2026") {
+  const payload = {
+    action: "updateArticle",
+    id: articleId,
+    articleId: articleId,
+    title: updateData.title || updateData.titlePL,
+    titleEn: updateData.titleEn || updateData.titleEN || updateData.titleOriginal || "",
+    categories: Array.isArray(updateData.categories) ? updateData.categories.join(", ") : (updateData.categories || updateData.category || ""),
+    tags: Array.isArray(updateData.tags) ? updateData.tags.join(", ") : (updateData.tags || updateData.keywords || ""),
+    accessLevel: updateData.accessLevel,
+    adminPin: adminPin
+  };
+
+  return await callGoogleScript("updateArticle", payload);
+}
+
+export async function updateTitle(articleId, newTitlePl, newTitleEn = "", adminPin = "2026") {
+  return await updateArticle(articleId, { title: newTitlePl, titleEn: newTitleEn }, adminPin);
+}
+
+export async function updateCategories(articleId, categories, tags, adminPin = "2026") {
+  return await updateArticle(articleId, { categories: categories, tags: tags }, adminPin);
+}
+
 export default {
   fetchFromAppsScript,
   callGoogleScript,
@@ -197,6 +224,9 @@ export default {
   readFileAsBase64,
   uploadPdfArticle,
   saveWebArticle,
+  updateArticle,
+  updateTitle,
+  updateCategories,
   updateArticleMeta,
   askDocument
 };
