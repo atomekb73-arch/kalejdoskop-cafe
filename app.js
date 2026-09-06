@@ -1903,63 +1903,74 @@ async function downloadWatermarkedPdf(articleId) {
     }
 
     const pdfLibInstance = typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib;
-    if (!pdfLibInstance || !pdfLibInstance.PDFDocument) {
-      throw new Error("Biblioteka pdf-lib nie została poprawnie zainicjalizowana.");
-    }
-
     const fileId = article.fileIdOriginal || article.fileId || article.fileIdTranslation || article.id;
     const existingPdfBytes = await fetchPdfBytes(fileId);
 
-    const pdfDoc = await pdfLibInstance.PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
-    const helveticaBold = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.HelveticaBold);
-    const helveticaRegular = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.Helvetica);
-
-    const userName = AppState.currentUser?.name || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Dostęp Akademicki");
-    const dateStr = new Date().toLocaleDateString("pl-PL");
-
-    const watermarkText = `EGZEMPLARZ: ${userName.toUpperCase()} • SKN SEKSUOLOGII`;
-    const auditText = "Pobrano przez: " + userName + " • SKN Seksuologii • " + dateStr;
-
-    const pages = pdfDoc.getPages();
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const { width, height } = page.getSize();
-
-      // 1. Diagonal Watermark (Środek strony, kąt -45 st.)
-      const diagonalFontSize = Math.max(14, Math.min(22, width / 30));
-      const textWidth = helveticaBold.widthOfTextAtSize(watermarkText, diagonalFontSize);
-
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const rad = -45 * (Math.PI / 180);
-      const x = centerX - (textWidth / 2) * Math.cos(rad);
-      const y = centerY - (textWidth / 2) * Math.sin(rad);
-
-      page.drawText(watermarkText, {
-        x: x,
-        y: y,
-        size: diagonalFontSize,
-        font: helveticaBold,
-        color: pdfLibInstance.rgb(0.45, 0.2, 0.55),
-        opacity: 0.14,
-        rotate: pdfLibInstance.degrees(-45)
-      });
-
-      // 2. Stopka strony (Stempel Audytowy)
-      page.drawText(auditText, {
-        x: 30,
-        y: 15,
-        size: 8,
-        font: helveticaRegular,
-        color: pdfLibInstance.rgb(0.25, 0.25, 0.25),
-        opacity: 0.85
-      });
+    if (!existingPdfBytes || existingPdfBytes.length === 0) {
+      throw new Error("Pusty bufor dokumentu.");
     }
 
-    const modifiedPdfBytes = await pdfDoc.save();
+    let outputBytes = existingPdfBytes;
+    let isWatermarked = false;
+
+    if (pdfLibInstance && pdfLibInstance.PDFDocument) {
+      try {
+        const pdfDoc = await pdfLibInstance.PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
+        const helveticaBold = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.HelveticaBold);
+        const helveticaRegular = await pdfDoc.embedFont(pdfLibInstance.StandardFonts.Helvetica);
+
+        const userName = AppState.currentUser?.name || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Dostęp Akademicki");
+        const dateStr = new Date().toLocaleDateString("pl-PL");
+
+        const watermarkText = `EGZEMPLARZ: ${userName.toUpperCase()} • SKN SEKSUOLOGII`;
+        const auditText = "Pobrano przez: " + userName + " • SKN Seksuologii • " + dateStr;
+
+        const pages = pdfDoc.getPages();
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i];
+          const { width, height } = page.getSize();
+
+          // 1. Diagonal Watermark (Środek strony, kąt -45 st.)
+          const diagonalFontSize = Math.max(14, Math.min(22, width / 30));
+          const textWidth = helveticaBold.widthOfTextAtSize(watermarkText, diagonalFontSize);
+
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const rad = -45 * (Math.PI / 180);
+          const x = centerX - (textWidth / 2) * Math.cos(rad);
+          const y = centerY - (textWidth / 2) * Math.sin(rad);
+
+          page.drawText(watermarkText, {
+            x: x,
+            y: y,
+            size: diagonalFontSize,
+            font: helveticaBold,
+            color: pdfLibInstance.rgb(0.45, 0.2, 0.55),
+            opacity: 0.14,
+            rotate: pdfLibInstance.degrees(-45)
+          });
+
+          // 2. Stopka strony (Stempel Audytowy)
+          page.drawText(auditText, {
+            x: 30,
+            y: 15,
+            size: 8,
+            font: helveticaRegular,
+            color: pdfLibInstance.rgb(0.25, 0.25, 0.25),
+            opacity: 0.85
+          });
+        }
+
+        outputBytes = await pdfDoc.save();
+        isWatermarked = true;
+      } catch (embErr) {
+        console.warn("Błąd nakładania stempla pdf-lib, pobieranie pliku źródłowego:", embErr);
+        outputBytes = existingPdfBytes;
+      }
+    }
 
     // Wywołaj pobieranie jako lokalny Blob i natychmiast zniszcz URL z pamięci
-    const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+    const blob = new Blob([outputBytes], { type: "application/pdf" });
     const blobUrl = URL.createObjectURL(blob);
     const dlLink = document.createElement("a");
     dlLink.href = blobUrl;
@@ -1967,7 +1978,7 @@ async function downloadWatermarkedPdf(articleId) {
       .replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ_\-\s]/g, "")
       .trim()
       .replace(/\s+/g, "_");
-    dlLink.download = `${safeBaseName}_SKN_Watermarked.pdf`;
+    dlLink.download = isWatermarked ? `${safeBaseName}_SKN_Watermarked.pdf` : `${safeBaseName}_SKN.pdf`;
     document.body.appendChild(dlLink);
     dlLink.click();
     document.body.removeChild(dlLink);
@@ -1977,11 +1988,15 @@ async function downloadWatermarkedPdf(articleId) {
       URL.revokeObjectURL(blobUrl);
     }, 500);
 
-    showToast(`Pobrano dokument «${title}» z podpisem cyfrowym i stemplem audytowym!`, "success");
+    if (isWatermarked) {
+      showToast(`Pobrano dokument «${title}» z podpisem cyfrowym i stemplem audytowym!`, "success");
+    } else {
+      showToast(`Pobrano dokument «${title}»!`, "success");
+    }
   } catch (err) {
-    console.error("Watermark error:", err);
-    const errText = (err && typeof err === "object" && err.message) ? err.message : (typeof err === "string" ? err : "Wystąpił problem podczas generowania stempla PDF.");
-    showToast("Błąd generowania znaku wodnego: " + errText, "error");
+    console.error("Watermark/Download error:", err);
+    const errText = (err && typeof err === "object" && err.message) ? err.message : (typeof err === "string" ? err : "Wystąpił problem podczas pobierania pliku PDF.");
+    showToast("Błąd pobierania pliku PDF: " + errText, "error");
   } finally {
     AppState.watermarkingIds.delete(articleId);
     filterAndRenderArticles();
@@ -2083,15 +2098,34 @@ async function fetchPdfBytes(fileId) {
 }
 
 function loadPdfLibScript() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (typeof PDFLib !== "undefined" || typeof window.PDFLib !== "undefined") {
       return resolve(typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib);
     }
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/pdf-lib@1.17.9/dist/pdf-lib.min.js";
-    script.onload = () => resolve(typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib);
-    script.onerror = () => reject(new Error("Nie udało się załadować biblioteki pdf-lib (błąd sieci/CDN)."));
-    document.head.appendChild(script);
+    const sources = [
+      "/js/pdf-lib.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js",
+      "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.9/dist/pdf-lib.min.js",
+      "https://unpkg.com/pdf-lib@1.17.9/dist/pdf-lib.min.js"
+    ];
+    let idx = 0;
+    function tryNext() {
+      if (idx >= sources.length) {
+        return resolve(typeof PDFLib !== "undefined" ? PDFLib : (window.PDFLib || null));
+      }
+      const script = document.createElement("script");
+      script.src = sources[idx++];
+      script.onload = () => {
+        const inst = typeof PDFLib !== "undefined" ? PDFLib : window.PDFLib;
+        if (inst) resolve(inst);
+        else tryNext();
+      };
+      script.onerror = () => {
+        tryNext();
+      };
+      document.head.appendChild(script);
+    }
+    tryNext();
   });
 }
 
@@ -3793,6 +3827,13 @@ function triggerFileSave(bytes, fileName) {
 
 window.downloadCurrentViewerPdf = downloadCurrentViewerPdf;
 window.downloadCurrentPdfFile = downloadCurrentViewerPdf;
+window.viewerDownloadWatermarked = async function() {
+  const currentArtId = (typeof ViewerState !== "undefined" && ViewerState?.currentArticleId) || window.currentArticleId;
+  if (currentArtId && typeof downloadWatermarkedPdf === "function") {
+    return await downloadWatermarkedPdf(currentArtId);
+  }
+  return await downloadCurrentViewerPdf();
+};
 let isPdfFullscreen = false;
 function togglePdfFullscreen(force) {
   const modal = document.getElementById("securePdfViewerModal");
