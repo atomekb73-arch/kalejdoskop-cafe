@@ -6,7 +6,7 @@
 
 import { APP_CONFIG } from './config.js';
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTBiZ8uGG3xHFfJY3lJDx9NO-G0apw4mNy7gOAGs3qieZjRe8stbrWUqpcwcFYVmVY/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVb1YA8iFutidhRyhOIZr32V9XD3ETTa8_BjjOgdhstnz2bfXIYJ2RGX8wNH-Aq0hm/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302

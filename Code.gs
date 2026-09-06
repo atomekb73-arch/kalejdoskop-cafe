@@ -206,21 +206,24 @@ function apiSaveWebArticle(postData) {
     throw new Error("Wymagany poprawny adres URL publikacji.");
   }
 
-  const titlePL = postData.titlePL || postData.title || "Publikacja Internetowa";
-  const titleOriginal = postData.titleEN || postData.titleOriginal || titlePL;
+  const titlePL = postData.titlePL || postData.title || postData.titlePl || "Publikacja Internetowa";
+  const titleOriginal = postData.titleEN || postData.titleEn || postData.titleOriginal || titlePL;
   const authors = postData.authors || "Autor nieznany";
   const year = postData.year || new Date().getFullYear();
-  const category = postData.category || "Edukacja Seksualna";
-  const abstractPL = postData.abstractPL || postData.abstract || "";
+  const category = postData.category || (Array.isArray(postData.categories) ? postData.categories[0] : "Edukacja Seksualna");
+  const categories = postData.categories || [category];
+  const abstractPL = postData.abstractPL || postData.abstract || postData.abstract_pl || "";
   const accessLevel = postData.accessLevel || "PUBLIC";
   const tags = postData.keywords || postData.tags || ["Artykuł Web", "Open Access", category];
 
   const record = SheetService.insertArticle({
+    id: postData.id || postData.articleId,
     titlePL: titlePL,
     titleOriginal: titleOriginal,
     authors: authors,
     year: year,
     category: category,
+    categories: categories,
     tags: tags,
     abstractPL: abstractPL,
     accessLevel: accessLevel,
@@ -249,8 +252,10 @@ function apiUpdateArticle(postData) {
   const updateRes = SheetService.updateArticle(articleId, {
     titlePL: postData.titlePL || postData.title || postData.titlePl || postData.polishTitle,
     titleOriginal: postData.titleOriginal || postData.titleEN || postData.titleEn || postData.originalTitle,
-    category: postData.category,
-    categories: postData.categories,
+    category: postData.category || (Array.isArray(postData.categories) ? postData.categories.join(", ") : postData.categories),
+    categories: postData.categories || postData.updatedCategories || postData.category,
+    tags: postData.tags || postData.keywords || postData.updatedTags,
+    keywords: postData.keywords || postData.tags,
     accessLevel: postData.accessLevel
   });
 

@@ -108,10 +108,11 @@ const SheetService = {
    */
   insertArticle: function(articleData) {
     const sheet = this.getOrCreateSheet();
-    const newId = "KC-" + Utilities.formatDate(new Date(), "GMT+2", "yyyyMMdd-HHmmss");
+    const newId = articleData.id || ("KC-" + Utilities.formatDate(new Date(), "GMT+2", "yyyyMMdd-HHmmss"));
     const todayStr = Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd");
 
-    const tagsStr = Array.isArray(articleData.tags) ? articleData.tags.join(", ") : (articleData.tags || "");
+    const categoryStr = Array.isArray(articleData.categories) ? articleData.categories.join(", ") : (articleData.category || "Edukacja Seksualna");
+    const tagsStr = Array.isArray(articleData.tags) ? articleData.tags.join(", ") : (articleData.tags || (Array.isArray(articleData.keywords) ? articleData.keywords.join(", ") : (articleData.keywords || "")));
 
     const newRow = [
       newId,
@@ -120,7 +121,7 @@ const SheetService = {
       articleData.titleOriginal,
       articleData.authors,
       articleData.year,
-      articleData.category,
+      categoryStr,
       tagsStr,
       articleData.abstractPL,
       articleData.accessLevel,
@@ -228,6 +229,13 @@ const SheetService = {
         if (updateData.category !== undefined && updateData.category !== null) {
           const catStr = Array.isArray(updateData.categories) ? updateData.categories.join(", ") : updateData.category;
           sheet.getRange(rowNumber, 7).setValue(catStr);
+        }
+
+        // Kolumna 8 (H): Slowa_Kluczowe / Tags
+        const newTags = updateData.tags !== undefined ? updateData.tags : (updateData.keywords !== undefined ? updateData.keywords : updateData.updatedTags);
+        if (newTags !== undefined && newTags !== null) {
+          const tagStr = Array.isArray(newTags) ? newTags.join(", ") : newTags;
+          sheet.getRange(rowNumber, 8).setValue(tagStr);
         }
 
         // Kolumna 10 (J): Poziom_Dostepu

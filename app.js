@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxTBiZ8uGG3xHFfJY3lJDx9NO-G0apw4mNy7gOAGs3qieZjRe8stbrWUqpcwcFYVmVY/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxVb1YA8iFutidhRyhOIZr32V9XD3ETTa8_BjjOgdhstnz2bfXIYJ2RGX8wNH-Aq0hm/exec";
 
 const AppState = {
   articles: [],
@@ -44,7 +44,7 @@ if (typeof window !== "undefined") {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTBiZ8uGG3xHFfJY3lJDx9NO-G0apw4mNy7gOAGs3qieZjRe8stbrWUqpcwcFYVmVY/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVb1YA8iFutidhRyhOIZr32V9XD3ETTa8_BjjOgdhstnz2bfXIYJ2RGX8wNH-Aq0hm/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
@@ -1292,10 +1292,17 @@ function updateLibraryWithRealDriveFiles(files) {
       : (meta.titlePL || meta.polishTitle || meta.translatedTitle || file.titlePL || file.polishTitle || file.Tytul_PL || file.title || (rawOrigTitle ? rawOrigTitle.replace(/^KC-\d{14}_?/, "").replace(/\.pdf$/i, "").replace(/_/g, " ") : "Dokument PDF"));
     const authors = meta.authors || file.authors || file.Autorzy || "Autor nieznany";
     const year = String(meta.year || file.year || file.Rok || "");
-    const category = meta.category || meta.suggestedCategory || file.category || file.Kategoria || "Edukacja Seksualna";
+    const category = (editOverride && (editOverride.category || (Array.isArray(editOverride.categories) && editOverride.categories[0])))
+      ? (editOverride.category || editOverride.categories[0])
+      : (meta.category || meta.suggestedCategory || file.category || file.Kategoria || "Edukacja Seksualna");
+    const categories = (editOverride && Array.isArray(editOverride.categories) && editOverride.categories.length > 0)
+      ? editOverride.categories
+      : (meta.categories || (Array.isArray(file.categories) ? file.categories : [category]));
     
     let tags = [];
-    if (Array.isArray(meta.keywords)) {
+    if (editOverride && Array.isArray(editOverride.tags)) {
+      tags = editOverride.tags;
+    } else if (Array.isArray(meta.keywords)) {
       tags = meta.keywords;
     } else if (Array.isArray(meta.tags)) {
       tags = meta.tags;
@@ -1372,6 +1379,7 @@ function updateLibraryWithRealDriveFiles(files) {
       authors: authors,
       year: year,
       category: category,
+      categories: categories,
       journal: file.journal || meta.journal || extractJournal(file),
       doi: file.doi || meta.doi || extractDoi(file),
       tags: tags,
@@ -2461,12 +2469,19 @@ async function changeArticleCategories(articleId, newCategories) {
 
   try {
     const payload = {
-      action: "updateArticleMeta",
+      action: "updateArticle",
+      id: article.id,
       recordId: article.id,
       articleId: article.id,
+      title: article.titlePL || article.title,
+      titlePl: article.titlePL || article.title,
+      titleEn: article.titleEN || article.titleOriginal,
       accessLevel: currentAccessLevel,
       category: categoryStr,
       categories: newCategories,
+      updatedCategories: newCategories,
+      tags: article.tags || article.keywords,
+      updatedTags: article.tags || article.keywords,
       adminPin: AppState.currentPin || "2026"
     };
 
@@ -2476,10 +2491,10 @@ async function changeArticleCategories(articleId, newCategories) {
         google.script.run
           .withSuccessHandler(resolve)
           .withFailureHandler(reject)
-          .apiUpdateArticleMeta(payload);
+          .apiUpdateArticle(payload);
       });
     } else {
-      res = await callGoogleScript("updateArticleMeta", payload);
+      res = await callGoogleScript("updateArticle", payload);
     }
 
     if (res && (res.status === "success" || res.success)) {
@@ -2499,6 +2514,17 @@ async function changeArticleCategories(articleId, newCategories) {
         }
       }
 
+      // Trwały zapis lokalny (odporność na F5)
+      const catOverride = {
+        categories: newCategories,
+        category: newCategories[0] || categoryStr
+      };
+      saveArticleEditOverride(article.id, catOverride);
+      if (article.fileIdOriginal) saveArticleEditOverride(article.fileIdOriginal, catOverride);
+      if (article.fileId) saveArticleEditOverride(article.fileId, catOverride);
+      if (article.ID_Artykulu) saveArticleEditOverride(article.ID_Artykulu, catOverride);
+
+      saveArticlesToCache(AppState.articles);
       closeCategoryChangeModal();
       renderCategoryPills();
       filterAndRenderArticles();
