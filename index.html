@@ -989,7 +989,27 @@
           <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
           <div class="flex items-start gap-2.5 mt-2">
             <div id="detail-category-icons" class="flex items-center gap-1.5 shrink-0 mt-1 select-none"></div>
-            <h3 id="detail-title-pl" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug flex-1"></h3>
+            <div class="flex-1 min-w-0">
+              <div id="detail-title-display-container" class="flex items-start gap-2 group">
+                <h3 id="detail-title-pl" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug flex-1"></h3>
+                <button type="button" id="detail-edit-title-btn" onclick="startEditingArticleTitle()" class="hidden text-slate-400 hover:text-indigo-600 p-1 rounded hover:bg-slate-100 transition-colors shrink-0 mt-0.5 cursor-pointer" title="Administrator: Edytuj tytuł publikacji">
+                  <i class="fas fa-pen text-xs"></i>
+                </button>
+              </div>
+              <div id="detail-title-edit-container" class="hidden flex-col gap-2 mt-1">
+                <textarea id="detail-edit-title-input" rows="2" placeholder="Tytuł w języku polskim" class="w-full text-sm font-semibold text-slate-900 border border-indigo-300 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 leading-snug" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); saveEditingArticleTitle(); } else if(event.key==='Escape'){ cancelEditingArticleTitle(); }"></textarea>
+                <input id="detail-edit-title-orig-input" type="text" placeholder="Tytuł oryginalny / angielski (opcjonalnie)" class="w-full text-xs text-slate-600 italic border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white" onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveEditingArticleTitle(); } else if(event.key==='Escape'){ cancelEditingArticleTitle(); }">
+                <div class="flex items-center justify-end gap-2 mt-1">
+                  <button type="button" onclick="cancelEditingArticleTitle()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer active:scale-95">
+                    Anuluj
+                  </button>
+                  <button type="button" id="detail-save-title-btn" onclick="saveEditingArticleTitle()" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95">
+                    <i class="fas fa-check text-[10px]"></i>
+                    <span>Zapisz</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <p id="detail-title-orig" class="text-xs text-slate-500 italic mt-1"></p>
         </div>

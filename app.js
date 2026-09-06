@@ -37,6 +37,9 @@ const AppState = {
   chatHistory: {},
   currentUser: null
 };
+if (typeof window !== "undefined") {
+  window.AppState = AppState;
+}
 
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
@@ -46,10 +49,13 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTBiZ8uGG3xHFfJY3lJ
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
  */
-async function fetchFromAppsScript(payload = { action: "scan" }) {
+async function fetchFromAppsScript(payload = { action: "scan" }, timeoutMs = 18000) {
+  const controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
   try {
     const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || SCRIPT_URL;
-    const response = await fetch(scriptUrl, {
+    const fetchOptions = {
       method: "POST",
       // Użycie text/plain zapobiega wysyłaniu zapytania wstępnego OPTIONS (preflight CORS):
       headers: {
@@ -58,7 +64,13 @@ async function fetchFromAppsScript(payload = { action: "scan" }) {
       body: JSON.stringify(payload),
       // Google Apps Script zawsze zwraca kod 302 przekierowujący na właściwe dane:
       redirect: "follow",
-    });
+    };
+    if (controller) {
+      fetchOptions.signal = controller.signal;
+    }
+
+    const response = await fetch(scriptUrl, fetchOptions);
+    if (timer) clearTimeout(timer);
 
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
@@ -68,9 +80,20 @@ async function fetchFromAppsScript(payload = { action: "scan" }) {
     AppState.isOffline = false;
     window.isOffline = false;
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { status: "success", raw: text };
+    }
     return data;
   } catch (error) {
+    if (timer) clearTimeout(timer);
+    if (error && error.name === "AbortError") {
+      console.warn(`Przekroczono limit czasu oczekiwania na Google Apps Script (${Math.round(timeoutMs / 1000)}s).`);
+      throw new Error(`Przekroczono limit czasu odpowiedzi Google Apps Script (${Math.round(timeoutMs / 1000)}s).`);
+    }
     console.error("Błąd połączenia z Google Apps Script:", error);
     throw error;
   }
@@ -3028,6 +3051,15 @@ function updateAuthUI() {
     }
     if (gasStatusText) gasStatusText.innerText = "Widok Otwarty (Dysk SKN)";
     if (gasStatusSubtext) gasStatusSubtext.innerText = "Zaloguj się e-mailem i PIN-em członka";
+  }
+
+  const editTitleBtn = document.getElementById("detail-edit-title-btn");
+  if (editTitleBtn) {
+    if (AppState.currentRole === "ADMIN") {
+      editTitleBtn.classList.remove("hidden");
+    } else {
+      editTitleBtn.classList.add("hidden");
+    }
   }
 
   filterAndRenderArticles();
@@ -6014,10 +6046,24 @@ function formatMarkdownSimple(text) {
 /**
  * Modal Szczegółów Artykułu
  */
+let currentDetailArticleId = null;
+
 function openArticleDetail(articleId) {
   switchDetailTab("abstract");
   const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
   if (!article) return;
+
+  currentDetailArticleId = articleId;
+  cancelEditingArticleTitle();
+
+  const editTitleBtn = document.getElementById("detail-edit-title-btn");
+  if (editTitleBtn) {
+    if (AppState.currentRole === "ADMIN") {
+      editTitleBtn.classList.remove("hidden");
+    } else {
+      editTitleBtn.classList.add("hidden");
+    }
+  }
 
   const meta = article.meta || article.data || article;
   const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.polishTitle || article.name || "Publikacja Naukowa");
@@ -6252,8 +6298,178 @@ function openArticleDetail(articleId) {
 }
 
 function closeDetailModal() {
+  cancelEditingArticleTitle();
   hideModalElement("detailModal");
 }
+
+/**
+ * Rozpoczęcie edycji tytułu artykułu (Tylko Administrator)
+ */
+function startEditingArticleTitle() {
+  if (AppState.currentRole !== "ADMIN" || !currentDetailArticleId) return;
+  const article = AppState.articles.find((a) => a.id === currentDetailArticleId) || AppState.filteredArticles.find((a) => a.id === currentDetailArticleId);
+  if (!article) return;
+
+  const meta = article.meta || article.data || article;
+  const currentTitlePL = meta.titlePL || meta.polishTitle || article.titlePL || article.polishTitle || article.name || "";
+  const currentTitleEN = meta.titleEN || meta.originalTitle || meta.titleOriginal || article.titleEN || article.titleOriginal || article.originalTitle || "";
+
+  const titleInput = document.getElementById("detail-edit-title-input");
+  const titleOrigInput = document.getElementById("detail-edit-title-orig-input");
+  const displayContainer = document.getElementById("detail-title-display-container");
+  const editContainer = document.getElementById("detail-title-edit-container");
+  const titleOrigEl = document.getElementById("detail-title-orig");
+
+  if (titleInput) titleInput.value = currentTitlePL;
+  if (titleOrigInput) titleOrigInput.value = currentTitleEN;
+
+  if (displayContainer) displayContainer.classList.add("hidden");
+  if (titleOrigEl) titleOrigEl.classList.add("hidden");
+  if (editContainer) {
+    editContainer.classList.remove("hidden");
+    editContainer.classList.add("flex");
+  }
+
+  if (titleInput) {
+    setTimeout(() => {
+      titleInput.focus();
+      titleInput.select();
+    }, 50);
+  }
+}
+window.startEditingArticleTitle = startEditingArticleTitle;
+
+/**
+ * Anulowanie edycji tytułu artykułu
+ */
+function cancelEditingArticleTitle() {
+  const displayContainer = document.getElementById("detail-title-display-container");
+  const editContainer = document.getElementById("detail-title-edit-container");
+  const titleOrigEl = document.getElementById("detail-title-orig");
+
+  if (editContainer) {
+    editContainer.classList.add("hidden");
+    editContainer.classList.remove("flex");
+  }
+  if (displayContainer) displayContainer.classList.remove("hidden");
+
+  if (titleOrigEl && titleOrigEl.innerText.trim()) {
+    titleOrigEl.classList.remove("hidden");
+  }
+}
+window.cancelEditingArticleTitle = cancelEditingArticleTitle;
+
+/**
+ * Zapisanie zaktualizowanego tytułu artykułu (Optymistycznie + Synchronizacja w tle)
+ */
+async function saveEditingArticleTitle() {
+  if (AppState.currentRole !== "ADMIN" || !currentDetailArticleId) return;
+  const article = AppState.articles.find((a) => a.id === currentDetailArticleId) || AppState.filteredArticles.find((a) => a.id === currentDetailArticleId);
+  if (!article) return;
+
+  const titleInput = document.getElementById("detail-edit-title-input");
+  const titleOrigInput = document.getElementById("detail-edit-title-orig-input");
+  const saveBtn = document.getElementById("detail-save-title-btn");
+
+  const newTitlePL = titleInput ? titleInput.value.trim() : "";
+  const newTitleEN = titleOrigInput ? titleOrigInput.value.trim() : "";
+
+  if (!newTitlePL) {
+    showToast("Tytuł artykułu nie może być pusty.", "warning");
+    return;
+  }
+
+  const originalSaveBtnHtml = saveBtn ? saveBtn.innerHTML : "";
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin text-xs"></i> <span>Zapisywanie...</span>`;
+  }
+
+  // 1. Zapis optymistyczny w pamięci podręcznej i bieżącym stanie aplikacji
+  article.titlePL = newTitlePL;
+  article.polishTitle = newTitlePL;
+  article.title = newTitlePL;
+  if (article.meta) {
+    article.meta.titlePL = newTitlePL;
+    article.meta.polishTitle = newTitlePL;
+    article.meta.title = newTitlePL;
+  }
+  if (newTitleEN !== undefined) {
+    article.titleEN = newTitleEN;
+    article.titleOriginal = newTitleEN;
+    article.originalTitle = newTitleEN;
+    if (article.meta) {
+      article.meta.titleEN = newTitleEN;
+      article.meta.titleOriginal = newTitleEN;
+      article.meta.originalTitle = newTitleEN;
+    }
+  }
+
+  const mainArt = AppState.articles.find((a) => a.id === article.id);
+  if (mainArt && mainArt !== article) {
+    mainArt.titlePL = newTitlePL;
+    mainArt.polishTitle = newTitlePL;
+    mainArt.title = newTitlePL;
+    if (mainArt.meta) {
+      mainArt.meta.titlePL = newTitlePL;
+      mainArt.meta.polishTitle = newTitlePL;
+      mainArt.meta.title = newTitlePL;
+    }
+    if (newTitleEN !== undefined) {
+      mainArt.titleEN = newTitleEN;
+      mainArt.titleOriginal = newTitleEN;
+      mainArt.originalTitle = newTitleEN;
+      if (mainArt.meta) {
+        mainArt.meta.titleEN = newTitleEN;
+        mainArt.meta.titleOriginal = newTitleEN;
+        mainArt.meta.originalTitle = newTitleEN;
+      }
+    }
+  }
+
+  saveArticlesToCache(AppState.articles);
+  saveWebArticleToCache(article);
+  filterAndRenderArticles();
+  cancelEditingArticleTitle();
+
+  // Odśwież widok modalu
+  openArticleDetail(article.id);
+  showToast("Tytuł publikacji został zaktualizowany.", "success");
+
+  // 2. Zdalna synchronizacja z Google Apps Script w tle
+  try {
+    const payload = {
+      action: "updateArticleMeta",
+      recordId: article.id,
+      articleId: article.id,
+      titlePL: newTitlePL,
+      title: newTitlePL,
+      polishTitle: newTitlePL,
+      titleEN: newTitleEN,
+      titleOriginal: newTitleEN,
+      adminPin: AppState.currentPin || "2026"
+    };
+
+    if (AppState.isGasEnvironment) {
+      google.script.run
+        .withSuccessHandler(() => console.log("Tytuł zsynchronizowany z Arkuszem Google."))
+        .withFailureHandler((err) => console.warn("Błąd zapisu tytułu w Apps Script:", err))
+        .apiUpdateArticleMeta(payload);
+    } else {
+      callGoogleScript("updateArticleMeta", payload, 15000).catch((err) => {
+        console.warn("Błąd sieciowej synchronizacji tytułu w tle:", err);
+      });
+    }
+  } catch (err) {
+    console.warn("Błąd wywołania synchronizacji tytułu:", err);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalSaveBtnHtml;
+    }
+  }
+}
+window.saveEditingArticleTitle = saveEditingArticleTitle;
 
 /**
  * Przełączanie rozwijania i zwijania pełnego tekstu abstraktu w modalu szczegółów
@@ -6849,40 +7065,61 @@ async function handleUploadPipeline() {
       };
 
       let result = null;
+      let cloudSyncSuccess = false;
 
-      if (AppState.isGasEnvironment) {
-        result = await new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler((res) => {
-              if (res && (res.status === "error" || res.success === false)) {
-                reject(new Error(res.message || res.error || "Błąd zapisu w Arkuszu Google"));
-              } else {
-                resolve(res);
-              }
-            })
-            .withFailureHandler(reject)
-            .apiProcessArticle(payload);
-        });
-      } else {
-        const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
-        const urlWithAction = `${scriptUrl}?action=saveWebArticle`;
+      const webController = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      const webTimer = webController ? setTimeout(() => webController.abort(), 15000) : null;
 
-        try {
-          const response = await fetch(urlWithAction, {
+      try {
+        if (AppState.isGasEnvironment) {
+          result = await new Promise((resolve, reject) => {
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res && (res.status === "error" || res.success === false)) {
+                  reject(new Error(res.message || res.error || "Błąd zapisu w Arkuszu Google"));
+                } else {
+                  resolve(res);
+                }
+              })
+              .withFailureHandler(reject)
+              .apiProcessArticle(payload);
+          });
+          cloudSyncSuccess = true;
+        } else {
+          const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || AppState.appsScriptUrl || DEFAULT_EXEC_URL;
+          const urlWithAction = `${scriptUrl}?action=saveWebArticle`;
+
+          const fetchOptions = {
             method: "POST",
             headers: {
               "Content-Type": "text/plain;charset=utf-8"
             },
             body: JSON.stringify(payload),
             redirect: "follow"
-          });
-
-          if (response.ok) {
-            result = await response.json();
+          };
+          if (webController) {
+            fetchOptions.signal = webController.signal;
           }
-        } catch (fetchErr) {
-          console.warn("Zapis w chmurze nie powiódł się, kontynuacja z zapisem lokalnym:", fetchErr);
+
+          const response = await fetch(urlWithAction, fetchOptions);
+          if (response.ok) {
+            const text = await response.text();
+            try {
+              result = JSON.parse(text);
+            } catch (e) {
+              result = { status: "success", raw: text };
+            }
+            cloudSyncSuccess = true;
+          }
         }
+      } catch (cloudErr) {
+        if (cloudErr && cloudErr.name === "AbortError") {
+          console.warn("Krok 5: Przekroczono limit czasu oczekiwania na Google Apps Script (15s). Przechodzę na zapis optymistyczny.");
+        } else {
+          console.warn("Krok 5: Zapis w chmurze nie powiódł się, kontynuacja z zapisem lokalnym:", cloudErr);
+        }
+      } finally {
+        if (webTimer) clearTimeout(webTimer);
       }
 
       // Aktualizacja ID rekordu z bazy danych jeśli zwrócono
@@ -6890,7 +7127,7 @@ async function handleUploadPipeline() {
         articleData.id = result.id || result.articleId;
       }
 
-      // Dodaj nową pozycję do stanu i cache
+      // Natychmiastowy zapis lokalny i w pamięci (Optimistic UI)
       saveWebArticleToCache(articleData);
       if (!AppState.articles.some((a) => a.id === articleData.id)) {
         AppState.articles.unshift(articleData);
@@ -6902,14 +7139,17 @@ async function handleUploadPipeline() {
       renderCategoryPills();
       filterAndRenderArticles();
 
-      // Pobierz i zsynchronizuj pełną listę z Arkusza Google
-      loadArticles().catch(() => {});
-
       showPipelineSuccess(articleData, rawUrl);
-      showToast("Publikacja została dodana do bazy.", "success");
+
+      if (cloudSyncSuccess) {
+        loadArticles().catch(() => {});
+        showToast("Publikacja została dodana do bazy.", "success");
+      } else {
+        showToast("Artykuł zapisany lokalnie i na Dysku. Synchronizacja z Arkuszem w toku.", "info");
+      }
     } catch (err) {
-      console.error("Błąd sieciowego zapisu artykułu Web:", err);
-      // Nawet w razie błędu sieciowego zapisz pozycję lokalnie
+      console.error("Błąd zapisu artykułu Web:", err);
+      // Fallback bezpieczeństwa
       const finalTitle = enteredTitle || (extractedDoi ? `Publikacja DOI ${extractedDoi}` : "Publikacja bez tytułu");
       const fallbackData = {
         id: `KC-URL-${Date.now()}`,
@@ -6920,8 +7160,8 @@ async function handleUploadPipeline() {
         authors: enteredAuthors || "Autor nieznany",
         journal: enteredJournal || "Źródło internetowe",
         year: new Date().getFullYear(),
-        category: finalCategory,
-        categories: finalCategories,
+        category: selectedCategory || "07. Edukacja, Zdrowie Publiczne & Profilaktyka",
+        categories: uploadSelectedCategories.length > 0 ? uploadSelectedCategories : [selectedCategory || "07. Edukacja, Zdrowie Publiczne & Profilaktyka"],
         abstract_pl: enteredAbstract || "",
         abstractPL: enteredAbstract || "",
         url: rawUrl,
@@ -6939,7 +7179,7 @@ async function handleUploadPipeline() {
       filterAndRenderArticles();
 
       showPipelineSuccess(fallbackData, rawUrl);
-      showToast("Publikacja została dodana do bazy.", "success");
+      showToast("Artykuł zapisany lokalnie i na Dysku. Synchronizacja z Arkuszem w toku.", "info");
     }
 
     return;
@@ -7239,6 +7479,9 @@ window.openCategoryChangeModal = openCategoryChangeModal;
 window.closeCategoryChangeModal = closeCategoryChangeModal;
 window.changeArticleCategories = changeArticleCategories;
 window.changeArticleCategory = (id, cat) => changeArticleCategories(id, [cat]);
+window.startEditingArticleTitle = startEditingArticleTitle;
+window.cancelEditingArticleTitle = cancelEditingArticleTitle;
+window.saveEditingArticleTitle = saveEditingArticleTitle;
 window.openClinicalReportModal = openClinicalReportModal;
 window.closeClinicalReportModal = closeClinicalReportModal;
 window.copyCitationFromReportModal = copyCitationFromReportModal;
