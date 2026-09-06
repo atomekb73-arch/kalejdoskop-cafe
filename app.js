@@ -3128,12 +3128,18 @@ function hideModalElement(modalId) {
 
 function handleBackdropClick(event, modalId) {
   if (event.target && event.target.id === modalId) {
-    hideModalElement(modalId);
+    if (modalId === "add-review-modal") {
+      closeAddReviewModal();
+    } else if (modalId === "focus-reader-modal") {
+      closeFocusReader();
+    } else {
+      hideModalElement(modalId);
+    }
   }
 }
 
 function closeAllModals() {
-  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal"].forEach((id) => {
+  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal", "add-review-modal", "focus-reader-modal"].forEach((id) => {
     hideModalElement(id);
   });
 }
@@ -5408,11 +5414,17 @@ function printFocusReview() {
 }
 window.printFocusReview = printFocusReview;
 
+let pendingReviewArticleId = null;
+
 function openAddReviewModal() {
   const modal = document.getElementById("add-review-modal");
   if (!modal) return;
   const form = document.getElementById("add-review-form");
   if (form) form.reset();
+
+  // Zapamiętaj ID recenzowanego artykułu
+  const detailId = document.getElementById("detail-id")?.innerText.trim();
+  pendingReviewArticleId = (detailId && detailId !== "-") ? detailId : (currentDetailArticleId || null);
 
   // Autouzupełnienie danych zalogowanego członka
   const user = AppState.currentUser || (AppState.currentRole === "ADMIN" ? { name: "Administrator SKN" } : null);
@@ -5421,23 +5433,32 @@ function openAddReviewModal() {
     authorInput.value = user.name;
   }
 
+  // Wariant A (zalecany UX): Ukryj modal szczegółów artykułu, aby formularz recenzji pojawił się bez przeszkód na pierwszym planie
+  hideModalElement("detailModal");
+
   modal.classList.remove("hidden");
   modal.style.display = "flex";
 }
 window.openAddReviewModal = openAddReviewModal;
 
-function closeAddReviewModal() {
+function closeAddReviewModal(shouldReopenDetail = true) {
   const modal = document.getElementById("add-review-modal");
   if (modal) {
     modal.classList.add("hidden");
     modal.style.display = "none";
+  }
+
+  // Po anulowaniu lub zamknięciu przywróć modal artykułu w zakładce Recenzje EBM
+  if (shouldReopenDetail && pendingReviewArticleId) {
+    openArticleDetail(pendingReviewArticleId);
+    switchDetailTab("reviews");
   }
 }
 window.closeAddReviewModal = closeAddReviewModal;
 
 function handleSaveNewReview(e) {
   if (e) e.preventDefault();
-  const detailId = document.getElementById("detail-id")?.innerText.trim();
+  const detailId = pendingReviewArticleId || document.getElementById("detail-id")?.innerText.trim() || currentDetailArticleId;
   if (!detailId || detailId === "-") return;
 
   const article = AppState.articles?.find((a) => a.id === detailId) || AppState.filteredArticles?.find((a) => a.id === detailId);
@@ -5487,7 +5508,9 @@ function handleSaveNewReview(e) {
     console.error("Błąd zapisu recenzji:", err);
   }
 
-  closeAddReviewModal();
+  // Zamknij formularz recenzji i przywróć modal szczegółów w zakładce recenzji
+  closeAddReviewModal(false);
+  openArticleDetail(article.id);
   renderArticleReviews(article);
   switchDetailTab("reviews");
   filterAndRenderArticles();

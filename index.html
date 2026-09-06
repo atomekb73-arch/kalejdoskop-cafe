@@ -1834,8 +1834,8 @@
   </div>
 
   <!-- MODAL: Pełnoekranowy Czytnik Recenzji Akademickiej (Focus Reader) -->
-  <div id="focus-reader-modal" class="fixed inset-0 z-60 hidden flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md transition-all duration-300" style="display: none;">
-    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+  <div id="focus-reader-modal" onclick="handleBackdropClick(event, 'focus-reader-modal')" class="fixed inset-0 z-[100010] hidden flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md transition-all duration-300" style="display: none;">
+    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
       <!-- Pasek Górny Czytnika (Focus Toolbar) -->
       <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200/90 flex items-center justify-between gap-3 shrink-0 select-none">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -1952,8 +1952,8 @@
   </div>
 
   <!-- MODAL: Formularz Dodawania Recenzji Akademickiej -->
-  <div id="add-review-modal" class="fixed inset-0 z-60 hidden flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm" style="display: none;">
-    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+  <div id="add-review-modal" onclick="handleBackdropClick(event, 'add-review-modal')" class="fixed inset-0 z-[100020] hidden flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-sm transition-all duration-300" style="display: none;">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
       <!-- Nagłówek -->
       <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 select-none">
         <div class="flex items-center gap-2">
