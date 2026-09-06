@@ -2478,10 +2478,8 @@ async function changeArticleCategories(articleId, newCategories) {
       titleEn: article.titleEN || article.titleOriginal,
       accessLevel: currentAccessLevel,
       category: categoryStr,
-      categories: newCategories,
-      updatedCategories: newCategories,
-      tags: article.tags || article.keywords,
-      updatedTags: article.tags || article.keywords,
+      categories: Array.isArray(newCategories) ? newCategories.join(", ") : (newCategories || categoryStr),
+      tags: Array.isArray(article.tags) ? article.tags.join(", ") : (article.tags || article.keywords || ""),
       adminPin: AppState.currentPin || "2026"
     };
 
