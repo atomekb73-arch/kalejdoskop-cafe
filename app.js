@@ -956,11 +956,42 @@ function getCachedArticles() {
       }
     });
 
-    articles = articles.filter((a) => !isArticleTrashed(a));
     return articles;
   } catch (e) {
     console.warn("Błąd odczytu kc_articles_cache:", e);
     return [];
+  }
+}
+
+const EDITS_CACHE_KEY = "kc_article_edits";
+
+function saveArticleEditOverride(articleId, overrideData) {
+  try {
+    if (!articleId) return;
+    const raw = localStorage.getItem(EDITS_CACHE_KEY) || localStorage.getItem("kc_edited_titles");
+    const map = raw ? JSON.parse(raw) : {};
+    map[String(articleId).trim()] = {
+      ...(map[String(articleId).trim()] || {}),
+      ...overrideData,
+      updatedAt: new Date().toISOString()
+    };
+    const serialized = JSON.stringify(map);
+    localStorage.setItem(EDITS_CACHE_KEY, serialized);
+    localStorage.setItem("kc_edited_titles", serialized);
+  } catch (e) {
+    console.warn("Błąd zapisu kc_article_edits:", e);
+  }
+}
+
+function getArticleEditOverride(articleId) {
+  try {
+    if (!articleId) return null;
+    const raw = localStorage.getItem(EDITS_CACHE_KEY) || localStorage.getItem("kc_edited_titles");
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map[String(articleId).trim()] || null;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -1218,7 +1249,18 @@ function updateLibraryWithRealDriveFiles(files) {
   persistentSources.forEach((item) => {
     if (isArticleTrashed(item)) return;
     const meta = item.meta || item.data || item;
-    const title = item.titlePL || item.title || meta.titlePL || meta.title || item.name;
+    const editOverride = getArticleEditOverride(item.id) || getArticleEditOverride(item.fileId);
+    let title = item.titlePL || item.title || meta.titlePL || meta.title || item.name;
+    if (editOverride && editOverride.titlePL) {
+      title = editOverride.titlePL;
+      item.titlePL = editOverride.titlePL;
+      item.polishTitle = editOverride.titlePL;
+      item.title = editOverride.titlePL;
+      if (editOverride.titleOriginal || editOverride.titleEN) {
+        item.titleOriginal = editOverride.titleOriginal || editOverride.titleEN;
+        item.titleEN = editOverride.titleOriginal || editOverride.titleEN;
+      }
+    }
     const hasSource = item.pdf_url || item.fileId || item.fileIdOriginal || item.url || item.urlOriginal || item.external_url || item.sourceUrl || item.source_url || item.abstractPL || item.abstract || meta.abstractPL || meta.abstract;
     const isValid = Boolean(title && hasSource);
 
@@ -1234,8 +1276,20 @@ function updateLibraryWithRealDriveFiles(files) {
     if (file.status === "TRASHED" || file.status === "DELETED" || file.trashed || file.deleted) return;
 
     const meta = file.meta || file.data || file;
-    const rawOrigTitle = meta.titleEN || meta.originalTitle || meta.titleOriginal || file.titleEN || file.originalTitle || file.titleOriginal || file.Tytul_Oryginalny || file.name || file.newName || "";
-    const polishTitle = meta.titlePL || meta.polishTitle || meta.translatedTitle || file.titlePL || file.polishTitle || file.Tytul_PL || file.title || (rawOrigTitle ? rawOrigTitle.replace(/^KC-\d{14}_?/, "").replace(/\.pdf$/i, "").replace(/_/g, " ") : "Dokument PDF");
+    const editOverride = getArticleEditOverride(id) || 
+                         getArticleEditOverride(file.id) || 
+                         getArticleEditOverride(file.ID_Artykulu) || 
+                         getArticleEditOverride(file.fileId) || 
+                         getArticleEditOverride(file.fileIdOriginal) || 
+                         getArticleEditOverride(file.FileID_Oryginal);
+
+    const rawOrigTitle = (editOverride && (editOverride.titleOriginal || editOverride.titleEN)) 
+      ? (editOverride.titleOriginal || editOverride.titleEN)
+      : (meta.titleEN || meta.originalTitle || meta.titleOriginal || file.titleEN || file.originalTitle || file.titleOriginal || file.Tytul_Oryginalny || file.name || file.newName || "");
+
+    const polishTitle = (editOverride && editOverride.titlePL)
+      ? editOverride.titlePL
+      : (meta.titlePL || meta.polishTitle || meta.translatedTitle || file.titlePL || file.polishTitle || file.Tytul_PL || file.title || (rawOrigTitle ? rawOrigTitle.replace(/^KC-\d{14}_?/, "").replace(/\.pdf$/i, "").replace(/_/g, " ") : "Dokument PDF"));
     const authors = meta.authors || file.authors || file.Autorzy || "Autor nieznany";
     const year = String(meta.year || file.year || file.Rok || "");
     const category = meta.category || meta.suggestedCategory || file.category || file.Kategoria || "Edukacja Seksualna";
@@ -6450,6 +6504,17 @@ async function saveEditingArticleTitle() {
     }
   }
 
+  // Zapisz trwałe nadpisanie w localStorage (odporność na F5 / przeładowanie)
+  const overridePayload = {
+    titlePL: newTitlePL,
+    titleOriginal: newTitleEN,
+    titleEN: newTitleEN
+  };
+  saveArticleEditOverride(article.id, overridePayload);
+  if (article.fileIdOriginal) saveArticleEditOverride(article.fileIdOriginal, overridePayload);
+  if (article.fileId) saveArticleEditOverride(article.fileId, overridePayload);
+  if (article.ID_Artykulu) saveArticleEditOverride(article.ID_Artykulu, overridePayload);
+
   saveArticlesToCache(AppState.articles);
   saveWebArticleToCache(article);
   filterAndRenderArticles();
@@ -6462,26 +6527,41 @@ async function saveEditingArticleTitle() {
   // 2. Zdalna synchronizacja z Google Apps Script w tle
   try {
     const payload = {
-      action: "updateArticleMeta",
+      action: "updateArticle",
       recordId: article.id,
       articleId: article.id,
+      id: article.id,
+      fileId: article.fileIdOriginal || article.fileId,
       titlePL: newTitlePL,
       title: newTitlePL,
+      titlePl: newTitlePL,
       polishTitle: newTitlePL,
       titleEN: newTitleEN,
+      titleEn: newTitleEN,
       titleOriginal: newTitleEN,
+      originalTitle: newTitleEN,
       adminPin: AppState.currentPin || "2026"
     };
 
     if (AppState.isGasEnvironment) {
       google.script.run
-        .withSuccessHandler(() => console.log("Tytuł zsynchronizowany z Arkuszem Google."))
-        .withFailureHandler((err) => console.warn("Błąd zapisu tytułu w Apps Script:", err))
-        .apiUpdateArticleMeta(payload);
+        .withSuccessHandler(() => {
+          console.log("Tytuł trwale zsynchronizowany z Arkuszem Google.");
+          showToast("Tytuł został trwale zapisany w bazie chmurowej.", "success");
+        })
+        .withFailureHandler((err) => {
+          console.warn("Błąd zapisu tytułu w Apps Script:", err);
+          showToast("Tytuł zapisany lokalnie (błąd chmury).", "warning");
+        })
+        .apiUpdateArticle(payload);
     } else {
-      callGoogleScript("updateArticleMeta", payload, 15000).catch((err) => {
-        console.warn("Błąd sieciowej synchronizacji tytułu w tle:", err);
-      });
+      callGoogleScript("updateArticle", payload, 15000)
+        .then(() => {
+          console.log("Tytuł zsynchronizowany z Google Sheets.");
+        })
+        .catch((err) => {
+          console.warn("Błąd sieciowej synchronizacji tytułu w tle:", err);
+        });
     }
   } catch (err) {
     console.warn("Błąd wywołania synchronizacji tytułu:", err);

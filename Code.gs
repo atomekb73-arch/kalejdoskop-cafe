@@ -107,6 +107,8 @@ function doPost(e) {
       result = apiAskDocument(postData);
     } else if (action === "deleteArticle" || action === "trash" || action === "trash_article") {
       result = apiDeleteArticle(postData.id || postData.articleId || postData.fileId, postData.adminPin, postData.fileId || postData.drive_file_id);
+    } else if (action === "updateArticle" || action === "updateTitle" || action === "updateArticleMeta") {
+      result = apiUpdateArticle(postData);
     } else {
       throw new Error("Nieznana akcja API: " + action);
     }
@@ -233,6 +235,35 @@ function apiSaveWebArticle(postData) {
     status: "success",
     success: true
   };
+}
+
+/**
+ * Aktualizacja tytułu i metadanych publikacji w arkuszu Baza_Artykulow
+ */
+function apiUpdateArticle(postData) {
+  const articleId = postData.articleId || postData.id || postData.recordId || postData.fileId;
+  if (!articleId) {
+    throw new Error("Brak identyfikatora artykułu (articleId).");
+  }
+
+  const updateRes = SheetService.updateArticle(articleId, {
+    titlePL: postData.titlePL || postData.title || postData.titlePl || postData.polishTitle,
+    titleOriginal: postData.titleOriginal || postData.titleEN || postData.titleEn || postData.originalTitle,
+    category: postData.category,
+    categories: postData.categories,
+    accessLevel: postData.accessLevel
+  });
+
+  return {
+    status: "success",
+    success: true,
+    articleId: articleId,
+    ...updateRes
+  };
+}
+
+function apiUpdateArticleMeta(postData) {
+  return apiUpdateArticle(postData);
 }
 
 /**

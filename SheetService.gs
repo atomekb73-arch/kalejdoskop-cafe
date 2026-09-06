@@ -185,6 +185,71 @@ const SheetService = {
       fileIdOriginal: null,
       fileIdTranslation: null,
       message: `Publikacja o ID «${articleId}» nie występuje w arkuszu (usunięto lokalnie).`
+  },
+
+  /**
+   * Aktualizuje pola rekordu w arkuszu Baza_Artykulow (Tytul_PL, Tytul_Oryginalny, Kategoria, itp.)
+   */
+  updateArticle: function(articleId, updateData) {
+    const sheet = this.getOrCreateSheet();
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return {
+        success: true,
+        notFoundInSheet: true,
+        message: "Arkusz jest pusty."
+      };
+    }
+
+    const cleanId = String(articleId || "").trim();
+
+    for (let i = 1; i < data.length; i++) {
+      const rowId = String(data[i][0] || "").trim();
+      const fileIdOrig = String(data[i][12] || "").trim();
+      const fileIdTrans = String(data[i][13] || "").trim();
+      const directUrl = String(data[i][10] || "").trim();
+
+      if (rowId === cleanId || (fileIdOrig && fileIdOrig === cleanId) || (fileIdTrans && fileIdTrans === cleanId) || (directUrl && directUrl === cleanId)) {
+        const rowNumber = i + 1;
+
+        // Kolumna 3 (C): Tytul_PL
+        const newTitlePL = updateData.titlePL !== undefined ? updateData.titlePL : (updateData.title !== undefined ? updateData.title : updateData.titlePl);
+        if (newTitlePL !== undefined && newTitlePL !== null) {
+          sheet.getRange(rowNumber, 3).setValue(newTitlePL);
+        }
+
+        // Kolumna 4 (D): Tytul_Oryginalny / Title EN
+        const newTitleEN = updateData.titleOriginal !== undefined ? updateData.titleOriginal : (updateData.titleEN !== undefined ? updateData.titleEN : (updateData.titleEn !== undefined ? updateData.titleEn : updateData.originalTitle));
+        if (newTitleEN !== undefined && newTitleEN !== null) {
+          sheet.getRange(rowNumber, 4).setValue(newTitleEN);
+        }
+
+        // Kolumna 7 (G): Kategoria
+        if (updateData.category !== undefined && updateData.category !== null) {
+          const catStr = Array.isArray(updateData.categories) ? updateData.categories.join(", ") : updateData.category;
+          sheet.getRange(rowNumber, 7).setValue(catStr);
+        }
+
+        // Kolumna 10 (J): Poziom_Dostepu
+        if (updateData.accessLevel !== undefined && updateData.accessLevel !== null) {
+          sheet.getRange(rowNumber, 10).setValue(updateData.accessLevel);
+        }
+
+        return {
+          success: true,
+          status: "success",
+          rowNumber: rowNumber,
+          articleId: rowId,
+          updated: true
+        };
+      }
+    }
+
+    return {
+      success: true,
+      status: "success",
+      notFoundInSheet: true,
+      message: `Publikacja o ID «${articleId}» zaktualizowana w pamięci lokalnej.`
     };
   },
 
