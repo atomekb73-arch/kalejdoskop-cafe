@@ -264,9 +264,7 @@ const SheetService = {
         const newTransUrl = updateData.translationUrl !== undefined ? updateData.translationUrl : (updateData.URL_Podgladu_PL !== undefined ? updateData.URL_Podgladu_PL : updateData.urlTranslation);
         if (newTransUrl !== undefined && newTransUrl !== null) {
           sheet.getRange(rowNumber, 12).setValue(newTransUrl);
-          if (sheet.getLastColumn() >= 15) {
-            sheet.getRange(rowNumber, 15).setValue(newTransUrl);
-          }
+          sheet.getRange(rowNumber, 15).setValue(newTransUrl);
         }
 
         // Kolumna 14 (N): FileID_Tlumaczenie
