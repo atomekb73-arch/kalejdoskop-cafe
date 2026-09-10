@@ -1336,7 +1336,7 @@ function updateLibraryWithRealDriveFiles(files) {
 
     const abstractPL = meta.abstractPL || file.abstractPL || file.Abstrakt_PL || "Brak abstraktu.";
     const directUrl = file.sourceUrl || file.url || meta.sourceUrl || meta.url || meta.urlOriginal || file.urlOriginal || file.fileUrl || file.URL_Oryginal_Priv || file.external_url || (file.fileId ? `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing` : "#");
-    const transUrl = meta.translationUrl || file.translationUrl || meta.urlTranslation || file.urlTranslation || file.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || file.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv || "";
+    const transUrl = meta.translationUrl || file.translationUrl || meta.URL_Podgladu_PL || file.URL_Podgladu_PL || meta.urlTranslation || file.urlTranslation || file.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || file.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv || "";
     const fileIdTrans = file.fileIdTranslation || meta.fileIdTranslation || file.FileID_Tlumaczenie || file.FileID_Tlumaczenia_PL || file.ID_Pliku_PL || extractDriveFileId(transUrl) || "";
     const hasTranslation = Boolean(
       file.hasPolishTranslation === true ||
@@ -1392,6 +1392,7 @@ function updateLibraryWithRealDriveFiles(files) {
       url: directUrl,
       urlTranslation: transUrl,
       translationUrl: transUrl,
+      URL_Podgladu_PL: transUrl,
       fileIdOriginal: isWeb ? id : (file.fileId || file.fileIdOriginal || file.FileID_Oryginal || id),
       fileIdTranslation: fileIdTrans,
       hasPolishTranslation: hasTranslation,
@@ -1644,7 +1645,7 @@ function extractDriveFileId(urlOrId) {
 function getArticleTranslationUrl(art) {
   if (!art) return null;
   const meta = art.meta || art.data || art;
-  const rawTrans = art.translationUrl || meta.translationUrl || art.urlTranslation || meta.urlTranslation || art.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || art.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv;
+  const rawTrans = art.translationUrl || meta.translationUrl || art.URL_Podgladu_PL || meta.URL_Podgladu_PL || art.urlTranslation || meta.urlTranslation || art.URL_Tlumaczenia_PL || meta.URL_Tlumaczenia_PL || art.URL_Tlumacz_Priv || meta.URL_Tlumacz_Priv;
   if (!rawTrans || typeof rawTrans !== "string" || !rawTrans.trim()) {
     if (art.fileIdTranslation || meta.fileIdTranslation) {
       const fId = art.fileIdTranslation || meta.fileIdTranslation;
@@ -2198,7 +2199,7 @@ async function generateClinicalReport(articleId) {
 
     if (result && (result.status === "success" || result.success)) {
       const resData = result.data || result;
-      const rawTransUrl = resData.translationUrl || resData.urlTranslation || resData.URL_Tlumaczenia_PL || resData.url || result.translationUrl || "";
+      const rawTransUrl = resData.translationUrl || resData.URL_Podgladu_PL || resData.urlTranslation || resData.URL_Tlumaczenia_PL || resData.url || result.translationUrl || result.URL_Podgladu_PL || "";
       const newTransUrl = rawTransUrl ? safeUrl(rawTransUrl) : "";
       const newAbstractPL = resData.abstractPL || resData.abstract || resData.abstraktPL || result.abstractPL || result.abstract;
       const newTitlePL = resData.titlePL || resData.polishTitle || resData.translatedTitle || result.titlePL;
@@ -3470,7 +3471,8 @@ async function openSecureViewer(articleId, mode = "original") {
   try {
     let fileId = "";
     if (mode === "translation") {
-      fileId = article.fileIdTranslation || extractDriveFileId(article.translationUrl || article.urlTranslation) || article.fileIdOriginal;
+      const transUrl = article.translationUrl || article.URL_Podgladu_PL || article.urlTranslation || "";
+      fileId = article.fileIdTranslation || extractDriveFileId(transUrl) || article.fileIdOriginal;
     } else {
       fileId = article.fileIdOriginal || article.fileId || extractDriveFileId(article.url || article.urlOriginal) || article.id;
     }
@@ -3522,10 +3524,37 @@ function openTranslationModal(articleId) {
   const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (document.getElementById("detail-id")?.innerText?.trim() || null);
   const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
 
-  if (article && article.fileIdTranslation) {
+  if (!article) {
+    showToast("Nie odnaleziono wybranej publikacji.", "warning");
+    return;
+  }
+
+  const transUrl = article.translationUrl || article.URL_Podgladu_PL || article.urlTranslation || (article.meta && (article.meta.translationUrl || article.meta.URL_Podgladu_PL || article.meta.urlTranslation));
+  const fileIdTrans = article.fileIdTranslation || (article.meta && article.meta.fileIdTranslation) || (transUrl ? extractDriveFileId(transUrl) : null);
+
+  if (fileIdTrans) {
+    article.fileIdTranslation = fileIdTrans;
     openSecureViewer(article.id, "translation");
+    return;
+  }
+
+  if (transUrl && typeof transUrl === "string" && transUrl.trim().length > 0 && transUrl !== "#") {
+    const driveId = extractDriveFileId(transUrl);
+    if (driveId) {
+      article.fileIdTranslation = driveId;
+      openSecureViewer(article.id, "translation");
+    } else {
+      showToast("Otwieranie podglądu tłumaczenia...", "info");
+      window.open(safeUrl(transUrl), "_blank", "noopener,noreferrer");
+    }
+    return;
+  }
+
+  // Komunikat jeśli tłumaczenie nie jest jeszcze podpięte
+  if (AppState.currentRole === "ADMIN") {
+    showToast("Brak przypisanego tłumaczenia (kolumna URL_Podgladu_PL w arkuszu).", "info");
   } else {
-    showToast("Moduł pełnego tłumaczenia w przygotowaniu.", "info");
+    showToast("Moduł pełnego tłumaczenia dla tej publikacji jest w przygotowaniu.", "info");
   }
 }
 window.openTranslationModal = openTranslationModal;
