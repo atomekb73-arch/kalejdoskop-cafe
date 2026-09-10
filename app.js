@@ -2758,14 +2758,14 @@ function renderArticleCards(articles) {
     } else {
       translationBtnListHtml = `
         <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
-          <i class="fas fa-plus text-slate-400 hover:text-purple-600 text-[10px] shrink-0"></i>
-          <span class="truncate">+ Tłumaczenie PL</span>
+          <i class="fas fa-plus text-purple-600 text-[10px] shrink-0"></i>
+          <span class="truncate">Dodaj tłumaczenie PL</span>
         </button>`;
 
       translationBtnGridHtml = `
         <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
-          <i class="fas fa-plus text-slate-400 text-xs shrink-0"></i>
-          <span class="truncate">+ Dodaj tłumaczenie PL</span>
+          <i class="fas fa-plus text-purple-600 text-xs shrink-0"></i>
+          <span class="truncate">Dodaj tłumaczenie PL</span>
         </button>`;
     }
 
@@ -6778,7 +6778,7 @@ function openArticleDetail(articleId) {
           <i class="fas fa-language text-purple-600 text-sm shrink-0"></i> <span class="truncate">Tłumaczenie PL</span>
         </button>`
       : `<button type="button" id="detail-btn-translation" onclick="uploadTranslationPdfForArticle('${article.id}')" class="text-center text-xs font-medium py-2.5 px-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-800 border border-dashed border-slate-300 hover:border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Wgraj plik tłumaczenia PDF">
-          <i class="fas fa-plus text-purple-600 text-xs shrink-0"></i> <span class="truncate">+ Dodaj tłumaczenie PL</span>
+          <i class="fas fa-plus text-purple-600 text-xs shrink-0"></i> <span>Dodaj tłumaczenie PL</span>
         </button>`;
 
     const reportBtnMarkup = isTranslating
