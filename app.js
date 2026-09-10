@@ -2681,126 +2681,128 @@ function renderArticleCards(articles) {
       ? `<span class="text-[10.5px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
       : "";
 
-    // Przyciski akcji (Oryginał, Czytaj, Raport)
-    let bottomButtonsHtml = "";
-    let listButtonsHtml = "";
+    // Przyciski akcji: 1. Abstrakt, 2. PDF, 3. Tłumaczenie, 4. Raport
+    const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
+
+    // 2. Przycisk PDF (list & grid)
+    let pdfBtnListHtml = "";
+    let pdfBtnGridHtml = "";
 
     if (isInternal) {
       if (isWatermarking) {
-        bottomButtonsHtml = `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-wait truncate">
+        pdfBtnListHtml = `
+          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-md cursor-wait truncate">
+            <i class="fas fa-circle-notch fa-spin text-rose-600 text-[10px] shrink-0"></i>
+            <span class="truncate">PDF...</span>
+          </button>`;
+        pdfBtnGridHtml = `
+          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-wait truncate">
             <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
             <span class="truncate">Znakowanie...</span>
           </button>`;
-        listButtonsHtml = `
-          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-md cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-rose-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Znakowanie...</span>
-          </button>`;
       } else {
-        bottomButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-xl transition-all shadow-sm truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
-            <i class="fas fa-file-shield text-xs shrink-0"></i>
-            <span class="truncate">Czytaj ze stemplem</span>
+        pdfBtnListHtml = `
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
+            <i class="fas fa-file-shield text-rose-500 text-[10px] shrink-0"></i>
+            <span class="truncate">PDF</span>
           </button>`;
-        listButtonsHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-white bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
-            <i class="fas fa-file-shield text-[10px] shrink-0"></i>
-            <span class="truncate">Czytaj</span>
+        pdfBtnGridHtml = `
+          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
+            <i class="fas fa-file-shield text-rose-500 text-xs shrink-0"></i>
+            <span class="truncate">PDF</span>
           </button>`;
       }
     } else if (isWeb) {
-      const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
-      bottomButtonsHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
-          <i class="fas fa-globe text-sky-500 text-xs shrink-0"></i>
-          <span class="truncate">Źródło ↗</span>
-        </a>
-        ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
-            <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport...</span>
-          </button>
-        ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        `}`;
-
-      listButtonsHtml = `
+      pdfBtnListHtml = `
         <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
           <i class="fas fa-globe text-sky-500 text-[10px] shrink-0"></i>
-          <span class="truncate">Źródło ↗</span>
-        </a>
-        ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-md cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-purple-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport...</span>
-          </button>
-        ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        `}`;
+          <span class="truncate">PDF / Web ↗</span>
+        </a>`;
+      pdfBtnGridHtml = `
+        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
+          <i class="fas fa-globe text-sky-500 text-xs shrink-0"></i>
+          <span class="truncate">PDF ↗</span>
+        </a>`;
     } else {
-      bottomButtonsHtml = `
-        ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl cursor-wait truncate shadow-2xs">
-            <i class="fas fa-circle-notch fa-spin text-purple-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport...</span>
-          </button>
-        ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-indigo-600 text-xs shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        `}
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all truncate cursor-pointer shadow-2xs active:scale-95" title="Otwórz oryginalny plik PDF">
-          <i class="fas fa-file-pdf text-red-500 text-xs shrink-0"></i>
-          <span class="truncate">Oryginał PDF</span>
-        </button>
-      `;
-
-      listButtonsHtml = `
-        ${isTranslating ? `
-          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-md cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-purple-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport...</span>
-          </button>
-        ` : hasReport ? `
-          <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-            <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        ` : `
-          <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-indigo-600 text-[10px] shrink-0"></i>
-            <span class="truncate">Raport</span>
-          </button>
-        `}
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz oryginalny plik PDF">
-          <i class="fas fa-file-pdf text-red-500 text-[10px] shrink-0"></i>
+      pdfBtnListHtml = `
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz plik PDF">
+          <i class="fas fa-file-pdf text-rose-500 text-[10px] shrink-0"></i>
           <span class="truncate">PDF</span>
-        </button>
-      `;
+        </button>`;
+      pdfBtnGridHtml = `
+        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz plik PDF">
+          <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i>
+          <span class="truncate">PDF</span>
+        </button>`;
     }
+
+    // 3. Przycisk Tłumaczenie (list & grid)
+    const translationBtnListHtml = `
+      <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/90 rounded-md transition truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+        <i class="fas fa-language text-purple-600 text-[11px] shrink-0"></i>
+        <span class="truncate">Tłumaczenie</span>
+      </button>`;
+
+    const translationBtnGridHtml = `
+      <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/90 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+        <i class="fas fa-language text-purple-600 text-xs shrink-0"></i>
+        <span class="truncate">Tłumaczenie</span>
+      </button>`;
+
+    // 4. Przycisk Raport (list & grid)
+    let reportBtnListHtml = "";
+    let reportBtnGridHtml = "";
+
+    if (isTranslating) {
+      reportBtnListHtml = `
+        <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md cursor-wait truncate">
+          <i class="fas fa-circle-notch fa-spin text-emerald-600 text-[10px] shrink-0"></i>
+          <span class="truncate">Raport...</span>
+        </button>`;
+      reportBtnGridHtml = `
+        <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl cursor-wait truncate shadow-2xs">
+          <i class="fas fa-circle-notch fa-spin text-emerald-600 text-xs shrink-0"></i>
+          <span class="truncate">Raport...</span>
+        </button>`;
+    } else if (hasReport) {
+      reportBtnListHtml = `
+        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+          <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
+          <span class="truncate">Raport</span>
+        </button>`;
+      reportBtnGridHtml = `
+        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
+          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
+          <span class="truncate">Raport</span>
+        </button>`;
+    } else {
+      reportBtnListHtml = `
+        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
+          <span class="truncate">Raport</span>
+        </button>`;
+      reportBtnGridHtml = `
+        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
+          <span class="truncate">Raport</span>
+        </button>`;
+    }
+
+    const listButtonsHtml = `
+      ${pdfBtnListHtml}
+      ${translationBtnListHtml}
+      ${reportBtnListHtml}
+    `;
+
+    const bottomButtonsHtml = `
+      <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pokaż / ukryj abstrakt">
+        <i class="fas fa-align-left text-slate-500 text-xs shrink-0"></i>
+        <span class="truncate">Abstrakt</span>
+      </button>
+      ${pdfBtnGridHtml}
+      ${translationBtnGridHtml}
+      ${reportBtnGridHtml}
+    `;
 
     const isSeminar = (art.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || art.publicationType === "seminar_presentation");
     const seminarBadge = isSeminar
@@ -2930,8 +2932,8 @@ function renderArticleCards(articles) {
           ${tagsHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>` : ""}
         </div>
 
-        <!-- 7. Dolny pasek akcji -->
-        <div class="grid grid-cols-2 gap-2 mt-auto pt-2.5 border-t border-slate-100 w-full">
+        <!-- 7. Dolny pasek akcji: 1. Abstrakt, 2. PDF, 3. Tłumaczenie, 4. Raport -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-auto pt-2.5 border-t border-slate-100 w-full">
           ${bottomButtonsHtml}
         </div>
       `;
@@ -2986,11 +2988,11 @@ function toggleTranslationFilter() {
   const label = document.getElementById("filter-translation-label");
   if (btn) {
     if (AppState.filterOnlyTranslations) {
-      btn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600 text-white border border-purple-700 shadow-sm transition cursor-pointer";
-      if (label) label.innerText = "🇵🇱 Tylko z tłumaczeniem PL (Aktywne)";
+      btn.className = "inline-flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-semibold bg-purple-600 text-white border border-purple-700 shadow-sm transition cursor-pointer shrink-0";
+      if (label) label.innerText = "Tylko z tłumaczeniem PL (Aktywne)";
     } else {
-      btn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-sm";
-      if (label) label.innerText = "🇵🇱 Tylko z tłumaczeniem PL";
+      btn.className = "inline-flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-2xs shrink-0";
+      if (label) label.innerText = "Tylko z tłumaczeniem PL";
     }
   }
   filterAndRenderArticles();
@@ -3515,6 +3517,27 @@ function openSecureViewerFromDetail(mode = "original") {
   }
 }
 window.openSecureViewerFromDetail = openSecureViewerFromDetail;
+
+function openTranslationModal(articleId) {
+  const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (document.getElementById("detail-id")?.innerText?.trim() || null);
+  const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
+
+  if (article && article.fileIdTranslation) {
+    openSecureViewer(article.id, "translation");
+  } else {
+    showToast("Moduł pełnego tłumaczenia w przygotowaniu.", "info");
+  }
+}
+window.openTranslationModal = openTranslationModal;
+window.onOpenTranslation = openTranslationModal;
+
+function scrollToDetailAbstract() {
+  const abstractContainer = document.getElementById("detail-abstract-container") || document.getElementById("tab-content-abstract");
+  if (abstractContainer) {
+    abstractContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+window.scrollToDetailAbstract = scrollToDetailAbstract;
 
 let isTouchPinchInitialized = false;
 function initViewerTouchGestures() {
@@ -6402,55 +6425,53 @@ function openArticleDetail(articleId) {
   const hasReport = hasArticleReport(article);
   const isTranslating = AppState.translatingIds && AppState.translatingIds.has(article.id);
 
-  const buttonsContainer = originalLink ? originalLink.parentElement : document.querySelector("#detailModal .grid.grid-cols-2");
+  const buttonsContainer = document.getElementById("detail-modal-actions") || (originalLink ? originalLink.parentElement : document.querySelector("#detailModal .pt-4.border-t"));
 
-  if (isInternal && buttonsContainer) {
-    if (isWatermarking) {
-      buttonsContainer.className = "pt-4 border-t border-slate-200 flex mt-4";
-      buttonsContainer.innerHTML = `
-        <button disabled class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-300 shadow-sm flex items-center justify-center gap-2 cursor-wait">
-          <i class="fas fa-circle-notch fa-spin text-rose-600"></i>
-          <span>Generowanie znaku wodnego i stempla audytowego...</span>
-        </button>
-      `;
-    } else {
-      buttonsContainer.className = "pt-4 border-t border-slate-200 flex gap-2.5 mt-4";
-      buttonsContainer.innerHTML = `
-        <button type="button" onclick="openSecureViewer('${article.id}', 'original')" class="flex-1 text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-rose-400"></i> <span>Czytaj w Bezpiecznym Czytniku</span>
-        </button>
-        <button type="button" onclick="downloadWatermarkedPdf('${article.id}')" class="flex-1 text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-shield text-sm"></i> <span>Pobierz ze stemplem</span>
-        </button>
-      `;
-    }
-  } else if (buttonsContainer) {
-    buttonsContainer.className = "pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4";
-    const originalBtnMarkup = isWeb
-      ? `<a href="${safeUrl(article.sourceUrl || article.url || article.urlOriginal || "#")}" target="_blank" rel="noopener noreferrer" id="detail-btn-original" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-          <i class="fas fa-globe text-sky-600"></i> <span>Źródło ↗</span>
+  if (buttonsContainer) {
+    buttonsContainer.className = "pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4";
+
+    const pdfBtnMarkup = isWeb
+      ? `<a href="${safeUrl(article.sourceUrl || article.url || article.urlOriginal || "#")}" target="_blank" rel="noopener noreferrer" id="detail-btn-original" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Otwórz źródło www">
+          <i class="fas fa-globe text-sky-600 text-xs shrink-0"></i> <span class="truncate">PDF ↗</span>
         </a>`
-      : `<button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-rose-500 text-xs"></i> <span>Oryginał</span>
+      : isInternal
+      ? `<button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Otwórz zabezpieczony czytnik PDF">
+          <i class="fas fa-file-shield text-rose-500 text-xs shrink-0"></i> <span class="truncate">PDF</span>
+        </button>`
+      : `<button type="button" id="detail-btn-original" onclick="openSecureViewer('${article.id}', 'original')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Otwórz plik PDF">
+          <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i> <span class="truncate">PDF</span>
+        </button>`;
+
+    const reportBtnMarkup = isTranslating
+      ? `<button disabled class="w-full text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs flex items-center justify-center gap-1.5 cursor-wait truncate">
+          <i class="fas fa-circle-notch fa-spin text-emerald-600 text-xs shrink-0"></i>
+          <span class="truncate">Raport...</span>
+        </button>`
+      : hasReport
+      ? `<button type="button" id="detail-btn-report" onclick="openClinicalReportModal('${article.id}')" class="w-full text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 truncate" title="Otwórz czytnik raportu klinicznego SKN">
+          <i class="fas fa-brain text-emerald-100 text-xs shrink-0"></i> <span class="truncate">Raport</span>
+        </button>`
+      : `<button type="button" id="detail-btn-report" onclick="generateClinicalReport('${article.id}')" class="w-full text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 truncate" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
+          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i> <span class="truncate">Raport</span>
         </button>`;
 
     buttonsContainer.innerHTML = `
-      ${originalBtnMarkup}
+      <!-- 1. Abstrakt -->
+      <button type="button" onclick="switchDetailTab('abstract'); scrollToDetailAbstract();" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Przejdź do abstraktu publikacji">
+        <i class="fas fa-align-left text-indigo-600 text-xs shrink-0"></i> <span class="truncate">Abstrakt</span>
+      </button>
+
+      <!-- 2. PDF -->
+      ${pdfBtnMarkup}
+
+      <!-- 3. Tłumaczenie -->
+      <button type="button" id="detail-btn-translation" onclick="openTranslationModal('${article.id}')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+        <i class="fas fa-language text-purple-600 text-sm shrink-0"></i> <span class="truncate">Tłumaczenie</span>
+      </button>
+
+      <!-- 4. Raport -->
       <div id="detail-translation-btn-wrapper" class="w-full flex">
-        ${isTranslating ? `
-          <button disabled class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-purple-50 text-purple-700 border border-purple-300 shadow-sm flex items-center justify-center gap-2 cursor-wait">
-            <i class="fas fa-circle-notch fa-spin text-purple-600"></i>
-            <span>Generowanie...</span>
-          </button>
-        ` : hasReport ? `
-          <button type="button" id="detail-btn-report" onclick="openClinicalReportModal('${article.id}')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Otwórz czytnik raportu klinicznego SKN">
-            <i class="fas fa-brain text-emerald-100 text-xs"></i> <span>Raport</span>
-          </button>
-        ` : `
-          <button type="button" onclick="generateClinicalReport('${article.id}')" class="w-full text-center text-xs font-medium py-2.5 px-3 rounded-xl bg-white text-slate-700 border border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-            <i class="fas fa-brain text-emerald-600 text-xs"></i> <span>Generuj Raport</span>
-          </button>
-        `}
+        ${reportBtnMarkup}
       </div>
     `;
   }

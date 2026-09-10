@@ -1253,13 +1253,19 @@
         </form>
       </div>
 
-      <div class="pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 mt-4">
-        <button type="button" id="detail-btn-original" onclick="openSecureViewerFromDetail('original')" class="text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-file-pdf text-rose-500 text-xs"></i> <span>Oryginał</span>
+      <div id="detail-modal-actions" class="pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
+        <button type="button" onclick="switchDetailTab('abstract'); scrollToDetailAbstract();" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Przejdź do abstraktu publikacji">
+          <i class="fas fa-align-left text-indigo-600 text-xs shrink-0"></i> <span class="truncate">Abstrakt</span>
+        </button>
+        <button type="button" id="detail-btn-original" onclick="openSecureViewerFromDetail('original')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Otwórz plik PDF">
+          <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i> <span class="truncate">PDF</span>
+        </button>
+        <button type="button" id="detail-btn-translation" onclick="openTranslationModal()" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+          <i class="fas fa-language text-purple-600 text-sm shrink-0"></i> <span class="truncate">Tłumaczenie</span>
         </button>
         <div id="detail-translation-btn-wrapper" class="w-full flex">
-          <button type="button" id="detail-btn-translation" onclick="openSecureViewerFromDetail('translation')" class="w-full text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fas fa-brain text-emerald-100 text-xs"></i> <span>Raport</span>
+          <button type="button" id="detail-btn-report" onclick="openClinicalReportModal(document.getElementById('detail-id')?.innerText)" class="w-full text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 truncate" title="Otwórz czytnik raportu klinicznego SKN">
+            <i class="fas fa-brain text-emerald-100 text-xs shrink-0"></i> <span class="truncate">Raport</span>
           </button>
         </div>
       </div>
