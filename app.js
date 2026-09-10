@@ -1633,9 +1633,9 @@ function safeUrl(url) {
 function extractDriveFileId(urlOrId) {
   if (!urlOrId || typeof urlOrId !== "string") return "";
   const trimmed = urlOrId.trim();
-  const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/) || trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (match && match[1]) return match[1];
-  if (!trimmed.includes("/") && !trimmed.includes(".")) return trimmed;
+  if (!trimmed.includes("/") && !trimmed.includes(".") && trimmed.length >= 15) return trimmed;
   return trimmed;
 }
 
@@ -3274,7 +3274,7 @@ function handleBackdropClick(event, modalId) {
 }
 
 function closeAllModals() {
-  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal", "add-review-modal", "focus-reader-modal"].forEach((id) => {
+  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal", "add-review-modal", "focus-reader-modal", "addTranslationModal", "categoryChangeModal"].forEach((id) => {
     hideModalElement(id);
   });
 }
@@ -3539,10 +3539,12 @@ function openSecureViewerFromDetail(mode = "original") {
 }
 window.openSecureViewerFromDetail = openSecureViewerFromDetail;
 
+let selectedTranslationFile = null;
+
 /**
- * Bezpośrednie wgrywanie pliku tłumaczenia PDF dla wybranego artykułu
+ * Otwiera modal wyboru źródła dodania tłumaczenia PL (Dysk Google / Plik z dysku)
  */
-async function uploadTranslationPdfForArticle(articleId) {
+function openAddTranslationModal(articleId) {
   const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (document.getElementById("detail-id")?.innerText?.trim() || null);
   const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
 
@@ -3551,92 +3553,273 @@ async function uploadTranslationPdfForArticle(articleId) {
     return;
   }
 
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".pdf,application/pdf";
-  fileInput.style.display = "none";
-  document.body.appendChild(fileInput);
+  const artIdInput = document.getElementById("translation-modal-article-id");
+  if (artIdInput) artIdInput.value = article.id;
 
-  fileInput.onchange = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) {
-      if (fileInput.parentNode) document.body.removeChild(fileInput);
-      return;
+  const artTitleEl = document.getElementById("translation-modal-art-title");
+  if (artTitleEl) {
+    const titleText = article.titlePL || article.titleOriginal || article.title || "Wybrana publikacja";
+    artTitleEl.innerText = titleText;
+    artTitleEl.title = titleText;
+  }
+
+  // Reset pól i stanu
+  const driveUrlInput = document.getElementById("translation-drive-url-input");
+  if (driveUrlInput) driveUrlInput.value = "";
+
+  const fileInput = document.getElementById("trans-file-input");
+  if (fileInput) fileInput.value = "";
+
+  selectedTranslationFile = null;
+  const fileLabel = document.getElementById("trans-file-label");
+  if (fileLabel) fileLabel.innerText = "Kliknij lub przeciągnij plik PDF tutaj";
+
+  const saveFileBtn = document.getElementById("trans-save-file-btn");
+  if (saveFileBtn) saveFileBtn.disabled = true;
+
+  switchTranslationSourceTab("drive");
+  showModalElement("addTranslationModal");
+}
+window.openAddTranslationModal = openAddTranslationModal;
+
+function closeAddTranslationModal() {
+  hideModalElement("addTranslationModal");
+  selectedTranslationFile = null;
+}
+window.closeAddTranslationModal = closeAddTranslationModal;
+
+function switchTranslationSourceTab(tabName) {
+  const driveBtn = document.getElementById("trans-tab-drive-btn");
+  const fileBtn = document.getElementById("trans-tab-file-btn");
+  const driveContent = document.getElementById("trans-tab-drive-content");
+  const fileContent = document.getElementById("trans-tab-file-content");
+
+  if (tabName === "drive") {
+    if (driveContent) driveContent.classList.remove("hidden");
+    if (fileContent) fileContent.classList.add("hidden");
+
+    if (driveBtn) {
+      driveBtn.className = "pb-2.5 px-3 text-xs font-semibold text-purple-600 border-b-2 border-purple-600 transition flex items-center gap-1.5 cursor-pointer";
     }
-
-    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
-      showToast("Wybierz poprawny plik w formacie PDF.", "warning");
-      if (fileInput.parentNode) document.body.removeChild(fileInput);
-      return;
+    if (fileBtn) {
+      fileBtn.className = "pb-2.5 px-3 text-xs font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition flex items-center gap-1.5 cursor-pointer";
     }
+  } else {
+    if (fileContent) fileContent.classList.remove("hidden");
+    if (driveContent) driveContent.classList.add("hidden");
 
-    showToast("Przesyłanie tłumaczenia PDF...", "info");
+    if (fileBtn) {
+      fileBtn.className = "pb-2.5 px-3 text-xs font-semibold text-purple-600 border-b-2 border-purple-600 transition flex items-center gap-1.5 cursor-pointer";
+    }
+    if (driveBtn) {
+      driveBtn.className = "pb-2.5 px-3 text-xs font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition flex items-center gap-1.5 cursor-pointer";
+    }
+  }
+}
+window.switchTranslationSourceTab = switchTranslationSourceTab;
 
+function handleTranslationFileSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+    showToast("Wybierz poprawny plik w formacie PDF.", "warning");
+    event.target.value = "";
+    return;
+  }
+
+  selectedTranslationFile = file;
+  const fileLabel = document.getElementById("trans-file-label");
+  if (fileLabel) {
+    fileLabel.innerText = `Wybrano: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+  }
+  const saveFileBtn = document.getElementById("trans-save-file-btn");
+  if (saveFileBtn) saveFileBtn.disabled = false;
+}
+window.handleTranslationFileSelected = handleTranslationFileSelected;
+
+/**
+ * Zapis tłumaczenia przesłanego z pliku lokalnego
+ */
+async function saveTranslationFromFile() {
+  if (!selectedTranslationFile) {
+    showToast("Wybierz plik PDF do przesłania.", "warning");
+    return;
+  }
+
+  const articleId = document.getElementById("translation-modal-article-id")?.value;
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+
+  if (!article) {
+    showToast("Nie odnaleziono wybranej publikacji.", "warning");
+    return;
+  }
+
+  const saveBtn = document.getElementById("trans-save-file-btn");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin text-xs"></i> <span>Przesyłanie...</span>`;
+  }
+
+  showToast("Przesyłanie pliku tłumaczenia PDF...", "info");
+
+  try {
+    const { dataUrl, base64 } = await readFileAsBase64(selectedTranslationFile);
+    const appScriptUrl = getAppsScriptUrl();
+
+    const payload = {
+      action: "saveTranslationPdf",
+      id: article.id,
+      articleId: article.id,
+      base64Data: base64,
+      mimeType: "application/pdf",
+      fileName: selectedTranslationFile.name
+    };
+
+    let responseData = null;
     try {
-      const { dataUrl, base64 } = await readFileAsBase64(file);
-      const appScriptUrl = getAppsScriptUrl();
-
-      const payload = {
-        action: "saveTranslationPdf",
-        id: article.id,
-        articleId: article.id,
-        base64Data: base64,
-        mimeType: "application/pdf",
-        fileName: file.name
-      };
-
-      let responseData = null;
-      try {
-        const res = await fetch(appScriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        responseData = await res.json();
-      } catch (fetchErr) {
-        console.warn("Błąd wysyłki do Apps Script:", fetchErr);
-      }
-
-      const savedUrl = (responseData && (responseData.translationUrl || responseData.urlTranslation || responseData.URL_Podgladu_PL || responseData.url)) || (responseData && responseData.fileId ? `https://drive.google.com/file/d/${responseData.fileId}/view?usp=sharing` : URL.createObjectURL(file));
-      const savedFileId = (responseData && (responseData.fileIdTranslation || responseData.fileId)) || "";
-
-      // Zaktualizuj stan artykułu
-      article.translationUrl = savedUrl;
-      article.urlTranslation = savedUrl;
-      article.URL_Podgladu_PL = savedUrl;
-      article.hasPolishTranslation = true;
-      if (savedFileId) article.fileIdTranslation = savedFileId;
-
-      if (article.meta) {
-        article.meta.translationUrl = savedUrl;
-        article.meta.urlTranslation = savedUrl;
-        article.meta.URL_Podgladu_PL = savedUrl;
-        article.meta.hasPolishTranslation = true;
-        if (savedFileId) article.meta.fileIdTranslation = savedFileId;
-      }
-
-      // Aktualizujemy listę i widok
-      filterAndRenderArticles();
-
-      // Jeśli modal szczegółów tego artykułu jest otwarty, odświeżamy jego przyciski
-      const detailModal = document.getElementById("detailModal");
-      const currentDetailId = document.getElementById("detail-id")?.innerText?.trim();
-      if (detailModal && !detailModal.classList.contains("hidden") && currentDetailId === article.id) {
-        openArticleDetail(article.id);
-      }
-
-      showToast("Tłumaczenie PL zostało zapisane.", "success");
-    } catch (err) {
-      console.error("Błąd podczas wgrywania tłumaczenia:", err);
-      showToast("Wystąpił błąd podczas zapisywania tłumaczenia: " + (err.message || "Błąd sieci"), "error");
-    } finally {
-      if (fileInput.parentNode) {
-        document.body.removeChild(fileInput);
-      }
+      const res = await fetch(appScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      responseData = await res.json();
+    } catch (fetchErr) {
+      console.warn("Błąd wysyłki do Apps Script:", fetchErr);
     }
-  };
 
-  fileInput.click();
+    const savedUrl = (responseData && (responseData.translationUrl || responseData.urlTranslation || responseData.URL_Podgladu_PL || responseData.url)) || (responseData && responseData.fileId ? `https://drive.google.com/file/d/${responseData.fileId}/view?usp=sharing` : URL.createObjectURL(selectedTranslationFile));
+    const savedFileId = (responseData && (responseData.fileIdTranslation || responseData.fileId)) || "";
+
+    article.translationUrl = savedUrl;
+    article.urlTranslation = savedUrl;
+    article.URL_Podgladu_PL = savedUrl;
+    article.hasPolishTranslation = true;
+    if (savedFileId) article.fileIdTranslation = savedFileId;
+
+    if (article.meta) {
+      article.meta.translationUrl = savedUrl;
+      article.meta.urlTranslation = savedUrl;
+      article.meta.URL_Podgladu_PL = savedUrl;
+      article.meta.hasPolishTranslation = true;
+      if (savedFileId) article.meta.fileIdTranslation = savedFileId;
+    }
+
+    closeAddTranslationModal();
+    filterAndRenderArticles();
+
+    const detailModal = document.getElementById("detailModal");
+    const currentDetailId = document.getElementById("detail-id")?.innerText?.trim();
+    if (detailModal && !detailModal.classList.contains("hidden") && currentDetailId === article.id) {
+      openArticleDetail(article.id);
+    }
+
+    showToast("Tłumaczenie PL zostało zapisane.", "success");
+  } catch (err) {
+    console.error("Błąd zapisu pliku tłumaczenia:", err);
+    showToast("Wystąpił błąd podczas zapisywania tłumaczenia: " + (err.message || "Błąd sieci"), "error");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<i class="fas fa-upload text-xs"></i> <span>Wgraj plik PDF</span>`;
+    }
+  }
+}
+window.saveTranslationFromFile = saveTranslationFromFile;
+
+/**
+ * Zapis tłumaczenia z podanego linku Dysku Google
+ */
+async function saveTranslationFromDriveUrl() {
+  const rawUrl = document.getElementById("translation-drive-url-input")?.value?.trim();
+  if (!rawUrl || rawUrl.length < 8) {
+    showToast("Wklej poprawny adres URL z Dysku Google.", "warning");
+    return;
+  }
+
+  const articleId = document.getElementById("translation-modal-article-id")?.value;
+  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+
+  if (!article) {
+    showToast("Nie odnaleziono wybranej publikacji.", "warning");
+    return;
+  }
+
+  // Wyodrębnienie ID pliku Dysku Google
+  const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  const extractedDriveId = match ? match[1] : extractDriveFileId(rawUrl);
+
+  const saveBtn = document.getElementById("trans-save-drive-btn");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin text-xs"></i> <span>Zapisywanie...</span>`;
+  }
+
+  showToast("Zapisywanie tłumaczenia z Dysku Google...", "info");
+
+  try {
+    const appScriptUrl = getAppsScriptUrl();
+    const payload = {
+      action: "saveTranslationPdf",
+      id: article.id,
+      articleId: article.id,
+      driveSourceId: extractedDriveId,
+      driveUrl: rawUrl
+    };
+
+    let responseData = null;
+    try {
+      const res = await fetch(appScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      responseData = await res.json();
+    } catch (fetchErr) {
+      console.warn("Błąd wysyłki do Apps Script:", fetchErr);
+    }
+
+    const savedUrl = (responseData && (responseData.translationUrl || responseData.urlTranslation || responseData.URL_Podgladu_PL || responseData.url)) || (extractedDriveId ? `https://drive.google.com/file/d/${extractedDriveId}/view?usp=sharing` : rawUrl);
+    const savedFileId = (responseData && (responseData.fileIdTranslation || responseData.fileId)) || extractedDriveId || "";
+
+    article.translationUrl = savedUrl;
+    article.urlTranslation = savedUrl;
+    article.URL_Podgladu_PL = savedUrl;
+    article.hasPolishTranslation = true;
+    if (savedFileId) article.fileIdTranslation = savedFileId;
+
+    if (article.meta) {
+      article.meta.translationUrl = savedUrl;
+      article.meta.urlTranslation = savedUrl;
+      article.meta.URL_Podgladu_PL = savedUrl;
+      article.meta.hasPolishTranslation = true;
+      if (savedFileId) article.meta.fileIdTranslation = savedFileId;
+    }
+
+    closeAddTranslationModal();
+    filterAndRenderArticles();
+
+    const detailModal = document.getElementById("detailModal");
+    const currentDetailId = document.getElementById("detail-id")?.innerText?.trim();
+    if (detailModal && !detailModal.classList.contains("hidden") && currentDetailId === article.id) {
+      openArticleDetail(article.id);
+    }
+
+    showToast("Tłumaczenie PL zostało zapisane.", "success");
+  } catch (err) {
+    console.error("Błąd zapisu linku tłumaczenia:", err);
+    showToast("Wystąpił błąd podczas zapisywania linku: " + (err.message || "Błąd sieci"), "error");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<i class="fas fa-link text-xs"></i> <span>Zapisz link z Dysku</span>`;
+    }
+  }
+}
+window.saveTranslationFromDriveUrl = saveTranslationFromDriveUrl;
+
+function uploadTranslationPdfForArticle(articleId) {
+  openAddTranslationModal(articleId);
 }
 window.uploadTranslationPdfForArticle = uploadTranslationPdfForArticle;
 window.uploadTranslationPdf = uploadTranslationPdfForArticle;
@@ -3671,8 +3854,8 @@ function openTranslationModal(articleId) {
     return;
   }
 
-  // Jeśli brak tłumaczenia, uruchom bezpośredni wybór pliku PDF i upload
-  uploadTranslationPdfForArticle(article.id);
+  // Jeśli brak tłumaczenia, otwórz modal wyboru źródła (Dysk Google / Plik)
+  openAddTranslationModal(article.id);
 }
 window.openTranslationModal = openTranslationModal;
 window.onOpenTranslation = openTranslationModal;

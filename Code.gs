@@ -278,6 +278,7 @@ function apiUpdateArticleMeta(postData) {
 
 /**
  * Zapis przesłanego tłumaczenia PDF w chmurze Drive i aktualizacja rekordu w arkuszu
+ * Obsługuje zarówno pliki przesyłane z komputera (base64Data), jak i pliki z Dysku Google (driveSourceId)
  */
 function apiSaveTranslationPdf(postData) {
   const articleId = postData.id || postData.articleId;
@@ -285,37 +286,76 @@ function apiSaveTranslationPdf(postData) {
     throw new Error("Brak identyfikatora artykułu (id).");
   }
 
-  const rawBase64 = postData.base64Data || postData.base64Pdf || postData.base64;
+  let fileId = "";
+  let fileUrl = "";
   const fileName = postData.fileName || `KC_${articleId}_PL.pdf`;
 
-  if (!rawBase64) {
-    throw new Error("Brak danych pliku PDF (base64Data).");
+  if (postData.driveSourceId) {
+    const sourceId = String(postData.driveSourceId).trim();
+    try {
+      const sourceFile = DriveApp.getFileById(sourceId);
+      const mime = sourceFile.getMimeType();
+
+      // Jeśli to Dokument Google lub plik tekstowy, konwertujemy na PDF
+      if (mime === "application/vnd.google-apps.document" || mime.includes("document") || mime.includes("text/")) {
+        const pdfBlob = sourceFile.getAs("application/pdf");
+        pdfBlob.setName(`KC_${articleId}_PL.pdf`);
+
+        let folder = null;
+        try {
+          folder = DriveApp.getFolderById(CONFIG.FOLDER_PRIVATE_ID);
+        } catch (e) {
+          folder = DriveApp.getRootFolder();
+        }
+
+        const newPdfFile = folder.createFile(pdfBlob);
+        try {
+          newPdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch (e) {}
+        fileId = newPdfFile.getId();
+        fileUrl = newPdfFile.getUrl();
+      } else {
+        // Plik jest już plikiem na Drive (np. PDF)
+        try {
+          sourceFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch (e) {}
+        fileId = sourceFile.getId();
+        fileUrl = sourceFile.getUrl();
+      }
+    } catch (driveErr) {
+      console.warn("Błąd pobierania pliku Drive po ID:", driveErr);
+      fileId = sourceId;
+      fileUrl = postData.driveUrl || `https://drive.google.com/file/d/${sourceId}/view?usp=sharing`;
+    }
+  } else if (postData.base64Data || postData.base64Pdf || postData.base64) {
+    const rawBase64 = postData.base64Data || postData.base64Pdf || postData.base64;
+    let cleanBase64 = rawBase64;
+    if (typeof cleanBase64 === "string" && cleanBase64.indexOf(",") !== -1) {
+      cleanBase64 = cleanBase64.split(",")[1];
+    }
+
+    const bytes = Utilities.base64Decode(cleanBase64);
+    const blob = Utilities.newBlob(bytes, postData.mimeType || "application/pdf", fileName);
+
+    let folder = null;
+    try {
+      folder = DriveApp.getFolderById(CONFIG.FOLDER_PRIVATE_ID);
+    } catch (e) {
+      folder = DriveApp.getRootFolder();
+    }
+
+    const file = folder.createFile(blob);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) {
+      console.warn("Błąd ustawiania uprawnień pliku:", e);
+    }
+
+    fileId = file.getId();
+    fileUrl = file.getUrl();
+  } else {
+    throw new Error("Brak danych pliku PDF (base64Data) ani identyfikatora Dysku (driveSourceId).");
   }
-
-  let cleanBase64 = rawBase64;
-  if (typeof cleanBase64 === "string" && cleanBase64.indexOf(",") !== -1) {
-    cleanBase64 = cleanBase64.split(",")[1];
-  }
-
-  const bytes = Utilities.base64Decode(cleanBase64);
-  const blob = Utilities.newBlob(bytes, postData.mimeType || "application/pdf", fileName);
-
-  let folder = null;
-  try {
-    folder = DriveApp.getFolderById(CONFIG.FOLDER_PRIVATE_ID);
-  } catch (e) {
-    folder = DriveApp.getRootFolder();
-  }
-
-  const file = folder.createFile(blob);
-  try {
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  } catch (e) {
-    console.warn("Błąd ustawiania uprawnień pliku:", e);
-  }
-
-  const fileId = file.getId();
-  const fileUrl = file.getUrl();
 
   // Zaktualizuj wpis w arkuszu
   const updateRes = SheetService.updateArticle(articleId, {
