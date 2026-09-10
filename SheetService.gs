@@ -107,7 +107,9 @@ const SheetService = {
         abstractPL: row[8],
         accessLevel: accessLevel,
         urlOriginal: row[10] || CONFIG.FALLBACK_DRIVE_URL,
-        urlTranslation: row[11] || CONFIG.FALLBACK_DRIVE_URL,
+        urlTranslation: row[14] || row[11] || CONFIG.FALLBACK_DRIVE_URL,
+        translationUrl: row[14] || row[11] || null,
+        URL_Podgladu_PL: row[14] || row[11] || null,
         fileIdOriginal: row[12],
         fileIdTranslation: row[13],
         status: status,
@@ -256,6 +258,20 @@ const SheetService = {
         // Kolumna 10 (J): Poziom_Dostepu
         if (updateData.accessLevel !== undefined && updateData.accessLevel !== null) {
           sheet.getRange(rowNumber, 10).setValue(updateData.accessLevel);
+        }
+
+        // Kolumna 12 (L): URL_Tlumacz_Priv / Kolumna 15 (O): URL_Podgladu_PL
+        const newTransUrl = updateData.translationUrl !== undefined ? updateData.translationUrl : (updateData.URL_Podgladu_PL !== undefined ? updateData.URL_Podgladu_PL : updateData.urlTranslation);
+        if (newTransUrl !== undefined && newTransUrl !== null) {
+          sheet.getRange(rowNumber, 12).setValue(newTransUrl);
+          if (sheet.getLastColumn() >= 15) {
+            sheet.getRange(rowNumber, 15).setValue(newTransUrl);
+          }
+        }
+
+        // Kolumna 14 (N): FileID_Tlumaczenie
+        if (updateData.fileIdTranslation !== undefined && updateData.fileIdTranslation !== null) {
+          sheet.getRange(rowNumber, 14).setValue(updateData.fileIdTranslation);
         }
 
         return {

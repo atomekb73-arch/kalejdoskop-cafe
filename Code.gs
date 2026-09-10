@@ -109,6 +109,8 @@ function doPost(e) {
       result = apiDeleteArticle(postData.id || postData.articleId || postData.fileId, postData.adminPin, postData.fileId || postData.drive_file_id);
     } else if (action === "updateArticle" || action === "updateTitle" || action === "updateArticleMeta") {
       result = apiUpdateArticle(postData);
+    } else if (action === "saveTranslationPdf" || action === "uploadTranslationPdf") {
+      result = apiSaveTranslationPdf(postData);
     } else {
       throw new Error("Nieznana akcja API: " + action);
     }
@@ -118,6 +120,9 @@ function doPost(e) {
       success: true,
       id: result ? (result.id || result.articleId) : null,
       url: result ? (result.urlOriginal || result.url) : null,
+      translationUrl: result ? (result.translationUrl || result.urlTranslation || result.URL_Podgladu_PL) : null,
+      URL_Podgladu_PL: result ? (result.URL_Podgladu_PL || result.translationUrl || result.urlTranslation) : null,
+      fileIdTranslation: result ? (result.fileIdTranslation || result.fileId) : null,
       titlePL: result ? result.titlePL : null,
       polishTitle: result ? result.titlePL : null,
       originalTitle: result ? result.titleOriginal : null,
@@ -269,6 +274,70 @@ function apiUpdateArticle(postData) {
 
 function apiUpdateArticleMeta(postData) {
   return apiUpdateArticle(postData);
+}
+
+/**
+ * Zapis przesłanego tłumaczenia PDF w chmurze Drive i aktualizacja rekordu w arkuszu
+ */
+function apiSaveTranslationPdf(postData) {
+  const articleId = postData.id || postData.articleId;
+  if (!articleId) {
+    throw new Error("Brak identyfikatora artykułu (id).");
+  }
+
+  const rawBase64 = postData.base64Data || postData.base64Pdf || postData.base64;
+  const fileName = postData.fileName || `KC_${articleId}_PL.pdf`;
+
+  if (!rawBase64) {
+    throw new Error("Brak danych pliku PDF (base64Data).");
+  }
+
+  let cleanBase64 = rawBase64;
+  if (typeof cleanBase64 === "string" && cleanBase64.indexOf(",") !== -1) {
+    cleanBase64 = cleanBase64.split(",")[1];
+  }
+
+  const bytes = Utilities.base64Decode(cleanBase64);
+  const blob = Utilities.newBlob(bytes, postData.mimeType || "application/pdf", fileName);
+
+  let folder = null;
+  try {
+    folder = DriveApp.getFolderById(CONFIG.FOLDER_PRIVATE_ID);
+  } catch (e) {
+    folder = DriveApp.getRootFolder();
+  }
+
+  const file = folder.createFile(blob);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (e) {
+    console.warn("Błąd ustawiania uprawnień pliku:", e);
+  }
+
+  const fileId = file.getId();
+  const fileUrl = file.getUrl();
+
+  // Zaktualizuj wpis w arkuszu
+  const updateRes = SheetService.updateArticle(articleId, {
+    translationUrl: fileUrl,
+    URL_Podgladu_PL: fileUrl,
+    urlTranslation: fileUrl,
+    fileIdTranslation: fileId
+  });
+
+  return {
+    status: "success",
+    success: true,
+    id: articleId,
+    articleId: articleId,
+    fileId: fileId,
+    fileIdTranslation: fileId,
+    translationUrl: fileUrl,
+    urlTranslation: fileUrl,
+    URL_Podgladu_PL: fileUrl,
+    fileName: fileName,
+    updated: updateRes.updated || false
+  };
 }
 
 /**

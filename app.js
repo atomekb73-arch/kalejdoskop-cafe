@@ -1473,7 +1473,7 @@ function filterAndRenderArticles() {
 
   // 2. Filtr tylko z tłumaczeniem PL
   if (AppState.filterOnlyTranslations) {
-    list = list.filter((a) => Boolean(getArticleTranslationUrl(a)));
+    list = list.filter((a) => Boolean(getArticleTranslationUrl(a)) || hasArticleTranslation(a));
   }
 
   // 3. Aktywny tag
@@ -2738,17 +2738,36 @@ function renderArticleCards(articles) {
     }
 
     // 3. Przycisk Tłumaczenie (list & grid)
-    const translationBtnListHtml = `
-      <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/90 rounded-md transition truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
-        <i class="fas fa-language text-purple-600 text-[11px] shrink-0"></i>
-        <span class="truncate">Tłumaczenie</span>
-      </button>`;
+    const hasTranslation = hasArticleTranslation(art) || Boolean(art.translationUrl && art.translationUrl.trim().length > 0 && art.translationUrl !== "#");
 
-    const translationBtnGridHtml = `
-      <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/90 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
-        <i class="fas fa-language text-purple-600 text-xs shrink-0"></i>
-        <span class="truncate">Tłumaczenie</span>
-      </button>`;
+    let translationBtnListHtml = "";
+    let translationBtnGridHtml = "";
+
+    if (hasTranslation) {
+      translationBtnListHtml = `
+        <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200 rounded-md transition truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+          <i class="fas fa-language text-purple-600 text-[11px] shrink-0"></i>
+          <span class="truncate">Tłumaczenie PL</span>
+        </button>`;
+
+      translationBtnGridHtml = `
+        <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+          <i class="fas fa-language text-purple-600 text-xs shrink-0"></i>
+          <span class="truncate">Tłumaczenie PL</span>
+        </button>`;
+    } else {
+      translationBtnListHtml = `
+        <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
+          <i class="fas fa-plus text-slate-400 hover:text-purple-600 text-[10px] shrink-0"></i>
+          <span class="truncate">+ Tłumaczenie PL</span>
+        </button>`;
+
+      translationBtnGridHtml = `
+        <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
+          <i class="fas fa-plus text-slate-400 text-xs shrink-0"></i>
+          <span class="truncate">+ Dodaj tłumaczenie PL</span>
+        </button>`;
+    }
 
     // 4. Przycisk Raport (list & grid)
     let reportBtnListHtml = "";
@@ -3520,6 +3539,108 @@ function openSecureViewerFromDetail(mode = "original") {
 }
 window.openSecureViewerFromDetail = openSecureViewerFromDetail;
 
+/**
+ * Bezpośrednie wgrywanie pliku tłumaczenia PDF dla wybranego artykułu
+ */
+async function uploadTranslationPdfForArticle(articleId) {
+  const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (document.getElementById("detail-id")?.innerText?.trim() || null);
+  const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
+
+  if (!article) {
+    showToast("Nie odnaleziono wybranej publikacji.", "warning");
+    return;
+  }
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".pdf,application/pdf";
+  fileInput.style.display = "none";
+  document.body.appendChild(fileInput);
+
+  fileInput.onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      if (fileInput.parentNode) document.body.removeChild(fileInput);
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      showToast("Wybierz poprawny plik w formacie PDF.", "warning");
+      if (fileInput.parentNode) document.body.removeChild(fileInput);
+      return;
+    }
+
+    showToast("Przesyłanie tłumaczenia PDF...", "info");
+
+    try {
+      const { dataUrl, base64 } = await readFileAsBase64(file);
+      const appScriptUrl = getAppsScriptUrl();
+
+      const payload = {
+        action: "saveTranslationPdf",
+        id: article.id,
+        articleId: article.id,
+        base64Data: base64,
+        mimeType: "application/pdf",
+        fileName: file.name
+      };
+
+      let responseData = null;
+      try {
+        const res = await fetch(appScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        responseData = await res.json();
+      } catch (fetchErr) {
+        console.warn("Błąd wysyłki do Apps Script:", fetchErr);
+      }
+
+      const savedUrl = (responseData && (responseData.translationUrl || responseData.urlTranslation || responseData.URL_Podgladu_PL || responseData.url)) || (responseData && responseData.fileId ? `https://drive.google.com/file/d/${responseData.fileId}/view?usp=sharing` : URL.createObjectURL(file));
+      const savedFileId = (responseData && (responseData.fileIdTranslation || responseData.fileId)) || "";
+
+      // Zaktualizuj stan artykułu
+      article.translationUrl = savedUrl;
+      article.urlTranslation = savedUrl;
+      article.URL_Podgladu_PL = savedUrl;
+      article.hasPolishTranslation = true;
+      if (savedFileId) article.fileIdTranslation = savedFileId;
+
+      if (article.meta) {
+        article.meta.translationUrl = savedUrl;
+        article.meta.urlTranslation = savedUrl;
+        article.meta.URL_Podgladu_PL = savedUrl;
+        article.meta.hasPolishTranslation = true;
+        if (savedFileId) article.meta.fileIdTranslation = savedFileId;
+      }
+
+      // Aktualizujemy listę i widok
+      filterAndRenderArticles();
+
+      // Jeśli modal szczegółów tego artykułu jest otwarty, odświeżamy jego przyciski
+      const detailModal = document.getElementById("detailModal");
+      const currentDetailId = document.getElementById("detail-id")?.innerText?.trim();
+      if (detailModal && !detailModal.classList.contains("hidden") && currentDetailId === article.id) {
+        openArticleDetail(article.id);
+      }
+
+      showToast("Tłumaczenie PL zostało zapisane.", "success");
+    } catch (err) {
+      console.error("Błąd podczas wgrywania tłumaczenia:", err);
+      showToast("Wystąpił błąd podczas zapisywania tłumaczenia: " + (err.message || "Błąd sieci"), "error");
+    } finally {
+      if (fileInput.parentNode) {
+        document.body.removeChild(fileInput);
+      }
+    }
+  };
+
+  fileInput.click();
+}
+window.uploadTranslationPdfForArticle = uploadTranslationPdfForArticle;
+window.uploadTranslationPdf = uploadTranslationPdfForArticle;
+
 function openTranslationModal(articleId) {
   const targetId = (typeof articleId === "string" && articleId.trim().length > 0) ? articleId : (document.getElementById("detail-id")?.innerText?.trim() || null);
   const article = AppState.articles.find((a) => a.id === targetId) || AppState.filteredArticles.find((a) => a.id === targetId);
@@ -3550,12 +3671,8 @@ function openTranslationModal(articleId) {
     return;
   }
 
-  // Komunikat jeśli tłumaczenie nie jest jeszcze podpięte
-  if (AppState.currentRole === "ADMIN") {
-    showToast("Brak przypisanego tłumaczenia (kolumna URL_Podgladu_PL w arkuszu).", "info");
-  } else {
-    showToast("Moduł pełnego tłumaczenia dla tej publikacji jest w przygotowaniu.", "info");
-  }
+  // Jeśli brak tłumaczenia, uruchom bezpośredni wybór pliku PDF i upload
+  uploadTranslationPdfForArticle(article.id);
 }
 window.openTranslationModal = openTranslationModal;
 window.onOpenTranslation = openTranslationModal;
@@ -6471,6 +6588,16 @@ function openArticleDetail(articleId) {
           <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i> <span class="truncate">PDF</span>
         </button>`;
 
+    const hasTranslation = hasArticleTranslation(article) || Boolean(article.translationUrl && article.translationUrl.trim().length > 0 && article.translationUrl !== "#");
+
+    const translationBtnMarkup = hasTranslation
+      ? `<button type="button" id="detail-btn-translation" onclick="openTranslationModal('${article.id}')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
+          <i class="fas fa-language text-purple-600 text-sm shrink-0"></i> <span class="truncate">Tłumaczenie PL</span>
+        </button>`
+      : `<button type="button" id="detail-btn-translation" onclick="uploadTranslationPdfForArticle('${article.id}')" class="text-center text-xs font-medium py-2.5 px-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-800 border border-dashed border-slate-300 hover:border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Wgraj plik tłumaczenia PDF">
+          <i class="fas fa-plus text-purple-600 text-xs shrink-0"></i> <span class="truncate">+ Dodaj tłumaczenie PL</span>
+        </button>`;
+
     const reportBtnMarkup = isTranslating
       ? `<button disabled class="w-full text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs flex items-center justify-center gap-1.5 cursor-wait truncate">
           <i class="fas fa-circle-notch fa-spin text-emerald-600 text-xs shrink-0"></i>
@@ -6494,9 +6621,7 @@ function openArticleDetail(articleId) {
       ${pdfBtnMarkup}
 
       <!-- 3. Tłumaczenie -->
-      <button type="button" id="detail-btn-translation" onclick="openTranslationModal('${article.id}')" class="text-center text-xs font-semibold py-2.5 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
-        <i class="fas fa-language text-purple-600 text-sm shrink-0"></i> <span class="truncate">Tłumaczenie</span>
-      </button>
+      ${translationBtnMarkup}
 
       <!-- 4. Raport -->
       <div id="detail-translation-btn-wrapper" class="w-full flex">
