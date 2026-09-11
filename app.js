@@ -9046,9 +9046,15 @@ function openProjectWorkspace(projectId) {
   const descEl = document.getElementById("workspace-project-desc");
   const dateEl = document.getElementById("workspace-project-date");
 
-  if (titleEl) titleEl.innerText = AppState.currentProject.name;
+  if (titleEl) {
+    titleEl.innerText = AppState.currentProject.name;
+    titleEl.title = AppState.currentProject.name;
+  }
   if (descEl) descEl.innerText = AppState.currentProject.description || "Projekt badawczy Studenckiego Koła Naukowego Seksuologii.";
-  if (dateEl) dateEl.innerText = `Utworzono: ${AppState.currentProject.createdAt || new Date().toISOString().split("T")[0]}`;
+  if (dateEl) {
+    const rawDate = AppState.currentProject.createdAt || new Date().toISOString().split("T")[0];
+    dateEl.innerText = rawDate.slice(0, 10);
+  }
 
   renderProjectWorkspaceMembers();
 
@@ -9068,6 +9074,23 @@ function openProjectWorkspace(projectId) {
   loadProjectDriveFiles(AppState.currentProject.id || projectId).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
 }
 window.openProjectWorkspace = openProjectWorkspace;
+
+function renderProjectWorkspaceMembers() {
+  const project = AppState.currentProject;
+  if (!project) return;
+  const members = Array.isArray(project.members) && project.members.length > 0
+    ? project.members
+    : (project.leader ? [project.leader] : (project.leaderEmail ? [project.leaderEmail] : []));
+  const countLabel = document.getElementById("workspace-project-members-count-label");
+  if (countLabel) {
+    countLabel.innerText = `Zespół (${members.length})`;
+  }
+}
+window.renderProjectWorkspaceMembers = renderProjectWorkspaceMembers;
+window.handleBackToRepository = switchToCatalogView;
+window.openProjectMembersModal = openEditProjectMembersModal;
+window.openCreateDocModal = openCreateProjectDocModal;
+window.handleDeleteProject = handleDeleteProjectClick;
 
 function switchToCatalogView() {
   AppState.currentProject = null;
