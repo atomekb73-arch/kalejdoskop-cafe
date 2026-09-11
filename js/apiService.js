@@ -244,6 +244,10 @@ export async function createProjectGoogleDoc(docData) {
   return await callGoogleScript("createProjectGoogleDoc", docData);
 }
 
+export async function deleteProjectResource(resourceData) {
+  return await callGoogleScript("deleteProjectResource", resourceData);
+}
+
 export default {
   fetchFromAppsScript,
   callGoogleScript,
@@ -258,5 +262,6 @@ export default {
   askDocument,
   getUserProjects,
   createProject,
-  createProjectGoogleDoc
+  createProjectGoogleDoc,
+  deleteProjectResource
 };

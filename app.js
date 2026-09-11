@@ -8728,7 +8728,15 @@ function renderWorkspaceResources() {
             </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-200/60 flex items-center justify-end">
+          <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+            <button 
+              type="button" 
+              onclick="event.stopPropagation(); deleteProjectResource('${escapeHtml(doc.id)}', '${escapeHtml(doc.title || 'dokument')}')" 
+              class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all flex items-center justify-center cursor-pointer active:scale-95 shrink-0" 
+              title="Usuń ten dokument z projektu"
+            >
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
             <a 
               href="${escapeHtml(targetUrl)}" 
               target="_blank" 
@@ -8749,6 +8757,60 @@ function renderWorkspaceResources() {
   }
 }
 window.renderWorkspaceResources = renderWorkspaceResources;
+
+async function deleteProjectResource(resourceId, docTitle = "dokument") {
+  if (!AppState.currentProject) {
+    showToast("Brak aktywnego projektu.", "error");
+    return;
+  }
+
+  const confirmed = window.confirm("Czy na pewno chcesz usunąć ten dokument? Zostanie on przeniesiony do kosza na Dysku Google.");
+  if (!confirmed) {
+    return;
+  }
+
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+  const projectId = AppState.currentProject.id;
+
+  const payload = {
+    action: "deleteProjectResource",
+    projectId: projectId,
+    resourceId: resourceId,
+    fileId: resourceId,
+    authorEmail: userEmail
+  };
+
+  try {
+    await callGoogleScript("deleteProjectResource", payload);
+  } catch (err) {
+    console.warn("Błąd wywołania deleteProjectResource w Apps Script (usuwanie lokalne):", err);
+  }
+
+  // Natychmiastowe usunięcie z lokalnego stanu dokumentów w projekcie
+  if (Array.isArray(AppState.currentProject.resources)) {
+    AppState.currentProject.resources = AppState.currentProject.resources.filter((d) => d.id !== resourceId && d.fileId !== resourceId);
+  }
+  if (Array.isArray(AppState.currentProject.docs)) {
+    AppState.currentProject.docs = AppState.currentProject.docs.filter((d) => d.id !== resourceId && d.fileId !== resourceId);
+  }
+
+  // Zaktualizuj w nadrzędnej liście projektów i pamięci cache
+  const pIndex = AppState.userProjects.findIndex((p) => p.id === projectId);
+  if (pIndex !== -1) {
+    AppState.userProjects[pIndex] = AppState.currentProject;
+  }
+  if (userEmail) {
+    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+  }
+
+  renderWorkspaceResources();
+  renderSidebarProjects();
+  showToast("Dokument został usunięty.", "success");
+
+  // Asynchroniczna synchronizacja w tle
+  loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
+}
+window.deleteProjectResource = deleteProjectResource;
 
 function openCreateProjectDocModal() {
   if (!AppState.currentProject) {
