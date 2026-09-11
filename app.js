@@ -169,15 +169,17 @@ function restoreAuthSession() {
     try {
       const parsedUser = JSON.parse(sessionStr);
       if (parsedUser && parsedUser.name && parsedUser.token) {
+        const userRole = (parsedUser.role === "ADMIN" || parsedUser.role === "ADMINISTRATOR") ? "ADMIN" : "CZLONEK";
+        const fallbackEmail = userRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl";
         AppState.currentUser = {
           name: parsedUser.name,
-          role: parsedUser.role === "ADMIN" ? "ADMIN" : "CZLONEK",
+          role: userRole,
           token: parsedUser.token,
-          email: parsedUser.email,
-          indexNumber: parsedUser.indexNumber
+          email: parsedUser.email || fallbackEmail,
+          indexNumber: parsedUser.indexNumber || ""
         };
-        AppState.currentRole = parsedUser.role === "ADMIN" ? "ADMIN" : "MEMBERS";
-        AppState.currentPin = parsedUser.role === "ADMIN" ? "2026" : "skn2026";
+        AppState.currentRole = userRole === "ADMIN" ? "ADMIN" : "MEMBERS";
+        AppState.currentPin = userRole === "ADMIN" ? "2026" : "skn2026";
       } else {
         AppState.currentUser = null;
         AppState.currentRole = "PUBLIC";
@@ -202,7 +204,7 @@ function restoreAuthSession() {
   sessionStorage.removeItem("skn_user");
 
   updateAuthUI();
-  if (AppState.currentUser && AppState.currentUser.email) {
+  if (typeof isMemberOrAdmin === "function" ? isMemberOrAdmin() : (AppState.currentUser && (AppState.currentUser.role === "ADMIN" || AppState.currentUser.role === "CZLONEK" || AppState.currentRole === "ADMIN" || AppState.currentRole === "MEMBERS"))) {
     loadUserProjects();
   } else {
     renderSidebarProjects();
@@ -4651,10 +4653,13 @@ async function handleLoginSubmit(e) {
         return;
       }
       if (authRes && (authRes.status === "success" || authRes.authenticated)) {
+        const userRole = (authRes.user?.role === "ADMIN" || authRes.role === "ADMIN") ? "ADMIN" : "CZLONEK";
+        const fallbackEmail = userRole === "ADMIN" ? "admin@skn.pl" : `${cleanIndex}@student.wskz.pl`;
         authSucceeded = true;
         authenticatedUser = {
           name: authRes.user?.name || authRes.name || formatNameFromEmail(identifier),
-          role: (authRes.user?.role === "ADMIN" || authRes.role === "ADMIN") ? "ADMIN" : "CZLONEK",
+          role: userRole,
+          email: authRes.user?.email || authRes.email || (identifier.includes("@") ? identifier : fallbackEmail),
           token: authRes.token || generateSessionToken()
         };
       }
@@ -4681,10 +4686,13 @@ async function handleLoginSubmit(e) {
         }
 
         if (data && (data.status === "success" || data.authenticated || data.success)) {
+          const userRole = (data.user?.role === "ADMIN" || data.role === "ADMIN") ? "ADMIN" : "CZLONEK";
+          const fallbackEmail = userRole === "ADMIN" ? "admin@skn.pl" : `${cleanIndex}@student.wskz.pl`;
           authSucceeded = true;
           authenticatedUser = {
             name: data.user?.name || data.name || formatNameFromEmail(identifier),
-            role: (data.user?.role === "ADMIN" || data.role === "ADMIN") ? "ADMIN" : "CZLONEK",
+            role: userRole,
+            email: data.user?.email || data.email || (identifier.includes("@") ? identifier : fallbackEmail),
             token: data.token || (data.user && data.user.token) || generateSessionToken()
           };
         }
@@ -4701,24 +4709,29 @@ async function handleLoginSubmit(e) {
       );
 
       if (localMatch) {
+        const userRole = localMatch.role === "ADMIN" ? "ADMIN" : "CZLONEK";
+        const fallbackEmail = userRole === "ADMIN" ? "admin@skn.pl" : `${cleanIndex}@student.wskz.pl`;
         authSucceeded = true;
         authenticatedUser = {
           name: localMatch.name,
-          role: localMatch.role === "ADMIN" ? "ADMIN" : "CZLONEK",
+          role: userRole,
+          email: localMatch.email || (identifier.includes("@") ? identifier : fallbackEmail),
           token: generateSessionToken()
         };
       } else if (pinNormalized === "2026") {
         authSucceeded = true;
         authenticatedUser = {
-          name: identifier.includes("zarzad") || identifier.includes("kontakt") ? "Zarząd SKN" : (identifier.includes("@") ? formatNameFromEmail(identifier) : `Administrator (${rawIdentifier})`),
+          name: identifier.includes("zarzad") || identifier.includes("kontakt") ? "Zarząd SKN" : (identifier.includes("@") ? formatNameFromEmail(identifier) : `Administrator (${rawIdentifier || "SKN"})`),
           role: "ADMIN",
+          email: identifier.includes("@") ? identifier : "admin@skn.pl",
           token: generateSessionToken()
         };
       } else if (pinNormalized === "skn2026") {
         authSucceeded = true;
         authenticatedUser = {
-          name: identifier.includes("@") ? formatNameFromEmail(identifier) : `Członek SKN (${rawIdentifier})`,
+          name: identifier.includes("@") ? formatNameFromEmail(identifier) : `Członek SKN (${rawIdentifier || "Student"})`,
           role: "CZLONEK",
+          email: identifier.includes("@") ? identifier : `${cleanIndex || "student"}@student.wskz.pl`,
           token: generateSessionToken()
         };
       }
@@ -5032,17 +5045,20 @@ window.handleResetConfirmSubmit = handleResetConfirmSubmit;
 window.handleResetPinSubmit = handleResetRequestSubmit;
 
 function applyAuthSuccess(user) {
+  const userRole = (user.role === "ADMIN" || user.role === "ADMINISTRATOR") ? "ADMIN" : "CZLONEK";
+  const defaultEmail = userRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl";
   const safeUser = {
-    name: user.name || "Członek SKN",
-    email: user.email || "",
-    role: (user.role === "ADMIN" || user.role === "ADMINISTRATOR") ? "ADMIN" : "CZLONEK",
-    token: user.token || generateSessionToken()
+    name: user.name || (userRole === "ADMIN" ? "Administrator SKN" : "Członek SKN"),
+    email: user.email || defaultEmail,
+    role: userRole,
+    token: user.token || generateSessionToken(),
+    indexNumber: user.indexNumber || user.index || ""
   };
 
   AppState.currentUser = safeUser;
   AppState.currentRole = safeUser.role;
 
-  // Zapis w sessionStorage (Zero-Trust Security)
+  // Zapis w sessionStorage i localStorage (Zero-Trust Security)
   sessionStorage.setItem("user", JSON.stringify(safeUser));
   sessionStorage.setItem("skn_auth_session", JSON.stringify(safeUser));
   localStorage.setItem("skn_auth_session", JSON.stringify(safeUser));
@@ -8273,14 +8289,24 @@ window.isPwaStandalone = isPwaStandalone;
  * =========================================================================
  */
 
+function isMemberOrAdmin(user = AppState.currentUser) {
+  if (!user) {
+    const role = AppState.currentRole;
+    return role === "ADMIN" || role === "CZLONEK" || role === "MEMBERS" || role === "ADMINISTRATOR";
+  }
+  const role = user.role || AppState.currentRole;
+  return role === "ADMIN" || role === "CZLONEK" || role === "MEMBERS" || role === "ADMINISTRATOR";
+}
+window.isMemberOrAdmin = isMemberOrAdmin;
+
 async function loadUserProjects() {
-  if (!AppState.currentUser || !AppState.currentUser.email) {
+  if (!isMemberOrAdmin()) {
     AppState.userProjects = [];
     renderSidebarProjects();
     return;
   }
 
-  const userEmail = AppState.currentUser.email;
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const cacheKey = `skn_user_projects_${userEmail}`;
 
   // Odczyt z pamięci podręcznej (Offline First / Natychmiastowy render)
@@ -8314,14 +8340,14 @@ async function loadUserProjects() {
     }
   } catch (err) {
     console.warn("Nie udało się pobrać projektów z Apps Script (użyto cache):", err);
-    // Jeśli brak projektów w cache, dodaj przykładowy starter dla zalogowanego członka
-    if (AppState.userProjects.length === 0 && (AppState.currentRole === "ADMIN" || AppState.currentRole === "MEMBERS")) {
+    // Jeśli brak projektów w cache, dodaj przykładowy starter dla zalogowanego członka/administratora
+    if (AppState.userProjects.length === 0 && isMemberOrAdmin()) {
       const defaultProj = {
         id: `proj-${Date.now()}`,
         name: "Wpływ dopingu na nagłą śmierć sercową",
         description: "Projekt wieloośrodkowego przeglądu systematycznego powikłań kardiologicznych i endokrynologicznych u sportowców wyczynowych.",
         leaderEmail: userEmail,
-        leaderName: AppState.currentUser.name || "Lider Projektu",
+        leaderName: AppState.currentUser?.name || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Lider Projektu"),
         members: [userEmail, "katedra.kardiologii@wskz.pl"],
         folderUrl: "https://drive.google.com/drive/",
         createdAt: new Date().toISOString().split("T")[0],
@@ -8349,7 +8375,7 @@ function renderSidebarProjects() {
   const mobileList = document.getElementById("mobile-projects-list");
 
   const buildProjectHtml = (isMobile = false) => {
-    if (!AppState.currentUser || !AppState.currentUser.email) {
+    if (!isMemberOrAdmin()) {
       return `
         <div class="p-2.5 bg-gradient-to-br from-purple-50/70 to-indigo-50/50 border border-purple-100 rounded-xl text-center space-y-1.5">
           <p class="text-[10px] text-purple-950 font-medium leading-tight">Zaloguj się, aby tworzyć i współdzielić projekty badawcze.</p>
@@ -8411,8 +8437,8 @@ function renderSidebarProjects() {
 window.renderSidebarProjects = renderSidebarProjects;
 
 function openCreateProjectModal() {
-  if (!AppState.currentUser || !AppState.currentUser.email) {
-    showToast("Tworzenie projektów wymaga logowania członka SKN.", "info");
+  if (!isMemberOrAdmin()) {
+    showToast("Tworzenie projektów wymaga logowania członka lub administratora SKN.", "info");
     openLoginModal();
     return;
   }
@@ -8451,7 +8477,7 @@ async function handleCreateProjectSubmit(e) {
     return;
   }
 
-  const userEmail = AppState.currentUser?.email || "czlonek@skn.pl";
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const membersList = membersRaw
     .split(",")
     .map((m) => m.trim())
@@ -8494,7 +8520,7 @@ async function handleCreateProjectSubmit(e) {
       name: projName,
       description: projDesc,
       leaderEmail: userEmail,
-      leaderName: AppState.currentUser?.name || "Lider",
+      leaderName: AppState.currentUser?.name || (AppState.currentRole === "ADMIN" ? "Administrator SKN" : "Lider"),
       members: membersList,
       folderUrl: "https://drive.google.com/drive/",
       createdAt: new Date().toISOString().split("T")[0],
@@ -8721,7 +8747,7 @@ async function handleCreateGoogleDocSubmit(e) {
     return;
   }
 
-  const userEmail = AppState.currentUser?.email || "";
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
 
   if (submitBtn) {
