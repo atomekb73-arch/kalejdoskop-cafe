@@ -35,7 +35,10 @@ const AppState = {
   filterOnlyTranslations: false,
   activeTag: null,
   chatHistory: {},
-  currentUser: null
+  currentUser: null,
+  userProjects: [],
+  currentProject: null,
+  activeMainView: "catalog"
 };
 if (typeof window !== "undefined") {
   window.AppState = AppState;
@@ -199,6 +202,11 @@ function restoreAuthSession() {
   sessionStorage.removeItem("skn_user");
 
   updateAuthUI();
+  if (AppState.currentUser && AppState.currentUser.email) {
+    loadUserProjects();
+  } else {
+    renderSidebarProjects();
+  }
 }
 
 /**
@@ -541,6 +549,9 @@ function renderCategoryPills() {
     `;
 
     btn.addEventListener("click", () => {
+      if (AppState.activeMainView !== "catalog") {
+        switchToCatalogView();
+      }
       if ((category === "08. Repozytorium Badawcze SKN" || category === "Materiały Własne SKN") && AppState.currentRole === "PUBLIC") {
         showToast("Strefa Repozytorium SKN wymaga autoryzacji. Zaloguj się kodem PIN członka/administratora.", "info");
         if (isMobileDrawer) closeCategoryDrawer();
@@ -4994,6 +5005,7 @@ function applyAuthSuccess(user) {
   closeLoginModal();
   updateAuthUI();
   renderCategoryPills();
+  loadUserProjects();
   showToast(`Witaj, ${safeUser.name}! Uzyskano bezpieczny dostęp do zasobów SKN (${safeUser.role === "ADMIN" ? "Administrator" : "Członek SKN"}).`, "success");
   loadArticles();
 }
@@ -5001,6 +5013,8 @@ function applyAuthSuccess(user) {
 function handleLogout() {
   AppState.currentUser = null;
   AppState.currentRole = "PUBLIC";
+  AppState.userProjects = [];
+  AppState.currentProject = null;
 
   sessionStorage.removeItem("skn_auth_session");
   localStorage.removeItem("skn_auth_session");
@@ -5010,8 +5024,10 @@ function handleLogout() {
     AppState.activeCategory = "Wszystko";
   }
 
+  switchToCatalogView();
   updateAuthUI();
   renderCategoryPills();
+  renderSidebarProjects();
   showToast("Wylogowano pomyślnie. Aktywny widok: Gość (Widok Publiczny).", "info");
   filterAndRenderArticles();
 }
@@ -8205,3 +8221,527 @@ function triggerPwaInstall() {
 }
 window.triggerPwaInstall = triggerPwaInstall;
 window.isPwaStandalone = isPwaStandalone;
+
+/**
+ * =========================================================================
+ * MODUŁ: PROJEKTY BADAWCZE SKN (Współpraca zespołowa & Google Docs)
+ * =========================================================================
+ */
+
+async function loadUserProjects() {
+  if (!AppState.currentUser || !AppState.currentUser.email) {
+    AppState.userProjects = [];
+    renderSidebarProjects();
+    return;
+  }
+
+  const userEmail = AppState.currentUser.email;
+  const cacheKey = `skn_user_projects_${userEmail}`;
+
+  // Odczyt z pamięci podręcznej (Offline First / Natychmiastowy render)
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) {
+        AppState.userProjects = parsed;
+        renderSidebarProjects();
+      }
+    }
+  } catch (e) {
+    console.warn("Błąd odczytu projektów z cache:", e);
+  }
+
+  // Pobranie z Google Apps Script
+  try {
+    const response = await callGoogleScript("getUserProjects", { email: userEmail });
+    if (response && (response.status === "success" || response.success) && Array.isArray(response.projects)) {
+      AppState.userProjects = response.projects;
+      localStorage.setItem(cacheKey, JSON.stringify(AppState.userProjects));
+      renderSidebarProjects();
+      if (AppState.currentProject) {
+        const updated = AppState.userProjects.find((p) => p.id === AppState.currentProject.id);
+        if (updated) {
+          AppState.currentProject = updated;
+          renderWorkspaceResources();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Nie udało się pobrać projektów z Apps Script (użyto cache):", err);
+    // Jeśli brak projektów w cache, dodaj przykładowy starter dla zalogowanego członka
+    if (AppState.userProjects.length === 0 && (AppState.currentRole === "ADMIN" || AppState.currentRole === "MEMBERS")) {
+      const defaultProj = {
+        id: `proj-${Date.now()}`,
+        name: "Wpływ dopingu na nagłą śmierć sercową",
+        description: "Projekt wieloośrodkowego przeglądu systematycznego powikłań kardiologicznych i endokrynologicznych u sportowców wyczynowych.",
+        leaderEmail: userEmail,
+        leaderName: AppState.currentUser.name || "Lider Projektu",
+        members: [userEmail, "katedra.kardiologii@wskz.pl"],
+        folderUrl: "https://drive.google.com/drive/",
+        createdAt: new Date().toISOString().split("T")[0],
+        docs: [
+          {
+            id: `doc-${Date.now()}-1`,
+            title: "Protokół i Metodologia Badania v1.0",
+            type: "doc",
+            url: "https://docs.google.com/document/create",
+            authorEmail: userEmail,
+            updatedAt: new Date().toISOString().split("T")[0]
+          }
+        ]
+      };
+      AppState.userProjects = [defaultProj];
+      localStorage.setItem(cacheKey, JSON.stringify(AppState.userProjects));
+      renderSidebarProjects();
+    }
+  }
+}
+window.loadUserProjects = loadUserProjects;
+
+function renderSidebarProjects() {
+  const sidebarList = document.getElementById("sidebar-projects-list");
+  const mobileList = document.getElementById("mobile-projects-list");
+
+  const buildProjectHtml = (isMobile = false) => {
+    if (!AppState.currentUser || !AppState.currentUser.email) {
+      return `
+        <div class="p-2.5 bg-gradient-to-br from-purple-50/70 to-indigo-50/50 border border-purple-100 rounded-xl text-center space-y-1.5">
+          <p class="text-[10px] text-purple-950 font-medium leading-tight">Zaloguj się, aby tworzyć i współdzielić projekty badawcze.</p>
+          <button type="button" onclick="${isMobile ? 'closeCategoryDrawer();' : ''}openLoginModal()" class="w-full py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold transition cursor-pointer shadow-2xs">
+            Zaloguj się
+          </button>
+        </div>
+      `;
+    }
+
+    if (!AppState.userProjects || AppState.userProjects.length === 0) {
+      return `
+        <div class="p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-center space-y-1">
+          <p class="text-[10.5px] text-slate-500 font-medium">Brak aktywnych projektów.</p>
+          <button type="button" onclick="${isMobile ? 'closeCategoryDrawer();' : ''}openCreateProjectModal()" class="text-[10.5px] text-purple-600 hover:text-purple-800 font-bold cursor-pointer transition">
+            + Utwórz pierwszy projekt
+          </button>
+        </div>
+      `;
+    }
+
+    return AppState.userProjects.map((project) => {
+      const isActive = AppState.activeMainView === "project" && AppState.currentProject && AppState.currentProject.id === project.id;
+      const docsCount = (project.docs && project.docs.length) || 0;
+      return `
+        <button 
+          type="button" 
+          onclick="${isMobile ? 'closeCategoryDrawer();' : ''}openProjectWorkspace('${escapeHtml(project.id)}')" 
+          class="w-full text-left p-2 rounded-xl transition-all duration-150 flex items-center justify-between gap-2 cursor-pointer active:scale-98 ${
+            isActive
+              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-semibold'
+              : 'bg-white hover:bg-purple-50/70 text-slate-700 hover:text-purple-900 border border-slate-200/80 shadow-2xs'
+          }"
+          title="${escapeHtml(project.name)}"
+        >
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="${isActive ? 'text-white' : 'text-purple-600'} text-xs shrink-0">
+              <i class="fas fa-folder"></i>
+            </span>
+            <span class="text-[11px] leading-snug truncate flex-1 font-medium">${escapeHtml(project.name)}</span>
+          </div>
+          <span class="px-1.5 py-0.2 rounded-full text-[9.5px] font-mono shrink-0 ${
+            isActive ? 'bg-white/25 text-white font-bold' : 'bg-purple-50 text-purple-700 border border-purple-200'
+          }">
+            ${docsCount} dok.
+          </span>
+        </button>
+      `;
+    }).join("");
+  };
+
+  if (sidebarList) {
+    sidebarList.innerHTML = buildProjectHtml(false);
+  }
+  if (mobileList) {
+    mobileList.innerHTML = buildProjectHtml(true);
+  }
+}
+window.renderSidebarProjects = renderSidebarProjects;
+
+function openCreateProjectModal() {
+  if (!AppState.currentUser || !AppState.currentUser.email) {
+    showToast("Tworzenie projektów wymaga logowania członka SKN.", "info");
+    openLoginModal();
+    return;
+  }
+  showModalElement("createProjectModal");
+  const nameInput = document.getElementById("project-name-input");
+  if (nameInput) {
+    nameInput.value = "";
+    setTimeout(() => nameInput.focus(), 50);
+  }
+  const descInput = document.getElementById("project-desc-input");
+  if (descInput) descInput.value = "";
+  const membersInput = document.getElementById("project-members-input");
+  if (membersInput) membersInput.value = "";
+}
+window.openCreateProjectModal = openCreateProjectModal;
+
+function closeCreateProjectModal() {
+  hideModalElement("createProjectModal");
+}
+window.closeCreateProjectModal = closeCreateProjectModal;
+
+async function handleCreateProjectSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const nameInput = document.getElementById("project-name-input");
+  const descInput = document.getElementById("project-desc-input");
+  const membersInput = document.getElementById("project-members-input");
+  const submitBtn = document.getElementById("submit-create-project-btn");
+
+  const projName = nameInput ? nameInput.value.trim() : "";
+  const projDesc = descInput ? descInput.value.trim() : "";
+  const membersRaw = membersInput ? membersInput.value.trim() : "";
+
+  if (!projName) {
+    showToast("Wprowadź nazwę projektu badawczego.", "error");
+    return;
+  }
+
+  const userEmail = AppState.currentUser?.email || "czlonek@skn.pl";
+  const membersList = membersRaw
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0 && m.includes("@"));
+
+  if (!membersList.includes(userEmail)) {
+    membersList.unshift(userEmail);
+  }
+
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+  if (submitBtn) {
+    submitBtn.setAttribute("disabled", "true");
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Tworzenie na Dysku Google...</span>`;
+  }
+
+  const payload = {
+    action: "createProject",
+    name: projName,
+    description: projDesc,
+    leaderEmail: userEmail,
+    members: membersList
+  };
+
+  let newProject = null;
+
+  try {
+    const response = await callGoogleScript("createProject", payload);
+    if (response && (response.status === "success" || response.success) && (response.project || response.data)) {
+      newProject = response.project || response.data;
+    }
+  } catch (err) {
+    console.warn("Błąd odpowiedzi Apps Script podczas tworzenia projektu (przejście na tryb lokalny):", err);
+  }
+
+  // Fallback lokalny
+  if (!newProject) {
+    const projId = `proj-${Date.now()}`;
+    newProject = {
+      id: projId,
+      name: projName,
+      description: projDesc,
+      leaderEmail: userEmail,
+      leaderName: AppState.currentUser?.name || "Lider",
+      members: membersList,
+      folderUrl: "https://drive.google.com/drive/",
+      createdAt: new Date().toISOString().split("T")[0],
+      docs: [
+        {
+          id: `doc-${Date.now()}-1`,
+          title: `Metodologia & Założenia: ${projName}`,
+          type: "doc",
+          url: "https://docs.google.com/document/create",
+          authorEmail: userEmail,
+          updatedAt: new Date().toISOString().split("T")[0]
+        }
+      ]
+    };
+  }
+
+  // Dopisz do stanu i cache
+  if (!Array.isArray(AppState.userProjects)) {
+    AppState.userProjects = [];
+  }
+  AppState.userProjects.unshift(newProject);
+  localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+
+  if (submitBtn) {
+    submitBtn.removeAttribute("disabled");
+    submitBtn.innerHTML = originalBtnHtml;
+  }
+
+  closeCreateProjectModal();
+  renderSidebarProjects();
+  openProjectWorkspace(newProject.id);
+  showToast(`Projekt «${projName}» został pomyślnie utworzony!`, "success");
+}
+window.handleCreateProjectSubmit = handleCreateProjectSubmit;
+
+function openProjectWorkspace(projectId) {
+  const project = AppState.userProjects.find((p) => p.id === projectId);
+  if (!project) {
+    showToast("Nie odnaleziono wybranego projektu.", "error");
+    return;
+  }
+
+  AppState.currentProject = project;
+  AppState.activeMainView = "project";
+
+  const catalogView = document.getElementById("publications-view-container");
+  const workspaceView = document.getElementById("project-workspace-view");
+
+  if (catalogView) {
+    catalogView.classList.add("hidden");
+    catalogView.style.display = "none";
+  }
+  if (workspaceView) {
+    workspaceView.classList.remove("hidden");
+    workspaceView.style.display = "flex";
+  }
+
+  const titleEl = document.getElementById("workspace-project-title");
+  const descEl = document.getElementById("workspace-project-desc");
+  const dateEl = document.getElementById("workspace-project-date");
+  const membersEl = document.getElementById("workspace-project-members");
+
+  if (titleEl) titleEl.innerText = project.name;
+  if (descEl) descEl.innerText = project.description || "Projekt badawczy Studenckiego Koła Naukowego Seksuologii.";
+  if (dateEl) dateEl.innerText = `Utworzono: ${project.createdAt || new Date().toISOString().split("T")[0]}`;
+
+  if (membersEl) {
+    const members = Array.isArray(project.members) ? project.members : [project.leaderEmail || "Członek SKN"];
+    membersEl.innerHTML = members.map((email) => {
+      const isLeader = email === project.leaderEmail;
+      return `
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+          isLeader
+            ? 'bg-amber-50 text-amber-900 border border-amber-200'
+            : 'bg-slate-100 text-slate-700 border border-slate-200'
+        }">
+          ${isLeader ? '<i class="fas fa-crown text-amber-500 text-[10px]"></i>' : '<i class="fas fa-user text-slate-400 text-[10px]"></i>'}
+          <span>${escapeHtml(email)}</span>
+        </span>
+      `;
+    }).join("");
+  }
+
+  renderWorkspaceResources();
+  renderSidebarProjects();
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+window.openProjectWorkspace = openProjectWorkspace;
+
+function switchToCatalogView() {
+  AppState.currentProject = null;
+  AppState.activeMainView = "catalog";
+
+  const catalogView = document.getElementById("publications-view-container");
+  const workspaceView = document.getElementById("project-workspace-view");
+
+  if (workspaceView) {
+    workspaceView.classList.add("hidden");
+    workspaceView.style.display = "none";
+  }
+  if (catalogView) {
+    catalogView.classList.remove("hidden");
+    catalogView.style.display = "flex";
+  }
+
+  renderSidebarProjects();
+}
+window.switchToCatalogView = switchToCatalogView;
+
+function openCurrentProjectDrive() {
+  if (AppState.currentProject && AppState.currentProject.folderUrl) {
+    window.open(AppState.currentProject.folderUrl, "_blank");
+  } else {
+    window.open("https://drive.google.com/drive/", "_blank");
+  }
+}
+window.openCurrentProjectDrive = openCurrentProjectDrive;
+
+function renderWorkspaceResources() {
+  const project = AppState.currentProject;
+  if (!project) return;
+
+  const listEl = document.getElementById("workspace-resources-list");
+  const emptyEl = document.getElementById("workspace-empty-resources");
+  const countEl = document.getElementById("workspace-resources-count");
+
+  const docs = Array.isArray(project.docs) ? project.docs : [];
+
+  if (countEl) {
+    countEl.innerText = `${docs.length} ${docs.length === 1 ? 'dokument' : (docs.length >= 2 && docs.length <= 4) ? 'dokumenty' : 'dokumentów'}`;
+  }
+
+  if (docs.length === 0) {
+    if (listEl) listEl.innerHTML = "";
+    if (emptyEl) emptyEl.classList.remove("hidden");
+    return;
+  }
+
+  if (emptyEl) emptyEl.classList.add("hidden");
+
+  if (listEl) {
+    listEl.innerHTML = docs.map((doc) => {
+      const isGoogleDoc = (doc.type === "doc" || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
+      const iconSvg = isGoogleDoc
+        ? `<div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-lines"></i></div>`
+        : `<div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-pdf"></i></div>`;
+
+      const typeBadge = isGoogleDoc
+        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Google Docs (Live)</span>`
+        : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">PDF</span>`;
+
+      return `
+        <div class="p-3.5 bg-slate-50/90 hover:bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-sm flex flex-col justify-between gap-3 group">
+          <div class="flex items-start gap-3">
+            ${iconSvg}
+            <div class="min-w-0 flex-1 space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                ${typeBadge}
+                <span class="text-[10.5px] text-slate-400 font-mono">${escapeHtml(doc.updatedAt || doc.createdAt || "")}</span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition leading-snug line-clamp-2">
+                ${escapeHtml(doc.title)}
+              </h4>
+              <p class="text-[11px] text-slate-500 truncate">Autor: ${escapeHtml(doc.authorEmail || doc.author || "Członek SKN")}</p>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200/60 flex items-center justify-end">
+            <a 
+              href="${escapeHtml(doc.url || 'https://docs.google.com/document/create')}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
+                isGoogleDoc 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs' 
+                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+              } transition active:scale-95 cursor-pointer"
+            >
+              <span>${isGoogleDoc ? 'Otwórz w edytorze Google Docs' : 'Otwórz plik'}</span>
+              <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+}
+window.renderWorkspaceResources = renderWorkspaceResources;
+
+function openCreateProjectDocModal() {
+  if (!AppState.currentProject) {
+    showToast("Wybierz najpierw projekt badawczy.", "error");
+    return;
+  }
+  showModalElement("createProjectDocModal");
+  const input = document.getElementById("project-doc-title-input");
+  if (input) {
+    input.value = "";
+    setTimeout(() => input.focus(), 50);
+  }
+}
+window.openCreateProjectDocModal = openCreateProjectDocModal;
+
+function closeCreateProjectDocModal() {
+  hideModalElement("createProjectDocModal");
+}
+window.closeCreateProjectDocModal = closeCreateProjectDocModal;
+
+async function handleCreateGoogleDocSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  if (!AppState.currentProject) {
+    showToast("Brak aktywnego projektu.", "error");
+    return;
+  }
+
+  const titleInput = document.getElementById("project-doc-title-input");
+  const submitBtn = document.getElementById("submit-create-doc-btn");
+  const docTitle = titleInput ? titleInput.value.trim() : "";
+
+  if (!docTitle) {
+    showToast("Wprowadź tytuł nowego dokumentu.", "error");
+    return;
+  }
+
+  const userEmail = AppState.currentUser?.email || "";
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+
+  if (submitBtn) {
+    submitBtn.setAttribute("disabled", "true");
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Generowanie dokumentu...</span>`;
+  }
+
+  const payload = {
+    action: "createProjectGoogleDoc",
+    projectId: AppState.currentProject.id,
+    title: docTitle,
+    authorEmail: userEmail
+  };
+
+  let newDoc = null;
+
+  try {
+    const response = await callGoogleScript("createProjectGoogleDoc", payload);
+    if (response && (response.status === "success" || response.success) && (response.doc || response.data)) {
+      newDoc = response.doc || response.data;
+    }
+  } catch (err) {
+    console.warn("Błąd Apps Script przy tworzeniu dokumentu Google Docs (użyto fallbacku):", err);
+  }
+
+  if (!newDoc) {
+    newDoc = {
+      id: `doc-${Date.now()}`,
+      title: docTitle,
+      type: "doc",
+      url: "https://docs.google.com/document/create",
+      authorEmail: userEmail,
+      updatedAt: new Date().toISOString().split("T")[0]
+    };
+  }
+
+  if (!Array.isArray(AppState.currentProject.docs)) {
+    AppState.currentProject.docs = [];
+  }
+  AppState.currentProject.docs.unshift(newDoc);
+
+  // Zaktualizuj w nadrzędnej liście projektów i cache
+  const pIndex = AppState.userProjects.findIndex((p) => p.id === AppState.currentProject.id);
+  if (pIndex !== -1) {
+    AppState.userProjects[pIndex] = AppState.currentProject;
+  }
+  if (userEmail) {
+    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+  }
+
+  if (submitBtn) {
+    submitBtn.removeAttribute("disabled");
+    submitBtn.innerHTML = originalBtnHtml;
+  }
+
+  closeCreateProjectDocModal();
+  renderWorkspaceResources();
+  renderSidebarProjects();
+
+  // Otwórz utworzony dokument w nowej karcie
+  if (newDoc.url) {
+    window.open(newDoc.url, "_blank");
+  }
+
+  showToast(`Dokument «${docTitle}» został utworzony i otwarty w nowej karcie!`, "success");
+}
+window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
+

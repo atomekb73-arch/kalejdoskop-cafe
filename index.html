@@ -340,6 +340,26 @@
           <!-- Dynamicznie renderowane 8 Działów Wiedzy przez renderCategoryPills() w app.js -->
         </nav>
 
+        <!-- Sekcja: Projekty Badawcze SKN -->
+        <div id="projects-sidebar-section" class="pt-2 border-t border-slate-100 space-y-1.5">
+          <div class="flex items-center justify-between pb-1">
+            <h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Projekty Badawcze</span>
+            </h3>
+            <button type="button" onclick="openCreateProjectModal()" class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs" title="Utwórz nowy projekt badawczy">
+              <i class="fas fa-plus text-[9px]"></i>
+              <span>Nowy Projekt</span>
+            </button>
+          </div>
+
+          <div id="sidebar-projects-list" class="space-y-1 max-h-44 overflow-y-auto pr-0.5">
+            <!-- Dynamic list of projects rendered by renderSidebarProjects() -->
+          </div>
+        </div>
+
         <!-- Narzędzia Administratora (Tylko dla ADMIN) -->
         <div id="admin-actions-container" class="space-y-1.5 pt-2 border-t border-slate-100" style="display: none;">
           <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Panel Administratora</h4>
@@ -394,92 +414,183 @@
           </button>
         </div>
 
-        <!-- Jednoliniowy, spójny pasek wyszukiwarki i filtrów (Wyszukiwarka + Sortowanie + Tłumaczenia PL + Przełącznik Widoku) -->
-        <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-2 sm:p-2.5 flex flex-wrap items-center gap-2">
-          <!-- Wyszukiwarka (elastyczna) -->
-          <div class="relative flex-1 min-w-[200px] flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-2.5 py-0.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100 h-8">
-            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input 
-              type="text" 
-              id="search-input" 
-              placeholder="Szukaj po tytule, autorze, abstrakcie, tagach..." 
-              class="w-full bg-transparent border-0 text-slate-800 placeholder-slate-400 px-2 py-0 text-xs focus:outline-none focus:ring-0"
-            >
-            <button id="clear-search-btn" class="hidden text-slate-400 hover:text-slate-600 px-1 text-xs cursor-pointer" onclick="clearSearchInput()">
-              ✕
+        <!-- KONTENER 1: Widok Bazy Publikacji (Katalog) -->
+        <div id="publications-view-container" class="flex flex-col gap-2.5 w-full">
+          <!-- Jednoliniowy, spójny pasek wyszukiwarki i filtrów (Wyszukiwarka + Sortowanie + Tłumaczenia PL + Przełącznik Widoku) -->
+          <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-2 sm:p-2.5 flex flex-wrap items-center gap-2">
+            <!-- Wyszukiwarka (elastyczna) -->
+            <div class="relative flex-1 min-w-[200px] flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-2.5 py-0.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100 h-8">
+              <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Szukaj po tytule, autorze, abstrakcie, tagach..." 
+                class="w-full bg-transparent border-0 text-slate-800 placeholder-slate-400 px-2 py-0 text-xs focus:outline-none focus:ring-0"
+              >
+              <button id="clear-search-btn" class="hidden text-slate-400 hover:text-slate-600 px-1 text-xs cursor-pointer" onclick="clearSearchInput()">
+                ✕
+              </button>
+            </div>
+
+            <!-- Selektor Sortowania -->
+            <div class="flex items-center shrink-0">
+              <select id="sort-select" onchange="handleSortChange(this.value)" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-2.5 h-8 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer transition">
+                <option value="date_desc">Najnowsze dodane</option>
+                <option value="year_desc">Rok publikacji: od najnowszych (↓)</option>
+                <option value="year_asc">Rok publikacji: od najstarszych (↑)</option>
+                <option value="title_asc">Tytuł alfabetycznie (A-Z)</option>
+                <option value="authors_asc">Autorzy alfabetycznie (A-Z)</option>
+              </select>
+            </div>
+
+            <!-- Szybki Przełącznik Tłumaczeń PL -->
+            <button type="button" id="filter-translation-toggle" onclick="toggleTranslationFilter()" class="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-2xs shrink-0" title="Pokaż tylko artykuły z gotowym tłumaczeniem PL">
+              <span id="filter-translation-label">Tylko z tłumaczeniem PL</span>
             </button>
+
+            <!-- Aktywny Tag / Filtr Chip (jeśli aktywny) -->
+            <div id="active-tag-chip" class="hidden items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs bg-purple-50 text-purple-800 border border-purple-200 font-medium shrink-0">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+              <span id="active-tag-label">#tag</span>
+              <button type="button" onclick="clearTagFilter()" class="text-purple-400 hover:text-purple-800 ml-0.5 cursor-pointer font-bold" title="Usuń filtr tagu">✕</button>
+            </div>
+
+            <!-- Przełącznik Widoku: Zwarta Lista vs Siatka Kafelków (bezpośrednio obok filtrów) -->
+            <div class="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 h-8 shrink-0">
+              <button type="button" id="view-mode-list-btn" onclick="setViewMode('list')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer bg-white text-indigo-600 shadow-xs" title="Domyślny widok zwartej listy">
+                <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"/>
+                  <line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </button>
+              <button type="button" id="view-mode-grid-btn" onclick="setViewMode('grid')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer text-slate-500 hover:text-slate-800" title="Widok siatki kafelków">
+                <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="7" height="7" x="3" y="3" rx="1"/>
+                  <rect width="7" height="7" x="14" y="3" rx="1"/>
+                  <rect width="7" height="7" x="14" y="14" rx="1"/>
+                  <rect width="7" height="7" x="3" y="14" rx="1"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Selektor Sortowania -->
-          <div class="flex items-center shrink-0">
-            <select id="sort-select" onchange="handleSortChange(this.value)" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-2.5 h-8 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer transition">
-              <option value="date_desc">Najnowsze dodane</option>
-              <option value="year_desc">Rok publikacji: od najnowszych (↓)</option>
-              <option value="year_asc">Rok publikacji: od najstarszych (↑)</option>
-              <option value="title_asc">Tytuł alfabetycznie (A-Z)</option>
-              <option value="authors_asc">Autorzy alfabetycznie (A-Z)</option>
-            </select>
+          <!-- Pasek wyników i statusu -->
+          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.9a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+              <span>Znalezionych publikacji: <strong id="results-count" class="text-slate-900 font-bold">0</strong></span>
+            </div>
+            <div id="loading-spinner" class="hidden flex items-center gap-2 text-indigo-600 font-medium">
+              <svg class="w-3.5 h-3.5 stroke-[2] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <span>Łączenie z bazą...</span>
+            </div>
           </div>
 
-          <!-- Szybki Przełącznik Tłumaczeń PL -->
-          <button type="button" id="filter-translation-toggle" onclick="toggleTranslationFilter()" class="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition cursor-pointer shadow-2xs shrink-0" title="Pokaż tylko artykuły z gotowym tłumaczeniem PL">
-            <span id="filter-translation-label">Tylko z tłumaczeniem PL</span>
-          </button>
+          <!-- Główny Kontener Publikacji (Domyślnie Zwarta Lista lub Siatka) -->
+          <div id="articles-grid" class="flex flex-col gap-2.5 w-full mt-2"></div>
 
-          <!-- Aktywny Tag / Filtr Chip (jeśli aktywny) -->
-          <div id="active-tag-chip" class="hidden items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs bg-purple-50 text-purple-800 border border-purple-200 font-medium shrink-0">
-            <svg class="w-3 h-3 stroke-[2] text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
-            <span id="active-tag-label">#tag</span>
-            <button type="button" onclick="clearTagFilter()" class="text-purple-400 hover:text-purple-800 ml-0.5 cursor-pointer font-bold" title="Usuń filtr tagu">✕</button>
-          </div>
-
-          <!-- Przełącznik Widoku: Zwarta Lista vs Siatka Kafelków (bezpośrednio obok filtrów) -->
-          <div class="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 h-8 shrink-0">
-            <button type="button" id="view-mode-list-btn" onclick="setViewMode('list')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer bg-white text-indigo-600 shadow-xs" title="Domyślny widok zwartej listy">
-              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                <line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-            </button>
-            <button type="button" id="view-mode-grid-btn" onclick="setViewMode('grid')" class="px-2 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer text-slate-500 hover:text-slate-800" title="Widok siatki kafelków">
-              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="7" height="7" x="3" y="3" rx="1"/>
-                <rect width="7" height="7" x="14" y="3" rx="1"/>
-                <rect width="7" height="7" x="14" y="14" rx="1"/>
-                <rect width="7" height="7" x="3" y="14" rx="1"/>
-              </svg>
-            </button>
+          <!-- Empty State -->
+          <div id="empty-state" class="hidden text-center py-16 px-4 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm">
+            <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-4 text-2xl">
+              <svg class="w-8 h-8 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 mb-1.5">Brak wyników w tym dziale</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+              Nie znaleziono publikacji odpowiadających Twoim kryteriom wyszukiwania. Spróbuj zmienić zapytanie lub przełączyć dział wiedzy.
+            </p>
           </div>
         </div>
 
-        <!-- Pasek wyników i statusu -->
-        <div class="flex items-center justify-between text-xs text-slate-500 px-1">
-          <div class="flex items-center gap-2">
-            <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.9a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
-            <span>Znalezionych publikacji: <strong id="results-count" class="text-slate-900 font-bold">0</strong></span>
+        <!-- KONTENER 2: Widok Projektu Badawczego (Project Workspace) -->
+        <div id="project-workspace-view" class="hidden flex-col gap-3.5 w-full animate-fadeIn" style="display: none;">
+          <!-- Pasek nawigacyjny i akcji workspace -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-xs">
+            <button type="button" onclick="switchToCatalogView()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer shadow-2xs">
+              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>Powrót do Bazy Publikacji</span>
+            </button>
+            
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" id="workspace-drive-btn" onclick="openCurrentProjectDrive()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95">
+                <i class="fab fa-google-drive text-amber-600 text-sm"></i>
+                <span>Otwórz Dysk projektu</span>
+              </button>
+              <button type="button" onclick="openCreateProjectDocModal()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer active:scale-95">
+                <i class="fas fa-file-circle-plus text-xs"></i>
+                <span>+ Nowy dokument Google Docs</span>
+              </button>
+            </div>
           </div>
-          <div id="loading-spinner" class="hidden flex items-center gap-2 text-indigo-600 font-medium">
-            <svg class="w-3.5 h-3.5 stroke-[2] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            <span>Łączenie z bazą...</span>
-          </div>
-        </div>
 
-        <!-- Główny Kontener Publikacji (Domyślnie Zwarta Lista lub Siatka) -->
-        <div id="articles-grid" class="flex flex-col gap-2.5 w-full mt-2"></div>
+          <!-- Karta Główna Projektu -->
+          <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                  <i class="fas fa-folder-open text-purple-600"></i>
+                  <span>Projekt Badawczy SKN</span>
+                </span>
+                <span id="workspace-project-date" class="text-[11px] text-slate-400 font-mono"></span>
+              </div>
+              <h2 id="workspace-project-title" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug"></h2>
+              <p id="workspace-project-desc" class="text-xs text-slate-600 leading-relaxed max-w-3xl"></p>
+            </div>
 
-        <!-- Empty State -->
-        <div id="empty-state" class="hidden text-center py-16 px-4 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm">
-          <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-4 text-2xl">
-            <svg class="w-8 h-8 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+            <!-- Członkowie Zespołu -->
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-slate-700 flex items-center gap-1"><i class="fas fa-users text-indigo-600"></i> Zespół:</span>
+                <div id="workspace-project-members" class="flex flex-wrap items-center gap-1.5"></div>
+              </div>
+            </div>
           </div>
-          <h3 class="text-base font-bold text-slate-800 mb-1.5">Brak wyników w tym dziale</h3>
-          <p class="text-xs text-slate-500 max-w-md mx-auto">
-            Nie znaleziono publikacji odpowiadających Twoim kryteriom wyszukiwania. Spróbuj zmienić zapytanie lub przełączyć dział wiedzy.
-          </p>
+
+          <!-- Informacja o edycji w czasie rzeczywistym Google Docs -->
+          <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-purple-50/90 border border-indigo-100 rounded-2xl p-3.5 text-xs text-indigo-950 flex items-start gap-3 shadow-xs">
+            <div class="w-8 h-8 rounded-xl bg-white shadow-xs text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 text-sm">
+              <i class="fas fa-users-rectangle"></i>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-bold text-slate-900">Przestrzeń wspólnej pracy w czasie rzeczywistym</h4>
+              <p class="text-slate-600 text-[11.5px] mt-0.5 leading-relaxed">
+                Każdy dokument Google Docs otwiera się bezpośrednio w nowej karcie Google Workspace. Wszyscy uprawnieni członkowie projektu mogą pisać, recenzować i formatować tekst jednocześnie.
+              </p>
+            </div>
+          </div>
+
+          <!-- Lista Zasobów i Dokumentów Roboczych -->
+          <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                <i class="fas fa-layer-group text-indigo-600"></i>
+                <span>Zasoby i Dokumenty Projektu</span>
+              </h3>
+              <span id="workspace-resources-count" class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">0 dokumentów</span>
+            </div>
+
+            <div id="workspace-resources-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Dynamicznie generowane kafelki dokumentów -->
+            </div>
+
+            <!-- Stan pusty (Brak dokumentów w projekcie) -->
+            <div id="workspace-empty-resources" class="hidden text-center py-10 px-4 bg-slate-50/70 rounded-xl border border-dashed border-slate-200">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center mx-auto mb-2 text-xl shadow-xs">
+                <i class="fas fa-file-pen"></i>
+              </div>
+              <h4 class="text-sm font-bold text-slate-800">Brak dokumentów roboczych</h4>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-3.5 leading-relaxed">
+                Utwórz pierwszy dokument w Dokumentach Google, aby rozpocząć pisanie metodologii, analizy danych lub przeglądu literatury.
+              </p>
+              <button type="button" onclick="openCreateProjectDocModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer active:scale-95">
+                <i class="fas fa-plus text-xs"></i>
+                <span>+ Utwórz dokument Google Docs</span>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -526,8 +637,28 @@
       </div>
 
       <!-- Lista kategorii w drawerze -->
-      <div class="flex-1 overflow-y-auto p-3.5 space-y-1.5" id="mobile-categories-container">
-        <!-- Dynamicznie renderowane przez renderCategoryPills() -->
+      <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
+        <div id="mobile-categories-container" class="space-y-1.5">
+          <!-- Dynamicznie renderowane przez renderCategoryPills() -->
+        </div>
+
+        <!-- Sekcja: Projekty Badawcze w Drawerze -->
+        <div id="mobile-projects-sidebar-section" class="pt-3 border-t border-slate-100 space-y-1.5">
+          <div class="flex items-center justify-between pb-1">
+            <h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <i class="fas fa-folder-open text-purple-600"></i>
+              <span>Projekty Badawcze</span>
+            </h3>
+            <button type="button" onclick="closeCategoryDrawer(); openCreateProjectModal();" class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs">
+              <i class="fas fa-plus text-[9px]"></i>
+              <span>Nowy Projekt</span>
+            </button>
+          </div>
+
+          <div id="mobile-projects-list" class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
+            <!-- Dynamic list rendered by renderSidebarProjects() -->
+          </div>
+        </div>
       </div>
 
       <!-- Stopka Drawera z Safe Area -->
@@ -2132,6 +2263,142 @@
         <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
           <button type="button" onclick="closeAddReviewModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer">Anuluj</button>
           <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm cursor-pointer">Zapisz recenzję</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Tworzenie Nowego Projektu Badawczego SKN -->
+  <div id="createProjectModal" onclick="handleBackdropClick(event, 'createProjectModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-sm">
+            <svg class="w-5 h-5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Nowy Projekt Badawczy SKN</h3>
+            <p class="text-xs text-slate-500">Współpraca zespołowa & Google Workspace</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCreateProjectModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
+          <i class="fas fa-times text-base"></i>
+        </button>
+      </div>
+
+      <form id="create-project-form" onsubmit="handleCreateProjectSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Nazwa Projektu <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="project-name-input" 
+            required 
+            placeholder="np. Wpływ dopingu na nagłą śmierć sercową" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Cel / Opis Projektu <span class="text-slate-400 font-normal">(opcjonalnie)</span>
+          </label>
+          <textarea 
+            id="project-desc-input" 
+            rows="3" 
+            placeholder="Krótki opis założeń badawczych, hipotez, grupy badanej lub celów publikacyjnych..." 
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Członkowie zespołu <span class="text-slate-400 font-normal">(adresy e-mail rozdzielone przecinkami)</span>
+          </label>
+          <input 
+            type="text" 
+            id="project-members-input" 
+            placeholder="np. anna.kowalska@wskz.pl, jan.nowak@wskz.pl" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition"
+          >
+          <p class="text-[11px] text-slate-400 mt-1">Twój adres e-mail zostanie automatycznie dopisany jako lider projektu.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 mt-5">
+          <button 
+            type="button" 
+            onclick="closeCreateProjectModal()" 
+            class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+          >
+            Anuluj
+          </button>
+          <button 
+            type="submit" 
+            id="submit-create-project-btn"
+            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-sm cursor-pointer"
+          >
+            <i class="fas fa-plus"></i>
+            <span>Utwórz projekt</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Nowy Dokument Google Docs w Projekcie -->
+  <div id="createProjectDocModal" onclick="handleBackdropClick(event, 'createProjectDocModal')" style="display: none;" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shadow-xs">
+            <svg class="w-5 h-5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Nowy Dokument Google Docs</h3>
+            <p class="text-xs text-slate-500">Praca wieloosobowa w chmurze</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCreateProjectDocModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
+          <i class="fas fa-times text-base"></i>
+        </button>
+      </div>
+
+      <form id="create-project-doc-form" onsubmit="handleCreateGoogleDocSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Tytuł dokumentu roboczego <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="project-doc-title-input" 
+            required 
+            placeholder="np. Metodologia badania v1 / Protokół etyczny" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition"
+          >
+        </div>
+
+        <div class="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed flex items-start gap-2">
+          <i class="fas fa-info-circle text-blue-600 mt-0.5 shrink-0"></i>
+          <span>Dokument zostanie automatycznie utworzony na Dysku Google projektu i otwarty w edytorze do wspólnej pracy w czasie rzeczywistym.</span>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 mt-5">
+          <button 
+            type="button" 
+            onclick="closeCreateProjectDocModal()" 
+            class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+          >
+            Anuluj
+          </button>
+          <button 
+            type="submit" 
+            id="submit-create-doc-btn"
+            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition shadow-sm cursor-pointer"
+          >
+            <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+            <span>Utwórz i otwórz dokument</span>
+          </button>
         </div>
       </form>
     </div>

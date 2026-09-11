@@ -232,6 +232,18 @@ export async function updateCategories(articleId, categories, tags, adminPin = "
   return await updateArticle(articleId, { categories: categories, tags: tags }, adminPin);
 }
 
+export async function getUserProjects(userEmail) {
+  return await callGoogleScript("getUserProjects", { email: userEmail });
+}
+
+export async function createProject(projectData) {
+  return await callGoogleScript("createProject", projectData);
+}
+
+export async function createProjectGoogleDoc(docData) {
+  return await callGoogleScript("createProjectGoogleDoc", docData);
+}
+
 export default {
   fetchFromAppsScript,
   callGoogleScript,
@@ -243,5 +255,8 @@ export default {
   updateTitle,
   updateCategories,
   updateArticleMeta,
-  askDocument
+  askDocument,
+  getUserProjects,
+  createProject,
+  createProjectGoogleDoc
 };
