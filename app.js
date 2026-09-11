@@ -9124,57 +9124,53 @@ function renderWorkspaceResources() {
   if (emptyEl) emptyEl.classList.add("hidden");
 
   if (listEl) {
-    listEl.innerHTML = docs.map((doc) => {
-      const isGoogleDoc = (doc.type === "GOOGLE_DOC" || doc.type === "doc" || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
-      const iconSvg = isGoogleDoc
-        ? `<div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-lines"></i></div>`
-        : `<div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-pdf"></i></div>`;
-
-      const typeBadge = isGoogleDoc
-        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Google Docs (Live)</span>`
-        : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">PDF</span>`;
-
-      const targetUrl = doc.url || (doc.id && !doc.id.startsWith("doc-") ? `https://docs.google.com/document/d/${doc.id}/edit` : "https://docs.google.com/document/create");
+    listEl.innerHTML = docs.map((res) => {
+      const isDoc = (res.type === "GOOGLE_DOC" || res.type === "doc" || !res.type || (res.url && res.url.includes("docs.google.com")));
+      const targetUrl = res.url || (res.id && !res.id.startsWith("doc-") ? `https://docs.google.com/document/d/${res.id}/edit` : "https://docs.google.com/document/create");
+      const title = res.title || res.name || "Dokument bez tytułu";
+      const authorText = (res.author || res.authorEmail) ? `Autor: ${escapeHtml(res.author || res.authorEmail)}` : (res.createdAt ? escapeHtml(res.createdAt.slice(0, 10)) : '');
 
       return `
-        <div class="p-3.5 bg-slate-50/90 hover:bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-sm flex flex-col justify-between gap-3 group">
-          <div class="flex items-start gap-3">
-            ${iconSvg}
-            <div class="min-w-0 flex-1 space-y-1">
-              <div class="flex items-center justify-between gap-2">
-                ${typeBadge}
-                <span class="text-[10.5px] text-slate-400 font-mono">${escapeHtml(doc.updatedAt || doc.createdAt || "")}</span>
-              </div>
-              <h4 class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition leading-snug line-clamp-2">
-                ${escapeHtml(doc.title || "Dokument bez tytułu")}
+        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-xl transition shadow-xs">
+          
+          <!-- Lewa strona: Ikona typu + Tytuł + Autor / Meta -->
+          <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-3">
+            <!-- Ikona badge (PDF czerwona, Docs niebieska) -->
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isDoc ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}">
+              ${isDoc ? 'DOC' : 'PDF'}
+            </div>
+            
+            <!-- Tytuł pliku i autor w jednym zwięzłym bloku -->
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs sm:text-sm font-semibold text-slate-800 truncate" title="${escapeHtml(title)}">
+                ${escapeHtml(title)}
               </h4>
-              <p class="text-[11px] text-slate-500 truncate">Autor: ${escapeHtml(doc.authorEmail || doc.author || "Członek SKN")}</p>
+              <p class="text-[10px] text-slate-400 truncate">
+                ${authorText}
+              </p>
             </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
-            <button 
-              type="button" 
-              onclick="event.stopPropagation(); deleteProjectResource('${escapeHtml(doc.id)}', '${escapeHtml(doc.title || 'dokument')}')" 
-              class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all flex items-center justify-center cursor-pointer active:scale-95 shrink-0" 
-              title="Usuń ten dokument z projektu"
-            >
-              <i class="fas fa-trash-alt text-xs"></i>
-            </button>
-            <a 
-              href="${escapeHtml(targetUrl)}" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
-                isGoogleDoc 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs' 
-                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-              } transition active:scale-95 cursor-pointer"
-            >
-              <span>${isGoogleDoc ? 'Otwórz w edytorze Google Docs' : 'Otwórz plik'}</span>
-              <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+          <!-- Prawa strona: Przycisk otwarcia + Kosz -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <!-- Zwarty przycisk Otwórz -->
+            <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition ${isDoc ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+              <span>Otwórz</span>
+              <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </a>
+
+            <!-- Przycisk usunięcia dokumentu (Kosz) -->
+            <button type="button" onclick="handleDeleteProjectResource('${escapeHtml(res.id)}', event)" title="Usuń plik z projektu"
+                    class="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
+
         </div>
       `;
     }).join("");
@@ -9280,6 +9276,20 @@ async function deleteProjectResource(resourceId, docTitle = "dokument") {
   loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.deleteProjectResource = deleteProjectResource;
+
+function handleDeleteProjectResource(resourceId, event) {
+  if (event) {
+    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    if (typeof event.preventDefault === 'function') event.preventDefault();
+  }
+  const currentDocs = Array.isArray(AppState.currentProject?.resources) 
+    ? AppState.currentProject.resources 
+    : (Array.isArray(AppState.currentProject?.docs) ? AppState.currentProject.docs : []);
+  const doc = currentDocs.find(d => String(d.id) === String(resourceId) || String(d.fileId) === String(resourceId));
+  const docTitle = doc ? (doc.title || doc.name || "dokument") : "dokument";
+  deleteProjectResource(resourceId, docTitle);
+}
+window.handleDeleteProjectResource = handleDeleteProjectResource;
 
 function openCreateProjectDocModal() {
   if (!AppState.currentProject) {
