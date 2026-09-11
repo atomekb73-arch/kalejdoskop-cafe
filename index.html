@@ -65,7 +65,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260911_2220">
+  <link rel="stylesheet" href="styles.css?v=20260911_2230">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -234,7 +234,7 @@
     });
   </script>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-slate-200 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- 1. GÓRNY NAGŁÓWEK (Stały, nieprzesuwalny) -->
   <header class="flex-shrink-0 h-16 bg-white border-b-0 border-none z-50 flex items-center justify-between px-3 sm:px-8 gap-2 sm:gap-4 light-header">
@@ -408,7 +408,7 @@
     </aside>
 
     <!-- 2. PRAWY OBSZAR GŁÓWNY -->
-    <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-slate-50">
+    <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-slate-200">
       <!-- Mobilny pasek wyboru kategorii (widoczny tylko na ekranach <= 1024px) -->
       <div class="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 p-2 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <button type="button" onclick="openCategoryDrawer()" class="flex-1 flex items-center justify-between px-3 py-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-xs font-bold transition active:scale-98 cursor-pointer">
@@ -425,9 +425,9 @@
       </div>
 
       <!-- KONTENER 1: Widok Bazy Publikacji (Katalog) -->
-      <div id="publications-view-container" class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        <!-- Zamrożony Pasek Wyszukiwarki i Filtrów -->
-        <div class="flex-shrink-0 bg-white/95 backdrop-blur border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3 z-30 flex flex-wrap items-center gap-2">
+      <div id="publications-view-container" class="flex-1 flex flex-col h-full min-w-0 overflow-hidden p-2.5 sm:p-4 gap-3 bg-slate-200">
+        <!-- Zamrożony Pasek Wyszukiwarki i Filtrów (Biała zaokrąglona wyspa) -->
+        <div class="flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-300/60 px-3 sm:px-5 py-2.5 sm:py-3 z-30 flex flex-wrap items-center gap-2">
           <!-- Wyszukiwarka (elastyczna) -->
           <div class="relative flex-1 min-w-[200px] flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-2.5 py-0.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100 h-8">
             <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -488,8 +488,8 @@
           </div>
         </div>
 
-        <!-- Scrollowany Kontener Artykułów -->
-        <div class="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-6 space-y-3">
+        <!-- Scrollowany Kontener Artykułów (Biała zaokrąglona tafla) -->
+        <div id="articles-scroll-container" class="flex-1 overflow-y-auto scrollbar-thin rounded-2xl md:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-300/60 space-y-3">
           <!-- Pasek wyników i statusu -->
           <div class="flex items-center justify-between text-xs text-slate-500 px-1">
             <div class="flex items-center gap-2">
@@ -531,9 +531,9 @@
       </div>
 
       <!-- KONTENER 2: Widok Projektu Badawczego (Project Workspace) -->
-      <div id="project-workspace-view" class="hidden flex-1 flex flex-col h-full min-w-0 overflow-hidden animate-fadeIn" style="display: none;">
-        <!-- Zamrożony Zintegrowany Pasek Narzędziowy Projektu (Jedna linia) -->
-        <div class="flex-shrink-0 bg-white border-0 border-none px-3 sm:px-5 py-2.5 sm:py-3 z-30 flex flex-wrap items-center justify-between gap-3 shadow-none">
+      <div id="project-workspace-view" class="hidden flex-1 flex flex-col h-full min-w-0 overflow-hidden p-2.5 sm:p-4 gap-3 bg-slate-200 animate-fadeIn" style="display: none;">
+        <!-- Zamrożony Zintegrowany Pasek Narzędziowy Projektu (Biała zaokrąglona wyspa) -->
+        <div class="flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-300/60 px-4 sm:px-5 py-2.5 sm:py-3 z-30 flex flex-wrap items-center justify-between gap-3">
           
           <!-- LEWA STRONA: Powrót + Tytuł + Data + Klikalny przycisk Zespołu -->
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap sm:flex-nowrap">
@@ -590,10 +590,10 @@
 
         </div>
 
-        <!-- Scrollowany Kontener Zasobów Projektu (Focus bezpośrednio na dokumenty) -->
-        <div class="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-6 space-y-4">
-          <!-- Lista Zasobów i Dokumentów Roboczych (Czysta biel, zero-space) -->
-          <div class="bg-white rounded-2xl p-4 sm:p-5 space-y-3 border-0 border-none shadow-none">
+        <!-- Scrollowany Kontener Zasobów Projektu (Biała zaokrąglona tafla) -->
+        <div class="flex-1 overflow-y-auto scrollbar-thin rounded-2xl md:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-300/60 space-y-4">
+          <!-- Lista Zasobów i Dokumentów Roboczych -->
+          <div class="space-y-3">
             <div class="flex items-center justify-between pb-2">
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                 <i class="fas fa-layer-group text-indigo-600"></i>
@@ -2512,8 +2512,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260911_2220"></script>
-  <script src="/authResetFlow.js?v=20260911_2220"></script>
-  <script src="app.js?v=20260911_2220"></script>
+  <script src="/config.js?v=20260911_2230"></script>
+  <script src="/authResetFlow.js?v=20260911_2230"></script>
+  <script src="app.js?v=20260911_2230"></script>
 </body>
 </html>
