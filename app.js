@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycby9FSknW-cDoWyqfpGLQLJp3Bjk9vtPF98VgIL3sqJmp7eUwER-0XZszxq4zi02E5gg/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbw1V_75tzjMl0Tyfn2SnjGxKS0XXv7-LAxE45EYSCx0fmdGn-e9CaoAFqIDd9hMoWKx/exec";
 
 const AppState = {
   articles: [],
@@ -47,7 +47,7 @@ if (typeof window !== "undefined") {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9FSknW-cDoWyqfpGLQLJp3Bjk9vtPF98VgIL3sqJmp7eUwER-0XZszxq4zi02E5gg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1V_75tzjMl0Tyfn2SnjGxKS0XXv7-LAxE45EYSCx0fmdGn-e9CaoAFqIDd9hMoWKx/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
@@ -4827,8 +4827,9 @@ async function handleActivationSubmit(e) {
       pin: pin
     };
 
+    let regResult = null;
     if (AppState.isGasEnvironment) {
-      await new Promise((resolve, reject) => {
+      regResult = await new Promise((resolve, reject) => {
         google.script.run
           .withSuccessHandler(resolve)
           .withFailureHandler(reject)
@@ -4836,7 +4837,7 @@ async function handleActivationSubmit(e) {
       });
     } else {
       try {
-        await callGoogleScript("registerRequest", payload);
+        regResult = await callGoogleScript("registerRequest", payload);
       } catch (fetchErr) {
         console.warn("GAS registerRequest fetch warning:", fetchErr);
       }
@@ -4844,10 +4845,16 @@ async function handleActivationSubmit(e) {
 
     resetBtn();
     const targetEmail = email || "podany adres e-mail";
+    const isInstantSuccess = regResult && (regResult.status === "success" || regResult.status === "active" || (regResult.success && regResult.authenticated));
+
     if (successBox) {
       const detailsEl = document.getElementById("registerSuccessDetails");
       if (detailsEl) {
-        detailsEl.innerHTML = `Potwierdzenie oraz informacja o statusie wniosku zostały przesłane na adres: <strong>${escapeHtml(targetEmail)}</strong>.<br/>Po weryfikacji i zatwierdzeniu przez Zarząd Koła otrzymasz pełny dostęp do Bazy Wiedzy.`;
+        if (isInstantSuccess) {
+          detailsEl.innerHTML = `Twoje konto zostało <strong>pomyślnie zweryfikowane w rejestrze członków SKN i aktywowane!</strong><br/>Możesz zalogować się od razu za pomocą ustalonego kodu PIN.`;
+        } else {
+          detailsEl.innerHTML = `Wniosek rejestracyjny został przesłany.<br/>Potwierdzenie oraz informacja o statusie zostały wysłane na adres: <strong>${escapeHtml(targetEmail)}</strong>.<br/>Po weryfikacji i zatwierdzeniu przez Zarząd Koła otrzymasz pełny dostęp do Bazy Wiedzy.`;
+        }
       }
       successBox.classList.remove("hidden");
       successBox.style.setProperty("display", "block", "important");
@@ -4862,7 +4869,11 @@ async function handleActivationSubmit(e) {
       loginIdentifierInput.value = targetEmail;
     }
 
-    showToast(`Zgłoszenie wysłane! Potwierdzenie wysłano na adres ${targetEmail}.`, "success");
+    if (isInstantSuccess) {
+      showToast("Konto aktywowane w rejestrze SKN! Możesz się teraz zalogować.", "success");
+    } else {
+      showToast(`Zgłoszenie wysłane! Potwierdzenie wysłano na adres ${targetEmail}.`, "success");
+    }
   } catch (err) {
     resetBtn();
     console.error("Registration request error:", err);

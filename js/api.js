@@ -2,7 +2,7 @@
  * Kalejdoskop Café - Klient API (fetchFromAppsScript)
  */
 
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9FSknW-cDoWyqfpGLQLJp3Bjk9vtPF98VgIL3sqJmp7eUwER-0XZszxq4zi02E5gg/exec";
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1V_75tzjMl0Tyfn2SnjGxKS0XXv7-LAxE45EYSCx0fmdGn-e9CaoAFqIDd9hMoWKx/exec";
 
 export const fetchFromAppsScript = async (payload = { action: "scan" }, timeoutMs = 90000) => {
   const controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
