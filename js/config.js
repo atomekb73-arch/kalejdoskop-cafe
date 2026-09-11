@@ -5,8 +5,8 @@
 
 export const APP_CONFIG = {
   VERSION: "2.1.1",
-  API_URL: "https://script.google.com/macros/s/AKfycbw1V_75tzjMl0Tyfn2SnjGxKS0XXv7-LAxE45EYSCx0fmdGn-e9CaoAFqIDd9hMoWKx/exec",
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw1V_75tzjMl0Tyfn2SnjGxKS0XXv7-LAxE45EYSCx0fmdGn-e9CaoAFqIDd9hMoWKx/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbyNr2Bt6loF9eRIhnx-9MhKiX5cXFnDB-QpobPUGw9xWR7Q9jwdCa37lEM7dI_wNIci/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyNr2Bt6loF9eRIhnx-9MhKiX5cXFnDB-QpobPUGw9xWR7Q9jwdCa37lEM7dI_wNIci/exec",
   SPREADSHEET_ID: "1O_PbmKe8Dy8g1YeuUNmSgqsFBVZTdoVFIciJxQ0Ta_w",
   HEADERS: {
     "Content-Type": "text/plain;charset=utf-8"
