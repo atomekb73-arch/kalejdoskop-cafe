@@ -65,7 +65,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260911_2130">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -237,7 +237,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- Sticky Glassmorphic Light Navbar (3-Kolumnowy Układ z Tytułem Biblioteki) -->
-  <header class="sticky top-0 z-40 light-header px-3 sm:px-8 py-2 sm:py-2.5 flex items-center justify-between transition-all gap-2 sm:gap-4">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 light-header px-3 sm:px-8 py-2 sm:py-2.5 flex items-center justify-between transition-all gap-2 sm:gap-4">
     <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
     <div class="flex items-center gap-2 sm:gap-3 shrink-0 overflow-visible">
       <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm shrink-0 border border-purple-200/50 bg-white/80 p-0.5 flex items-center justify-center">
@@ -331,8 +331,8 @@
   <div class="max-w-[1850px] w-full mx-auto px-3 sm:px-4 lg:px-6 pt-2 pb-4 flex-1 safe-area-bottom">
     <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
       
-      <!-- 1. LEWY PANEL BOCZNY (8 Działów Wiedzy & Narzędzia Zarządzania - Auto-Fit Viewport bez scrollbara) -->
-      <aside class="hidden lg:block sticky top-16 self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-sm space-y-2">
+      <!-- 1. LEWY PANEL BOCZNY (8 Działów Wiedzy & Narzędzia Zarządzania - Auto-Fit Viewport z niezależnym przewijaniem) -->
+      <aside class="hidden lg:block sticky top-[65px] h-[calc(100vh-65px)] overflow-y-auto overflow-x-hidden scrollbar-thin self-start w-full bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-sm space-y-2">
         <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
           <h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5 stroke-[2] text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -425,8 +425,8 @@
 
         <!-- KONTENER 1: Widok Bazy Publikacji (Katalog) -->
         <div id="publications-view-container" class="flex flex-col gap-2.5 w-full">
-          <!-- Jednoliniowy, spójny pasek wyszukiwarki i filtrów (Wyszukiwarka + Sortowanie + Tłumaczenia PL + Przełącznik Widoku) -->
-          <div class="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm p-2 sm:p-2.5 flex flex-wrap items-center gap-2">
+          <!-- Jednoliniowy, spójny pasek wyszukiwarki i filtrów (Sticky Pod Nagłówkiem) -->
+          <div class="sticky top-[65px] z-30 bg-slate-50/95 backdrop-blur-sm py-3 px-2 sm:px-2.5 border-b border-slate-200/80 rounded-2xl shadow-sm mb-4 flex flex-wrap items-center gap-2">
             <!-- Wyszukiwarka (elastyczna) -->
             <div class="relative flex-1 min-w-[200px] flex items-center bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl px-2.5 py-0.5 transition duration-200 focus-within:ring-2 focus-within:ring-indigo-100 h-8">
               <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -516,8 +516,8 @@
 
         <!-- KONTENER 2: Widok Projektu Badawczego (Project Workspace) -->
         <div id="project-workspace-view" class="hidden flex-col gap-3.5 w-full animate-fadeIn" style="display: none;">
-          <!-- Pasek nawigacyjny i akcji workspace -->
-          <div class="flex flex-wrap items-center justify-between gap-2.5 bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-xs">
+          <!-- Pasek nawigacyjny i akcji workspace (Sticky Pod Nagłówkiem) -->
+          <div class="sticky top-[65px] z-30 bg-white/95 backdrop-blur-sm py-3 px-3 sm:px-4 border-b border-slate-200 rounded-2xl shadow-xs mb-4 flex flex-wrap items-center justify-between gap-2.5">
             <button type="button" onclick="switchToCatalogView()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer shadow-2xs">
               <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               <span>Powrót do Bazy Publikacji</span>
@@ -2518,8 +2518,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260911_2100"></script>
-  <script src="/authResetFlow.js?v=20260911_2100"></script>
-  <script src="app.js?v=20260911_2100"></script>
+  <script src="/config.js?v=20260911_2130"></script>
+  <script src="/authResetFlow.js?v=20260911_2130"></script>
+  <script src="app.js?v=20260911_2130"></script>
 </body>
 </html>
