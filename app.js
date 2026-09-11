@@ -8683,17 +8683,21 @@ function openEditProjectMembersModal() {
   }
 
   renderTempProjectMembers();
+  showModalElement("projectMembersModal");
   showModalElement("editProjectMembersModal");
   if (inputEl) {
     setTimeout(() => inputEl.focus(), 60);
   }
 }
 window.openEditProjectMembersModal = openEditProjectMembersModal;
+window.openProjectMembersModal = openEditProjectMembersModal;
 
 function closeEditProjectMembersModal() {
+  hideModalElement("projectMembersModal");
   hideModalElement("editProjectMembersModal");
 }
 window.closeEditProjectMembersModal = closeEditProjectMembersModal;
+window.closeProjectMembersModal = closeEditProjectMembersModal;
 
 function showMemberDuplicateWarning(message = "Ten użytkownik jest już w zespole") {
   const warningEl = document.getElementById("member-duplicate-warning");
