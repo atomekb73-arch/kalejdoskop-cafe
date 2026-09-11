@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbzZeroJP3K3sZaGiNwMv334TgShS2VipBedHZEqoG4XpIMEU0aA5rHLz38dLh0W6azz/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxw2aam4r4G01USbAkBdqMzLQintMjCL_mUIjCaRHTTyB9ozbAHugcTvmeE555We3JN/exec";
 
 const AppState = {
   articles: [],
@@ -47,7 +47,7 @@ if (typeof window !== "undefined") {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZeroJP3K3sZaGiNwMv334TgShS2VipBedHZEqoG4XpIMEU0aA5rHLz38dLh0W6azz/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxw2aam4r4G01USbAkBdqMzLQintMjCL_mUIjCaRHTTyB9ozbAHugcTvmeE555We3JN/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
@@ -8945,6 +8945,59 @@ async function handleDeleteProjectClick() {
 }
 window.handleDeleteProjectClick = handleDeleteProjectClick;
 
+async function loadProjectDriveFiles(projectId) {
+  if (!projectId) return;
+  const targetProjectId = projectId;
+
+  try {
+    const response = await callGoogleScript("getProjectDriveFiles", { projectId: targetProjectId });
+    if (response && (response.status === "success" || response.success) && Array.isArray(response.resources || response.files || response.data)) {
+      const rawList = response.resources || response.files || response.data;
+      const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+
+      const normalizedResources = rawList.map((doc) => {
+        const docId = doc.id || doc.fileId || doc.docId || `doc-${Math.random().toString(36).substr(2, 6)}`;
+        const isGoogleDoc = doc.type === "GOOGLE_DOC" || doc.type === "doc" || (!doc.type && (!doc.fileUrl && !doc.pdfUrl && !doc.url?.endsWith(".pdf")));
+        const docUrl = doc.url || doc.docUrl || doc.webViewLink || doc.fileUrl || (isGoogleDoc && docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : (isGoogleDoc ? "https://docs.google.com/document/create" : null));
+        return {
+          id: docId,
+          title: doc.title || doc.name || "Dokument bez tytułu",
+          type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : "PDF"),
+          url: docUrl,
+          authorEmail: doc.authorEmail || doc.author || userEmail,
+          createdAt: doc.createdAt || new Date().toISOString().split("T")[0],
+          updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString().split("T")[0]
+        };
+      });
+
+      if (AppState.currentProject && AppState.currentProject.id === targetProjectId) {
+        AppState.currentProject = {
+          ...AppState.currentProject,
+          resources: normalizedResources,
+          docs: normalizedResources
+        };
+        renderWorkspaceResources();
+      }
+
+      const pIndex = AppState.userProjects.findIndex((p) => p.id === targetProjectId);
+      if (pIndex !== -1) {
+        AppState.userProjects[pIndex] = {
+          ...AppState.userProjects[pIndex],
+          resources: normalizedResources,
+          docs: normalizedResources
+        };
+        renderSidebarProjects();
+        if (userEmail) {
+          localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Błąd pobierania plików z Dysku projektu (getProjectDriveFiles):", err);
+  }
+}
+window.loadProjectDriveFiles = loadProjectDriveFiles;
+
 function openProjectWorkspace(projectId) {
   const project = AppState.userProjects.find((p) => p.id === projectId);
   if (!project) {
@@ -8989,6 +9042,9 @@ function openProjectWorkspace(projectId) {
   renderSidebarProjects();
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // Bezpośrednia synchronizacja plików z folderu projektu na Dysku Google
+  loadProjectDriveFiles(projectId).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
 }
 window.openProjectWorkspace = openProjectWorkspace;
 
@@ -9158,7 +9214,8 @@ async function deleteProjectResource(resourceId, docTitle = "dokument") {
   renderSidebarProjects();
   showToast("Dokument został usunięty.", "success");
 
-  // Asynchroniczna synchronizacja w tle
+  // Asynchroniczna synchronizacja w tle z folderem na Dysku i arkuszem
+  loadProjectDriveFiles(projectId).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
   loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.deleteProjectResource = deleteProjectResource;
@@ -9305,7 +9362,8 @@ async function handleCreateGoogleDocSubmit(e) {
 
   showToast(`Dokument «${docTitle}» został pomyślnie utworzony i dodany do projektu!`, "success");
 
-  // Asynchroniczne odświeżenie listy projektów z Arkusza Google dla pełnej spójności w tle
+  // Asynchroniczne odświeżenie listy plików z Dysku Google oraz bazy projektów w tle
+  loadProjectDriveFiles(AppState.currentProject?.id).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
   loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
