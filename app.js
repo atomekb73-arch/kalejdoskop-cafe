@@ -4392,6 +4392,8 @@ function switchAuthTab(tab) {
   const errorMsg = document.getElementById("loginErrorMsg");
   const noticeMsg = document.getElementById("loginNoticeMsg");
   const successBox = document.getElementById("resetReqSuccessBox");
+  const registerSuccessBox = document.getElementById("registerSuccessBox");
+  const regForm = document.getElementById("registerForm");
 
   if (errorMsg) {
     errorMsg.classList.add("hidden");
@@ -4404,6 +4406,15 @@ function switchAuthTab(tab) {
   if (successBox) {
     successBox.classList.add("hidden");
     successBox.style.setProperty("display", "none", "important");
+  }
+  if (tab === "login") {
+    if (registerSuccessBox) {
+      registerSuccessBox.classList.add("hidden");
+      registerSuccessBox.style.setProperty("display", "none", "important");
+    }
+    if (regForm) {
+      regForm.style.display = "block";
+    }
   }
 
   const hideAllViews = () => {
@@ -4490,6 +4501,14 @@ function openResetConfirmModal(token) {
 window.openResetConfirmModal = openResetConfirmModal;
 
 function openLoginModal() {
+  const isAuth = (AppState.currentUser && (AppState.currentUser.email || AppState.currentUser.token)) || 
+                 sessionStorage.getItem("skn_auth_session") || 
+                 localStorage.getItem("skn_auth_session") || 
+                 sessionStorage.getItem("user");
+  if (isAuth) {
+    console.info("Użytkownik jest już zalogowany - modal logowania zablokowany.");
+    return;
+  }
   const modal = document.getElementById("loginModal");
   if (modal) {
     modal.classList.remove("hidden");
@@ -4824,11 +4843,26 @@ async function handleActivationSubmit(e) {
     }
 
     resetBtn();
+    const targetEmail = email || "podany adres e-mail";
     if (successBox) {
+      const detailsEl = document.getElementById("registerSuccessDetails");
+      if (detailsEl) {
+        detailsEl.innerHTML = `Potwierdzenie oraz informacja o statusie wniosku zostały przesłane na adres: <strong>${escapeHtml(targetEmail)}</strong>.<br/>Po weryfikacji i zatwierdzeniu przez Zarząd Koła otrzymasz pełny dostęp do Bazy Wiedzy.`;
+      }
       successBox.classList.remove("hidden");
       successBox.style.setProperty("display", "block", "important");
     }
-    showToast("Zgłoszenie zostało wysłane! Po zaakceptowaniu przez Zarząd otrzymasz dostęp do Bazy Wiedzy.", "success");
+    const regForm = document.getElementById("registerForm");
+    if (regForm) {
+      regForm.style.display = "none";
+    }
+
+    const loginIdentifierInput = document.getElementById("authLoginIdentifierInput");
+    if (loginIdentifierInput && targetEmail && targetEmail !== "podany adres e-mail") {
+      loginIdentifierInput.value = targetEmail;
+    }
+
+    showToast(`Zgłoszenie wysłane! Potwierdzenie wysłano na adres ${targetEmail}.`, "success");
   } catch (err) {
     resetBtn();
     console.error("Registration request error:", err);
