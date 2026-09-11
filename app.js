@@ -8628,6 +8628,302 @@ async function handleCreateProjectSubmit(e) {
 }
 window.handleCreateProjectSubmit = handleCreateProjectSubmit;
 
+function renderProjectWorkspaceMembers() {
+  const membersEl = document.getElementById("workspace-project-members");
+  if (!membersEl || !AppState.currentProject) return;
+
+  const members = Array.isArray(AppState.currentProject.members) && AppState.currentProject.members.length > 0
+    ? AppState.currentProject.members 
+    : [AppState.currentProject.leaderEmail || "Członek SKN"];
+
+  const leaderEmail = (AppState.currentProject.leaderEmail || "").toLowerCase();
+
+  membersEl.innerHTML = members.map((email) => {
+    const isLeader = email.toLowerCase() === leaderEmail;
+    return `
+      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+        isLeader
+          ? 'bg-amber-50 text-amber-900 border border-amber-200'
+          : 'bg-slate-100 text-slate-700 border border-slate-200'
+      }">
+        ${isLeader ? '<i class="fas fa-crown text-amber-500 text-[10px]"></i>' : '<i class="fas fa-user text-slate-400 text-[10px]"></i>'}
+        <span>${escapeHtml(email)}</span>
+      </span>
+    `;
+  }).join("");
+}
+window.renderProjectWorkspaceMembers = renderProjectWorkspaceMembers;
+
+let tempProjectMembers = [];
+
+function openEditProjectMembersModal() {
+  if (!AppState.currentProject) {
+    showToast("Wybierz najpierw projekt badawczy.", "error");
+    return;
+  }
+
+  const leaderEmail = AppState.currentProject.leaderEmail || AppState.currentUser?.email || "admin@skn.pl";
+  const existing = Array.isArray(AppState.currentProject.members) && AppState.currentProject.members.length > 0
+    ? [...AppState.currentProject.members]
+    : [leaderEmail];
+
+  // Upewnij się, że lider jest na liście
+  if (!existing.some(m => m.toLowerCase() === leaderEmail.toLowerCase())) {
+    existing.unshift(leaderEmail);
+  }
+
+  tempProjectMembers = existing;
+
+  const warningEl = document.getElementById("member-duplicate-warning");
+  if (warningEl) warningEl.classList.add("hidden");
+
+  const inputEl = document.getElementById("new-member-email-input");
+  if (inputEl) {
+    inputEl.value = "";
+  }
+
+  renderTempProjectMembers();
+  showModalElement("editProjectMembersModal");
+  if (inputEl) {
+    setTimeout(() => inputEl.focus(), 60);
+  }
+}
+window.openEditProjectMembersModal = openEditProjectMembersModal;
+
+function closeEditProjectMembersModal() {
+  hideModalElement("editProjectMembersModal");
+}
+window.closeEditProjectMembersModal = closeEditProjectMembersModal;
+
+function showMemberDuplicateWarning(message = "Ten użytkownik jest już w zespole") {
+  const warningEl = document.getElementById("member-duplicate-warning");
+  const textEl = document.getElementById("member-duplicate-warning-text");
+  if (warningEl) {
+    if (textEl) textEl.innerText = message;
+    warningEl.classList.remove("hidden");
+  }
+}
+
+function hideMemberDuplicateWarning() {
+  const warningEl = document.getElementById("member-duplicate-warning");
+  if (warningEl) {
+    warningEl.classList.add("hidden");
+  }
+}
+
+function handleAddMemberToTempList() {
+  const inputEl = document.getElementById("new-member-email-input");
+  const rawEmail = inputEl ? inputEl.value.trim() : "";
+
+  if (!rawEmail) {
+    showMemberDuplicateWarning("Wprowadź adres e-mail.");
+    return;
+  }
+
+  if (!rawEmail.includes("@") || !rawEmail.includes(".")) {
+    showMemberDuplicateWarning("Wprowadź poprawny adres e-mail (np. user@student.wskz.pl).");
+    return;
+  }
+
+  const cleanEmail = rawEmail.trim().toLowerCase();
+
+  // BLOKADA DUPLIKATÓW
+  const isDuplicate = tempProjectMembers.some((m) => m.trim().toLowerCase() === cleanEmail);
+  if (isDuplicate) {
+    showMemberDuplicateWarning("Ten użytkownik jest już w zespole");
+    return;
+  }
+
+  hideMemberDuplicateWarning();
+  tempProjectMembers.push(rawEmail.trim());
+  if (inputEl) {
+    inputEl.value = "";
+    inputEl.focus();
+  }
+
+  renderTempProjectMembers();
+}
+window.handleAddMemberToTempList = handleAddMemberToTempList;
+
+function handleRemoveMemberFromTempList(emailToRemove) {
+  if (!emailToRemove) return;
+  const leaderEmail = (AppState.currentProject?.leaderEmail || "").toLowerCase();
+  if (emailToRemove.toLowerCase() === leaderEmail && tempProjectMembers.length === 1) {
+    showMemberDuplicateWarning("Projekt musi posiadać przynajmniej jednego członka (lidera).");
+    return;
+  }
+
+  hideMemberDuplicateWarning();
+  tempProjectMembers = tempProjectMembers.filter((m) => m.trim().toLowerCase() !== emailToRemove.trim().toLowerCase());
+  renderTempProjectMembers();
+}
+window.handleRemoveMemberFromTempList = handleRemoveMemberFromTempList;
+
+function renderTempProjectMembers() {
+  const listEl = document.getElementById("temp-project-members-list");
+  const countEl = document.getElementById("edit-members-count");
+
+  if (countEl) {
+    countEl.innerText = `${tempProjectMembers.length} ${tempProjectMembers.length === 1 ? 'osoba' : (tempProjectMembers.length >= 2 && tempProjectMembers.length <= 4) ? 'osoby' : 'osób'}`;
+  }
+
+  if (!listEl) return;
+
+  if (tempProjectMembers.length === 0) {
+    listEl.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">Brak członków w zespole. Dodaj przynajmniej jedną osobę.</p>`;
+    return;
+  }
+
+  const leaderEmail = (AppState.currentProject?.leaderEmail || "").toLowerCase();
+
+  listEl.innerHTML = tempProjectMembers.map((email) => {
+    const isLeader = email.toLowerCase() === leaderEmail;
+    return `
+      <div class="flex items-center justify-between gap-2 p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/90 transition text-xs">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+            isLeader ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
+          } text-[10px]">
+            ${isLeader ? '<i class="fas fa-crown"></i>' : '<i class="fas fa-user"></i>'}
+          </span>
+          <span class="font-medium text-slate-800 truncate">${escapeHtml(email)}</span>
+          ${isLeader ? '<span class="px-1.5 py-0.2 rounded-md text-[9.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">Lider</span>' : ''}
+        </div>
+        <button 
+          type="button" 
+          onclick="handleRemoveMemberFromTempList('${escapeHtml(email)}')" 
+          class="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer active:scale-95 shrink-0" 
+          title="Usuń z zespołu"
+        >
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+window.renderTempProjectMembers = renderTempProjectMembers;
+
+async function handleSaveProjectMembersSubmit() {
+  if (!AppState.currentProject) return;
+
+  if (tempProjectMembers.length === 0) {
+    showMemberDuplicateWarning("Zespół musi posiadać przynajmniej jednego członka.");
+    return;
+  }
+
+  const submitBtn = document.getElementById("submit-save-members-btn");
+  const originalHtml = submitBtn ? submitBtn.innerHTML : "";
+
+  if (submitBtn) {
+    submitBtn.setAttribute("disabled", "true");
+    submitBtn.classList.add("opacity-60", "cursor-not-allowed");
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Zapisywanie...</span>`;
+  }
+
+  const updatedMembersArray = [...tempProjectMembers];
+  const projectId = AppState.currentProject.id;
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+
+  const payload = {
+    action: "updateProjectMembers",
+    projectId: projectId,
+    members: updatedMembersArray,
+    authorEmail: userEmail
+  };
+
+  try {
+    await callGoogleScript("updateProjectMembers", payload);
+  } catch (err) {
+    console.warn("Błąd Apps Script przy aktualizacji zespołu (zapis lokalny):", err);
+  }
+
+  // Atomowa aktualizacja stanu
+  AppState.currentProject = {
+    ...AppState.currentProject,
+    members: updatedMembersArray
+  };
+
+  const pIndex = AppState.userProjects.findIndex((p) => p.id === projectId);
+  if (pIndex !== -1) {
+    AppState.userProjects[pIndex] = { ...AppState.currentProject };
+  }
+
+  if (userEmail) {
+    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+  }
+
+  if (submitBtn) {
+    submitBtn.removeAttribute("disabled");
+    submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+    submitBtn.innerHTML = originalHtml;
+  }
+
+  closeEditProjectMembersModal();
+  renderProjectWorkspaceMembers();
+  showToast("Skład zespołu został pomyślnie zaktualizowany!", "success");
+
+  // Asynchroniczna synchronizacja w tle
+  loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
+}
+window.handleSaveProjectMembersSubmit = handleSaveProjectMembersSubmit;
+
+async function handleDeleteProjectClick() {
+  if (!AppState.currentProject) {
+    showToast("Brak aktywnego projektu.", "error");
+    return;
+  }
+
+  const projectName = AppState.currentProject.name || "ten projekt";
+  const confirmed = window.confirm(`Czy na pewno chcesz bezpowrotnie usunąć ten projekt wraz z jego folderem i plikami na Dysku Google?`);
+  if (!confirmed) {
+    return;
+  }
+
+  const projectId = AppState.currentProject.id;
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+
+  const deleteBtn = document.getElementById("workspace-delete-project-btn");
+  const originalBtnHtml = deleteBtn ? deleteBtn.innerHTML : "";
+
+  if (deleteBtn) {
+    deleteBtn.setAttribute("disabled", "true");
+    deleteBtn.classList.add("opacity-60", "cursor-not-allowed");
+    deleteBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Usuwanie...</span>`;
+  }
+
+  const payload = {
+    action: "deleteProject",
+    projectId: projectId,
+    authorEmail: userEmail
+  };
+
+  try {
+    await callGoogleScript("deleteProject", payload);
+  } catch (err) {
+    console.warn("Błąd wywołania deleteProject w Apps Script (usuwanie lokalne):", err);
+  }
+
+  // Usunięcie z lokalnego stanu projektów
+  AppState.userProjects = AppState.userProjects.filter((p) => p.id !== projectId);
+  if (userEmail) {
+    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+  }
+
+  if (deleteBtn) {
+    deleteBtn.removeAttribute("disabled");
+    deleteBtn.classList.remove("opacity-60", "cursor-not-allowed");
+    deleteBtn.innerHTML = originalBtnHtml;
+  }
+
+  switchToCatalogView();
+  renderSidebarProjects();
+  showToast("Projekt został pomyślnie usunięty.", "success");
+
+  // Asynchroniczne odświeżenie w tle
+  loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
+}
+window.handleDeleteProjectClick = handleDeleteProjectClick;
+
 function openProjectWorkspace(projectId) {
   const project = AppState.userProjects.find((p) => p.id === projectId);
   if (!project) {
@@ -8654,27 +8950,18 @@ function openProjectWorkspace(projectId) {
   const titleEl = document.getElementById("workspace-project-title");
   const descEl = document.getElementById("workspace-project-desc");
   const dateEl = document.getElementById("workspace-project-date");
-  const membersEl = document.getElementById("workspace-project-members");
 
   if (titleEl) titleEl.innerText = AppState.currentProject.name;
   if (descEl) descEl.innerText = AppState.currentProject.description || "Projekt badawczy Studenckiego Koła Naukowego Seksuologii.";
   if (dateEl) dateEl.innerText = `Utworzono: ${AppState.currentProject.createdAt || new Date().toISOString().split("T")[0]}`;
 
-  if (membersEl) {
-    const members = Array.isArray(AppState.currentProject.members) ? AppState.currentProject.members : [AppState.currentProject.leaderEmail || "Członek SKN"];
-    membersEl.innerHTML = members.map((email) => {
-      const isLeader = email === AppState.currentProject.leaderEmail;
-      return `
-        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-          isLeader
-            ? 'bg-amber-50 text-amber-900 border border-amber-200'
-            : 'bg-slate-100 text-slate-700 border border-slate-200'
-        }">
-          ${isLeader ? '<i class="fas fa-crown text-amber-500 text-[10px]"></i>' : '<i class="fas fa-user text-slate-400 text-[10px]"></i>'}
-          <span>${escapeHtml(email)}</span>
-        </span>
-      `;
-    }).join("");
+  renderProjectWorkspaceMembers();
+
+  // Widoczność przycisku usuwania projektu (Lider lub Admin)
+  const deleteBtn = document.getElementById("workspace-delete-project-btn");
+  if (deleteBtn) {
+    const isLeaderOrAdmin = AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" || AppState.currentProject.leaderEmail === userEmail;
+    deleteBtn.style.display = isLeaderOrAdmin ? "inline-flex" : "none";
   }
 
   renderWorkspaceResources();

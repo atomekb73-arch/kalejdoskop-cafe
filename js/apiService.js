@@ -248,6 +248,14 @@ export async function deleteProjectResource(resourceData) {
   return await callGoogleScript("deleteProjectResource", resourceData);
 }
 
+export async function updateProjectMembers(membersData) {
+  return await callGoogleScript("updateProjectMembers", membersData);
+}
+
+export async function deleteProject(projectData) {
+  return await callGoogleScript("deleteProject", projectData);
+}
+
 export default {
   fetchFromAppsScript,
   callGoogleScript,
@@ -263,5 +271,7 @@ export default {
   getUserProjects,
   createProject,
   createProjectGoogleDoc,
-  deleteProjectResource
+  deleteProjectResource,
+  updateProjectMembers,
+  deleteProject
 };
