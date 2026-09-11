@@ -9154,7 +9154,7 @@ function renderWorkspaceResources() {
       const authorText = (res.author || res.authorEmail) ? `Autor: ${escapeHtml(res.author || res.authorEmail)}` : (res.createdAt ? escapeHtml(res.createdAt.slice(0, 10)) : '');
 
       return `
-        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-xl transition shadow-xs">
+        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50/60 border-0 border-none outline-none rounded-xl transition shadow-none">
           
           <!-- Lewa strona: Ikona typu + Tytuł + Autor / Meta -->
           <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-3">
