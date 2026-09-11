@@ -7343,14 +7343,7 @@ function resetUploadForm() {
     errorBox.style.setProperty("display", "none", "important");
   }
 
-  for (let i = 1; i <= 5; i++) {
-    const step = document.getElementById(`step-${i}`);
-    if (step) {
-      step.className = "flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500";
-      const icon = step.querySelector(".step-icon");
-      if (icon) icon.innerHTML = `<i class="far fa-circle"></i>`;
-    }
-  }
+  resetPipelineStages();
 }
 
 /**
@@ -7757,31 +7750,25 @@ async function handleUploadPipeline() {
   const cleanOriginalName = AppState.selectedUploadFile.name.replace(/\.pdf$/i, "").replace(/\s+/g, "_");
   const targetDriveName = `${generatedId}_${cleanOriginalName}.pdf`;
 
-  animateStep(1, `1/5: Weryfikacja pliku i generowanie ID: «${generatedId}»...`);
+  startPipelineProgress();
 
   if (AppState.isGasEnvironment) {
-    animateStep(2, "2/5: Fizyczny zapis pliku w folderze Google Drive...");
-
     google.script.run
       .withSuccessHandler((newArticle) => {
         if (!newArticle) {
+          stopPipelineProgress();
           handlePipelineError("Brak potwierdzenia zapisu z Google Apps Script.");
           return;
         }
-        animateStep(3, "3/5: Wielomodalna analiza Gemini (DSM-5-TR / ICD-11)...");
+        completeAllPipelineStages();
         setTimeout(() => {
-          animateStep(4, "4/5: Generowanie standaryzowanego PDF tłumaczenia (*_PL.pdf)...");
-          setTimeout(() => {
-            animateStep(5, "5/5: Rejestracja w Arkuszu Google (Baza_Artykulow)...");
-            setTimeout(() => {
-              showPipelineSuccess(newArticle, targetDriveName);
-              loadArticles();
-              showToast("Plik został pomyślnie zapisany na Dysku Google!", "success");
-            }, 400);
-          }, 400);
-        }, 400);
+          showPipelineSuccess(newArticle, targetDriveName);
+          loadArticles();
+          showToast("Plik został pomyślnie zapisany na Dysku Google!", "success");
+        }, 500);
       })
       .withFailureHandler((err) => {
+        stopPipelineProgress();
         handlePipelineError("Błąd Google Apps Script: " + err.message);
       })
       .apiProcessArticle({
@@ -7797,8 +7784,6 @@ async function handleUploadPipeline() {
         adminPin: AppState.currentPin
       });
   } else {
-    animateStep(2, "2/5: Przesyłanie pliku i generowanie analizy AI... Może to potrwać około 30-40 sekund.");
-
     try {
       const resData = await uploadAndAnalyzePDF(AppState.selectedUploadFile, selectedCategory || "Edukacja Seksualna", uploadSelectedCategories);
 
@@ -7838,27 +7823,126 @@ async function handleUploadPipeline() {
         status: "ACTIVE"
       };
 
-      animateStep(3, "3/5: Ekstrakcja metadanych przez Gemini AI zakończona...");
+      completeAllPipelineStages();
       setTimeout(() => {
-        animateStep(4, "4/5: Plik PDF zapisany na Dysku Google...");
-        setTimeout(() => {
-          animateStep(5, "5/5: Rekord zarejestrowany w bazie...");
-          setTimeout(() => {
-            showPipelineSuccess(articleData, targetDriveName);
-            loadArticles();
-            showToast(`Plik «${polishTitle}» został pomyślnie przetworzony przez Gemini AI!`, "success");
-          }, 400);
-        }, 400);
-      }, 400);
+        showPipelineSuccess(articleData, targetDriveName);
+        loadArticles();
+        showToast(`Plik «${polishTitle}» został pomyślnie przetworzony przez Gemini AI!`, "success");
+      }, 500);
 
     } catch (err) {
       console.error("Błąd zapisu do chmury:", err);
+      stopPipelineProgress();
       handlePipelineError(`Błąd połączenia z Google Drive: ${err.message}`);
     }
   }
 }
 
+let pipelineTimerInterval = null;
+let pipelineElapsedSeconds = 0;
+
+function startPipelineProgress() {
+  stopPipelineProgress();
+  pipelineElapsedSeconds = 0;
+  
+  const timerEl = document.getElementById("pipeline-elapsed-time");
+  if (timerEl) {
+    timerEl.innerText = "Czas trwania: 0s";
+  }
+  
+  updatePipelineStage(0);
+  
+  pipelineTimerInterval = setInterval(() => {
+    pipelineElapsedSeconds++;
+    const timerEl = document.getElementById("pipeline-elapsed-time");
+    if (timerEl) {
+      timerEl.innerText = `Czas trwania: ${pipelineElapsedSeconds}s`;
+    }
+    updatePipelineStage(pipelineElapsedSeconds);
+  }, 1000);
+}
+
+function stopPipelineProgress() {
+  if (pipelineTimerInterval) {
+    clearInterval(pipelineTimerInterval);
+    pipelineTimerInterval = null;
+  }
+}
+
+function updatePipelineStage(seconds) {
+  let activeStep = 1;
+  if (seconds >= 26) {
+    activeStep = 3;
+  } else if (seconds >= 9) {
+    activeStep = 2;
+  }
+
+  for (let i = 1; i <= 3; i++) {
+    const stageEl = document.getElementById(`pipe-stage-${i}`);
+    if (!stageEl) continue;
+    const iconEl = stageEl.querySelector(".stage-icon");
+    
+    if (i < activeStep) {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="fas fa-check-circle text-emerald-600"></i>`;
+    } else if (i === activeStep) {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-indigo-500 bg-indigo-50/90 text-indigo-900 shadow-xs font-semibold transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="fas fa-spinner fa-spin text-indigo-600"></i>`;
+    } else {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="far fa-circle text-slate-300"></i>`;
+    }
+  }
+}
+
+function updatePipelineStageManual(stageNum, text) {
+  const statusEl = document.getElementById("pipeline-status-text");
+  if (statusEl && text) statusEl.innerText = text;
+
+  for (let i = 1; i <= 3; i++) {
+    const stageEl = document.getElementById(`pipe-stage-${i}`);
+    if (!stageEl) continue;
+    const iconEl = stageEl.querySelector(".stage-icon");
+    if (i < stageNum) {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="fas fa-check-circle text-emerald-600"></i>`;
+    } else if (i === stageNum) {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-indigo-500 bg-indigo-50/90 text-indigo-900 shadow-xs font-semibold transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="fas fa-spinner fa-spin text-indigo-600"></i>`;
+    } else {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all duration-300";
+      if (iconEl) iconEl.innerHTML = `<i class="far fa-circle text-slate-300"></i>`;
+    }
+  }
+}
+
+function completeAllPipelineStages() {
+  stopPipelineProgress();
+  for (let i = 1; i <= 3; i++) {
+    const stageEl = document.getElementById(`pipe-stage-${i}`);
+    if (!stageEl) continue;
+    const iconEl = stageEl.querySelector(".stage-icon");
+    stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 transition-all duration-300";
+    if (iconEl) iconEl.innerHTML = `<i class="fas fa-check-circle text-emerald-600"></i>`;
+  }
+}
+
+function resetPipelineStages() {
+  stopPipelineProgress();
+  const timerEl = document.getElementById("pipeline-elapsed-time");
+  if (timerEl) timerEl.innerText = "Czas trwania: 0s";
+  for (let i = 1; i <= 3; i++) {
+    const stageEl = document.getElementById(`pipe-stage-${i}`);
+    if (stageEl) {
+      stageEl.className = "flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all duration-300";
+      const iconEl = stageEl.querySelector(".stage-icon");
+      if (iconEl) iconEl.innerHTML = `<i class="far fa-circle text-slate-300"></i>`;
+    }
+  }
+}
+
 function handlePipelineError(errorMessage) {
+  stopPipelineProgress();
   const progressContainer = document.getElementById("pipeline-progress-container");
   if (progressContainer) {
     progressContainer.classList.add("hidden");
@@ -7875,27 +7959,12 @@ function handlePipelineError(errorMessage) {
 }
 
 function animateStep(stepNum, statusText) {
-  const statusEl = document.getElementById("pipeline-status-text");
-  if (statusEl) statusEl.innerText = statusText;
-
-  for (let i = 1; i < stepNum; i++) {
-    const step = document.getElementById(`step-${i}`);
-    if (step) {
-      step.className = "flex items-center gap-3 p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 step-completed";
-      const icon = step.querySelector(".step-icon");
-      if (icon) icon.innerHTML = `<i class="fas fa-check-circle text-emerald-600"></i>`;
-    }
-  }
-
-  const activeStep = document.getElementById(`step-${stepNum}`);
-  if (activeStep) {
-    activeStep.className = "flex items-center gap-3 p-2.5 rounded-xl border border-indigo-500 bg-indigo-50 text-indigo-800 step-active";
-    const icon = activeStep.querySelector(".step-icon");
-    if (icon) icon.innerHTML = `<i class="fas fa-spinner fa-spin text-indigo-600"></i>`;
-  }
+  const stageNum = stepNum <= 2 ? 1 : stepNum <= 4 ? 2 : 3;
+  updatePipelineStageManual(stageNum, statusText);
 }
 
 function showPipelineSuccess(article, targetDriveName) {
+  stopPipelineProgress();
   const progressContainer = document.getElementById("pipeline-progress-container");
   if (progressContainer) {
     progressContainer.classList.add("hidden");
