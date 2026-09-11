@@ -8322,6 +8322,7 @@ function normalizeProjectData(p, fallbackEmail) {
   return {
     ...p,
     folderUrl: folderUrl,
+    leader: p.leader || p.leaderEmail || fallbackEmail,
     leaderEmail: p.leaderEmail || p.leader || fallbackEmail,
     leaderName: p.leaderName || p.leader || "Lider Projektu",
     resources: normalizedDocs,
@@ -8632,24 +8633,27 @@ function renderProjectWorkspaceMembers() {
   const membersEl = document.getElementById("workspace-project-members");
   if (!membersEl || !AppState.currentProject) return;
 
+  const leaderEmail = (AppState.currentProject.leader || AppState.currentProject.leaderEmail || "").toLowerCase();
   const members = Array.isArray(AppState.currentProject.members) && AppState.currentProject.members.length > 0
     ? AppState.currentProject.members 
-    : [AppState.currentProject.leaderEmail || "Członek SKN"];
-
-  const leaderEmail = (AppState.currentProject.leaderEmail || "").toLowerCase();
+    : [AppState.currentProject.leader || AppState.currentProject.leaderEmail || "Członek SKN"];
 
   membersEl.innerHTML = members.map((email) => {
     const isLeader = email.toLowerCase() === leaderEmail;
-    return `
-      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-        isLeader
-          ? 'bg-amber-50 text-amber-900 border border-amber-200'
-          : 'bg-slate-100 text-slate-700 border border-slate-200'
-      }">
-        ${isLeader ? '<i class="fas fa-crown text-amber-500 text-[10px]"></i>' : '<i class="fas fa-user text-slate-400 text-[10px]"></i>'}
-        <span>${escapeHtml(email)}</span>
-      </span>
-    `;
+    return isLeader
+      ? `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
+          <i class="fas fa-crown text-amber-500 text-[10px]"></i>
+          <span>${escapeHtml(email)}</span>
+          <span class="text-[9.5px] text-amber-700 font-semibold">(Lider)</span>
+        </span>
+      `
+      : `
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+          <i class="fas fa-user text-slate-400 text-[10px]"></i>
+          <span>${escapeHtml(email)}</span>
+        </span>
+      `;
   }).join("");
 }
 window.renderProjectWorkspaceMembers = renderProjectWorkspaceMembers;
@@ -8662,7 +8666,7 @@ function openEditProjectMembersModal() {
     return;
   }
 
-  const leaderEmail = AppState.currentProject.leaderEmail || AppState.currentUser?.email || "admin@skn.pl";
+  const leaderEmail = AppState.currentProject.leader || AppState.currentProject.leaderEmail || AppState.currentUser?.email || "admin@skn.pl";
   const existing = Array.isArray(AppState.currentProject.members) && AppState.currentProject.members.length > 0
     ? [...AppState.currentProject.members]
     : [leaderEmail];
@@ -8751,9 +8755,10 @@ window.handleAddMemberToTempList = handleAddMemberToTempList;
 
 function handleRemoveMemberFromTempList(emailToRemove) {
   if (!emailToRemove) return;
-  const leaderEmail = (AppState.currentProject?.leaderEmail || "").toLowerCase();
-  if (emailToRemove.toLowerCase() === leaderEmail && tempProjectMembers.length === 1) {
-    showMemberDuplicateWarning("Projekt musi posiadać przynajmniej jednego członka (lidera).");
+  const leaderEmail = (AppState.currentProject?.leader || AppState.currentProject?.leaderEmail || "").toLowerCase();
+  if (emailToRemove.toLowerCase() === leaderEmail) {
+    showMemberDuplicateWarning("Twórca projektu nie może zostać usunięty z zespołu.");
+    showToast("Twórca projektu nie może zostać usunięty.", "warning");
     return;
   }
 
@@ -8778,10 +8783,10 @@ function renderTempProjectMembers() {
     return;
   }
 
-  const leaderEmail = (AppState.currentProject?.leaderEmail || "").toLowerCase();
+  const leaderEmail = (AppState.currentProject?.leader || AppState.currentProject?.leaderEmail || "").toLowerCase();
 
   listEl.innerHTML = tempProjectMembers.map((email) => {
-    const isLeader = email.toLowerCase() === leaderEmail;
+    const isLeader = (email.toLowerCase() === (AppState.currentProject?.leader || "").toLowerCase()) || (email.toLowerCase() === (AppState.currentProject?.leaderEmail || "").toLowerCase());
     return `
       <div class="flex items-center justify-between gap-2 p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/90 transition text-xs">
         <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -8791,16 +8796,20 @@ function renderTempProjectMembers() {
             ${isLeader ? '<i class="fas fa-crown"></i>' : '<i class="fas fa-user"></i>'}
           </span>
           <span class="font-medium text-slate-800 truncate">${escapeHtml(email)}</span>
-          ${isLeader ? '<span class="px-1.5 py-0.2 rounded-md text-[9.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">Lider</span>' : ''}
+          ${isLeader ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0"><i class="fas fa-lock text-[9px] text-amber-600"></i> Lider / Twórca</span>' : ''}
         </div>
-        <button 
-          type="button" 
-          onclick="handleRemoveMemberFromTempList('${escapeHtml(email)}')" 
-          class="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer active:scale-95 shrink-0" 
-          title="Usuń z zespołu"
-        >
-          <i class="fas fa-times text-xs"></i>
-        </button>
+        ${
+          isLeader
+            ? `<span class="text-[10.5px] font-semibold text-amber-700/80 px-1 shrink-0" title="Twórca projektu nie może zostać usunięty"><i class="fas fa-shield-halved text-amber-500"></i> Stały</span>`
+            : `<button 
+                type="button" 
+                onclick="handleRemoveMemberFromTempList('${escapeHtml(email)}')" 
+                class="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer active:scale-95 shrink-0" 
+                title="Usuń z zespołu"
+              >
+                <i class="fas fa-times text-xs"></i>
+              </button>`
+        }
       </div>
     `;
   }).join("");
@@ -8810,7 +8819,16 @@ window.renderTempProjectMembers = renderTempProjectMembers;
 async function handleSaveProjectMembersSubmit() {
   if (!AppState.currentProject) return;
 
-  if (tempProjectMembers.length === 0) {
+  const leaderEmail = AppState.currentProject.leader || AppState.currentProject.leaderEmail || AppState.currentUser?.email || "admin@skn.pl";
+  const cleanLeader = leaderEmail.trim().toLowerCase();
+
+  let updatedMembersArray = [...tempProjectMembers];
+  // Gwarancja, że lider ZAWSZE znajduje się w tablicy członków
+  if (!updatedMembersArray.some(m => m.trim().toLowerCase() === cleanLeader)) {
+    updatedMembersArray.unshift(leaderEmail.trim());
+  }
+
+  if (updatedMembersArray.length === 0) {
     showMemberDuplicateWarning("Zespół musi posiadać przynajmniej jednego członka.");
     return;
   }
@@ -8824,7 +8842,6 @@ async function handleSaveProjectMembersSubmit() {
     submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Zapisywanie...</span>`;
   }
 
-  const updatedMembersArray = [...tempProjectMembers];
   const projectId = AppState.currentProject.id;
   const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
 
