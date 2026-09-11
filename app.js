@@ -8299,6 +8299,32 @@ function isMemberOrAdmin(user = AppState.currentUser) {
 }
 window.isMemberOrAdmin = isMemberOrAdmin;
 
+function normalizeProjectData(p, fallbackEmail) {
+  if (!p) return p;
+  const resList = Array.isArray(p.resources) ? p.resources : (Array.isArray(p.docs) ? p.docs : []);
+  const normalizedDocs = resList.map((doc) => {
+    const docId = doc.id || doc.fileId || `doc-${Math.random().toString(36).substr(2, 6)}`;
+    const docUrl = doc.url || doc.docUrl || doc.webViewLink || (docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : "https://docs.google.com/document/create");
+    return {
+      id: docId,
+      title: doc.title || doc.name || "Dokument bez tytułu",
+      type: doc.type || "GOOGLE_DOC",
+      url: docUrl,
+      authorEmail: doc.authorEmail || doc.author || fallbackEmail,
+      createdAt: doc.createdAt || new Date().toISOString().split("T")[0],
+      updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString().split("T")[0]
+    };
+  });
+
+  return {
+    ...p,
+    leaderEmail: p.leaderEmail || p.leader || fallbackEmail,
+    leaderName: p.leaderName || p.leader || "Lider Projektu",
+    resources: normalizedDocs,
+    docs: normalizedDocs
+  };
+}
+
 async function loadUserProjects() {
   if (!isMemberOrAdmin()) {
     AppState.userProjects = [];
@@ -8315,8 +8341,15 @@ async function loadUserProjects() {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed)) {
-        AppState.userProjects = parsed;
+        AppState.userProjects = parsed.map((p) => normalizeProjectData(p, userEmail));
         renderSidebarProjects();
+        if (AppState.currentProject) {
+          const updated = AppState.userProjects.find((p) => p.id === AppState.currentProject.id);
+          if (updated) {
+            AppState.currentProject = updated;
+            renderWorkspaceResources();
+          }
+        }
       }
     }
   } catch (e) {
@@ -8327,7 +8360,7 @@ async function loadUserProjects() {
   try {
     const response = await callGoogleScript("getUserProjects", { email: userEmail });
     if (response && (response.status === "success" || response.success) && Array.isArray(response.projects)) {
-      AppState.userProjects = response.projects;
+      AppState.userProjects = response.projects.map((p) => normalizeProjectData(p, userEmail));
       localStorage.setItem(cacheKey, JSON.stringify(AppState.userProjects));
       renderSidebarProjects();
       if (AppState.currentProject) {
@@ -8342,7 +8375,7 @@ async function loadUserProjects() {
     console.warn("Nie udało się pobrać projektów z Apps Script (użyto cache):", err);
     // Jeśli brak projektów w cache, dodaj przykładowy starter dla zalogowanego członka/administratora
     if (AppState.userProjects.length === 0 && isMemberOrAdmin()) {
-      const defaultProj = {
+      const defaultProj = normalizeProjectData({
         id: `proj-${Date.now()}`,
         name: "Wpływ dopingu na nagłą śmierć sercową",
         description: "Projekt wieloośrodkowego przeglądu systematycznego powikłań kardiologicznych i endokrynologicznych u sportowców wyczynowych.",
@@ -8351,17 +8384,17 @@ async function loadUserProjects() {
         members: [userEmail, "katedra.kardiologii@wskz.pl"],
         folderUrl: "https://drive.google.com/drive/",
         createdAt: new Date().toISOString().split("T")[0],
-        docs: [
+        resources: [
           {
             id: `doc-${Date.now()}-1`,
             title: "Protokół i Metodologia Badania v1.0",
-            type: "doc",
+            type: "GOOGLE_DOC",
             url: "https://docs.google.com/document/create",
             authorEmail: userEmail,
             updatedAt: new Date().toISOString().split("T")[0]
           }
         ]
-      };
+      }, userEmail);
       AppState.userProjects = [defaultProj];
       localStorage.setItem(cacheKey, JSON.stringify(AppState.userProjects));
       renderSidebarProjects();
@@ -8399,7 +8432,8 @@ function renderSidebarProjects() {
 
     return AppState.userProjects.map((project) => {
       const isActive = AppState.activeMainView === "project" && AppState.currentProject && AppState.currentProject.id === project.id;
-      const docsCount = (project.docs && project.docs.length) || 0;
+      const docsList = (Array.isArray(project.resources) && project.resources.length > 0) ? project.resources : (Array.isArray(project.docs) ? project.docs : []);
+      const docsCount = docsList.length;
       return `
         <button 
           type="button" 
@@ -8506,7 +8540,7 @@ async function handleCreateProjectSubmit(e) {
   try {
     const response = await callGoogleScript("createProject", payload);
     if (response && (response.status === "success" || response.success) && (response.project || response.data)) {
-      newProject = response.project || response.data;
+      newProject = normalizeProjectData(response.project || response.data, userEmail);
     }
   } catch (err) {
     console.warn("Błąd odpowiedzi Apps Script podczas tworzenia projektu (przejście na tryb lokalny):", err);
@@ -8515,7 +8549,7 @@ async function handleCreateProjectSubmit(e) {
   // Fallback lokalny
   if (!newProject) {
     const projId = `proj-${Date.now()}`;
-    newProject = {
+    newProject = normalizeProjectData({
       id: projId,
       name: projName,
       description: projDesc,
@@ -8524,17 +8558,17 @@ async function handleCreateProjectSubmit(e) {
       members: membersList,
       folderUrl: "https://drive.google.com/drive/",
       createdAt: new Date().toISOString().split("T")[0],
-      docs: [
+      resources: [
         {
           id: `doc-${Date.now()}-1`,
           title: `Metodologia & Założenia: ${projName}`,
-          type: "doc",
+          type: "GOOGLE_DOC",
           url: "https://docs.google.com/document/create",
           authorEmail: userEmail,
           updatedAt: new Date().toISOString().split("T")[0]
         }
       ]
-    };
+    }, userEmail);
   }
 
   // Dopisz do stanu i cache
@@ -8563,7 +8597,8 @@ function openProjectWorkspace(projectId) {
     return;
   }
 
-  AppState.currentProject = project;
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+  AppState.currentProject = normalizeProjectData(project, userEmail);
   AppState.activeMainView = "project";
 
   const catalogView = document.getElementById("publications-view-container");
@@ -8583,14 +8618,14 @@ function openProjectWorkspace(projectId) {
   const dateEl = document.getElementById("workspace-project-date");
   const membersEl = document.getElementById("workspace-project-members");
 
-  if (titleEl) titleEl.innerText = project.name;
-  if (descEl) descEl.innerText = project.description || "Projekt badawczy Studenckiego Koła Naukowego Seksuologii.";
-  if (dateEl) dateEl.innerText = `Utworzono: ${project.createdAt || new Date().toISOString().split("T")[0]}`;
+  if (titleEl) titleEl.innerText = AppState.currentProject.name;
+  if (descEl) descEl.innerText = AppState.currentProject.description || "Projekt badawczy Studenckiego Koła Naukowego Seksuologii.";
+  if (dateEl) dateEl.innerText = `Utworzono: ${AppState.currentProject.createdAt || new Date().toISOString().split("T")[0]}`;
 
   if (membersEl) {
-    const members = Array.isArray(project.members) ? project.members : [project.leaderEmail || "Członek SKN"];
+    const members = Array.isArray(AppState.currentProject.members) ? AppState.currentProject.members : [AppState.currentProject.leaderEmail || "Członek SKN"];
     membersEl.innerHTML = members.map((email) => {
-      const isLeader = email === project.leaderEmail;
+      const isLeader = email === AppState.currentProject.leaderEmail;
       return `
         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
           isLeader
@@ -8648,7 +8683,9 @@ function renderWorkspaceResources() {
   const emptyEl = document.getElementById("workspace-empty-resources");
   const countEl = document.getElementById("workspace-resources-count");
 
-  const docs = Array.isArray(project.docs) ? project.docs : [];
+  const docs = (Array.isArray(project.resources) && project.resources.length > 0)
+    ? project.resources
+    : (Array.isArray(project.docs) ? project.docs : []);
 
   if (countEl) {
     countEl.innerText = `${docs.length} ${docs.length === 1 ? 'dokument' : (docs.length >= 2 && docs.length <= 4) ? 'dokumenty' : 'dokumentów'}`;
@@ -8664,7 +8701,7 @@ function renderWorkspaceResources() {
 
   if (listEl) {
     listEl.innerHTML = docs.map((doc) => {
-      const isGoogleDoc = (doc.type === "doc" || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
+      const isGoogleDoc = (doc.type === "GOOGLE_DOC" || doc.type === "doc" || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
       const iconSvg = isGoogleDoc
         ? `<div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-lines"></i></div>`
         : `<div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0 text-base shadow-xs"><i class="fas fa-file-pdf"></i></div>`;
@@ -8672,6 +8709,8 @@ function renderWorkspaceResources() {
       const typeBadge = isGoogleDoc
         ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Google Docs (Live)</span>`
         : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">PDF</span>`;
+
+      const targetUrl = doc.url || (doc.id && !doc.id.startsWith("doc-") ? `https://docs.google.com/document/d/${doc.id}/edit` : "https://docs.google.com/document/create");
 
       return `
         <div class="p-3.5 bg-slate-50/90 hover:bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-sm flex flex-col justify-between gap-3 group">
@@ -8683,7 +8722,7 @@ function renderWorkspaceResources() {
                 <span class="text-[10.5px] text-slate-400 font-mono">${escapeHtml(doc.updatedAt || doc.createdAt || "")}</span>
               </div>
               <h4 class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition leading-snug line-clamp-2">
-                ${escapeHtml(doc.title)}
+                ${escapeHtml(doc.title || "Dokument bez tytułu")}
               </h4>
               <p class="text-[11px] text-slate-500 truncate">Autor: ${escapeHtml(doc.authorEmail || doc.author || "Członek SKN")}</p>
             </div>
@@ -8691,7 +8730,7 @@ function renderWorkspaceResources() {
 
           <div class="pt-2 border-t border-slate-200/60 flex items-center justify-end">
             <a 
-              href="${escapeHtml(doc.url || 'https://docs.google.com/document/create')}" 
+              href="${escapeHtml(targetUrl)}" 
               target="_blank" 
               rel="noopener noreferrer" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
@@ -8730,8 +8769,15 @@ function closeCreateProjectDocModal() {
 }
 window.closeCreateProjectDocModal = closeCreateProjectDocModal;
 
+let isCreatingProjectDoc = false;
+
 async function handleCreateGoogleDocSubmit(e) {
   if (e && e.preventDefault) e.preventDefault();
+
+  if (isCreatingProjectDoc) {
+    console.warn("handleCreateGoogleDocSubmit: Tworzenie dokumentu już trwa, pomijam podwójne wywołanie.");
+    return;
+  }
 
   if (!AppState.currentProject) {
     showToast("Brak aktywnego projektu.", "error");
@@ -8750,9 +8796,11 @@ async function handleCreateGoogleDocSubmit(e) {
   const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
 
+  isCreatingProjectDoc = true;
   if (submitBtn) {
     submitBtn.setAttribute("disabled", "true");
-    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i> <span>Generowanie dokumentu...</span>`;
+    submitBtn.classList.add("opacity-60", "cursor-not-allowed");
+    submitBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin text-xs"></i> <span>Tworzenie w Google Docs...</span>`;
   }
 
   const payload = {
@@ -8766,28 +8814,44 @@ async function handleCreateGoogleDocSubmit(e) {
 
   try {
     const response = await callGoogleScript("createProjectGoogleDoc", payload);
-    if (response && (response.status === "success" || response.success) && (response.doc || response.data)) {
-      newDoc = response.doc || response.data;
+    if (response && (response.status === "success" || response.success) && (response.doc || response.data || response.resource)) {
+      const rawDoc = response.doc || response.data || response.resource;
+      const docId = rawDoc.id || rawDoc.fileId || rawDoc.docId;
+      const docUrl = rawDoc.url || rawDoc.docUrl || rawDoc.webViewLink || (docId ? `https://docs.google.com/document/d/${docId}/edit` : null);
+      newDoc = {
+        id: docId || `doc-${Date.now()}`,
+        title: rawDoc.title || docTitle,
+        type: rawDoc.type || "GOOGLE_DOC",
+        url: docUrl,
+        authorEmail: rawDoc.authorEmail || userEmail,
+        createdAt: rawDoc.createdAt || new Date().toISOString().split("T")[0],
+        updatedAt: rawDoc.updatedAt || new Date().toISOString().split("T")[0]
+      };
     }
   } catch (err) {
     console.warn("Błąd Apps Script przy tworzeniu dokumentu Google Docs (użyto fallbacku):", err);
   }
 
   if (!newDoc) {
+    // Fallback wyłącznie gdy backend nie zwrócił dokumentu
+    const mockId = `doc-${Date.now()}`;
     newDoc = {
-      id: `doc-${Date.now()}`,
+      id: mockId,
       title: docTitle,
-      type: "doc",
+      type: "GOOGLE_DOC",
       url: "https://docs.google.com/document/create",
       authorEmail: userEmail,
+      createdAt: new Date().toISOString().split("T")[0],
       updatedAt: new Date().toISOString().split("T")[0]
     };
   }
 
-  if (!Array.isArray(AppState.currentProject.docs)) {
-    AppState.currentProject.docs = [];
+  // Atomowe dopisanie do zasobów projektu
+  if (!Array.isArray(AppState.currentProject.resources)) {
+    AppState.currentProject.resources = Array.isArray(AppState.currentProject.docs) ? AppState.currentProject.docs : [];
   }
-  AppState.currentProject.docs.unshift(newDoc);
+  AppState.currentProject.resources.unshift(newDoc);
+  AppState.currentProject.docs = AppState.currentProject.resources;
 
   // Zaktualizuj w nadrzędnej liście projektów i cache
   const pIndex = AppState.userProjects.findIndex((p) => p.id === AppState.currentProject.id);
@@ -8800,19 +8864,24 @@ async function handleCreateGoogleDocSubmit(e) {
 
   if (submitBtn) {
     submitBtn.removeAttribute("disabled");
+    submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
     submitBtn.innerHTML = originalBtnHtml;
   }
+  isCreatingProjectDoc = false;
 
   closeCreateProjectDocModal();
   renderWorkspaceResources();
   renderSidebarProjects();
 
-  // Otwórz utworzony dokument w nowej karcie
+  // Otwórz utworzony dokument w nowej karcie dokładnie z przypisanym adresem URL
   if (newDoc.url) {
     window.open(newDoc.url, "_blank");
   }
 
-  showToast(`Dokument «${docTitle}» został utworzony i otwarty w nowej karcie!`, "success");
+  showToast(`Dokument «${docTitle}» został utworzony i otwarty w edytorze!`, "success");
+
+  // Asynchroniczne odświeżenie listy projektów z Arkusza Google dla pełnej spójności
+  loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
 
