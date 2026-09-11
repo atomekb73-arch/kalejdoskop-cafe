@@ -8303,12 +8303,13 @@ function normalizeProjectData(p, fallbackEmail) {
   if (!p) return p;
   const resList = Array.isArray(p.resources) ? p.resources : (Array.isArray(p.docs) ? p.docs : []);
   const normalizedDocs = resList.map((doc) => {
-    const docId = doc.id || doc.fileId || `doc-${Math.random().toString(36).substr(2, 6)}`;
-    const docUrl = doc.url || doc.docUrl || doc.webViewLink || (docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : "https://docs.google.com/document/create");
+    const docId = doc.id || doc.fileId || doc.docId || `doc-${Math.random().toString(36).substr(2, 6)}`;
+    const isGoogleDoc = doc.type === "GOOGLE_DOC" || doc.type === "doc" || (!doc.type && (!doc.fileUrl && !doc.pdfUrl && !doc.url?.endsWith(".pdf")));
+    const docUrl = doc.url || doc.docUrl || doc.webViewLink || doc.fileUrl || (isGoogleDoc && docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : (isGoogleDoc ? "https://docs.google.com/document/create" : null));
     return {
       id: docId,
       title: doc.title || doc.name || "Dokument bez tytułu",
-      type: doc.type || "GOOGLE_DOC",
+      type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : "PDF"),
       url: docUrl,
       authorEmail: doc.authorEmail || doc.author || fallbackEmail,
       createdAt: doc.createdAt || new Date().toISOString().split("T")[0],
@@ -8316,13 +8317,50 @@ function normalizeProjectData(p, fallbackEmail) {
     };
   });
 
+  const folderUrl = p.folderUrl || (p.folderId ? `https://drive.google.com/drive/folders/${p.folderId}` : "https://drive.google.com/drive/");
+
   return {
     ...p,
+    folderUrl: folderUrl,
     leaderEmail: p.leaderEmail || p.leader || fallbackEmail,
     leaderName: p.leaderName || p.leader || "Lider Projektu",
     resources: normalizedDocs,
     docs: normalizedDocs
   };
+}
+
+function mergeProjectsWithLocal(serverProjects, userEmail) {
+  return serverProjects.map((sProj) => {
+    const normalizedServer = normalizeProjectData(sProj, userEmail);
+    const localProj = (AppState.currentProject && AppState.currentProject.id === normalizedServer.id)
+      ? AppState.currentProject
+      : AppState.userProjects.find((p) => p.id === normalizedServer.id);
+
+    if (!localProj) return normalizedServer;
+
+    const localDocs = Array.isArray(localProj.resources) ? localProj.resources : [];
+    const serverDocs = Array.isArray(normalizedServer.resources) ? normalizedServer.resources : [];
+
+    // Merge without duplicates (by id or title)
+    const mergedDocs = [...serverDocs];
+    localDocs.forEach((lDoc) => {
+      const alreadyExists = mergedDocs.some((mDoc) => 
+        (mDoc.id && lDoc.id && mDoc.id === lDoc.id) ||
+        (mDoc.title && lDoc.title && mDoc.title === lDoc.title)
+      );
+      if (!alreadyExists) {
+        mergedDocs.unshift(lDoc);
+      }
+    });
+
+    return {
+      ...normalizedServer,
+      folderUrl: normalizedServer.folderUrl || localProj.folderUrl,
+      folderId: normalizedServer.folderId || localProj.folderId,
+      resources: mergedDocs,
+      docs: mergedDocs
+    };
+  });
 }
 
 async function loadUserProjects() {
@@ -8335,7 +8373,7 @@ async function loadUserProjects() {
   const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const cacheKey = `skn_user_projects_${userEmail}`;
 
-  // Odczyt z pamięci podręcznej (Offline First / Natychmiastowy render)
+  // 1. Odczyt z pamięci podręcznej (Offline First / Natychmiastowy render)
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -8356,11 +8394,11 @@ async function loadUserProjects() {
     console.warn("Błąd odczytu projektów z cache:", e);
   }
 
-  // Pobranie z Google Apps Script
+  // 2. Pobranie z Google Apps Script z zachowaniem lokalnych zasobów
   try {
     const response = await callGoogleScript("getUserProjects", { email: userEmail });
     if (response && (response.status === "success" || response.success) && Array.isArray(response.projects)) {
-      AppState.userProjects = response.projects.map((p) => normalizeProjectData(p, userEmail));
+      AppState.userProjects = mergeProjectsWithLocal(response.projects, userEmail);
       localStorage.setItem(cacheKey, JSON.stringify(AppState.userProjects));
       renderSidebarProjects();
       if (AppState.currentProject) {
@@ -8667,8 +8705,9 @@ function switchToCatalogView() {
 window.switchToCatalogView = switchToCatalogView;
 
 function openCurrentProjectDrive() {
-  if (AppState.currentProject && AppState.currentProject.folderUrl) {
-    window.open(AppState.currentProject.folderUrl, "_blank");
+  if (AppState.currentProject) {
+    const folderUrl = AppState.currentProject.folderUrl || (AppState.currentProject.folderId ? `https://drive.google.com/drive/folders/${AppState.currentProject.folderId}` : "https://drive.google.com/drive/");
+    window.open(folderUrl, "_blank");
   } else {
     window.open("https://drive.google.com/drive/", "_blank");
   }
@@ -8787,17 +8826,21 @@ async function deleteProjectResource(resourceId, docTitle = "dokument") {
   }
 
   // Natychmiastowe usunięcie z lokalnego stanu dokumentów w projekcie
-  if (Array.isArray(AppState.currentProject.resources)) {
-    AppState.currentProject.resources = AppState.currentProject.resources.filter((d) => d.id !== resourceId && d.fileId !== resourceId);
-  }
-  if (Array.isArray(AppState.currentProject.docs)) {
-    AppState.currentProject.docs = AppState.currentProject.docs.filter((d) => d.id !== resourceId && d.fileId !== resourceId);
-  }
+  const currentDocs = Array.isArray(AppState.currentProject.resources) 
+    ? AppState.currentProject.resources 
+    : (Array.isArray(AppState.currentProject.docs) ? AppState.currentProject.docs : []);
+  const remainingResources = currentDocs.filter((d) => d.id !== resourceId && d.fileId !== resourceId);
+  
+  AppState.currentProject = {
+    ...AppState.currentProject,
+    resources: remainingResources,
+    docs: remainingResources
+  };
 
   // Zaktualizuj w nadrzędnej liście projektów i pamięci cache
   const pIndex = AppState.userProjects.findIndex((p) => p.id === projectId);
   if (pIndex !== -1) {
-    AppState.userProjects[pIndex] = AppState.currentProject;
+    AppState.userProjects[pIndex] = { ...AppState.currentProject };
   }
   if (userEmail) {
     localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
@@ -8908,18 +8951,29 @@ async function handleCreateGoogleDocSubmit(e) {
     };
   }
 
-  // Atomowe dopisanie do zasobów projektu
-  if (!Array.isArray(AppState.currentProject.resources)) {
-    AppState.currentProject.resources = Array.isArray(AppState.currentProject.docs) ? AppState.currentProject.docs : [];
-  }
-  AppState.currentProject.resources.unshift(newDoc);
-  AppState.currentProject.docs = AppState.currentProject.resources;
+  // Atomowe reaktywne dopisanie do zasobów projektu
+  const existingResources = Array.isArray(AppState.currentProject.resources) 
+    ? AppState.currentProject.resources 
+    : (Array.isArray(AppState.currentProject.docs) ? AppState.currentProject.docs : []);
 
-  // Zaktualizuj w nadrzędnej liście projektów i cache
+  // Usuń ewentualne duplikaty o tym samym id lub tytule przed dodaniem
+  const filteredResources = existingResources.filter(r => r.id !== newDoc.id && r.title !== newDoc.title);
+  const updatedResources = [newDoc, ...filteredResources];
+
+  AppState.currentProject = {
+    ...AppState.currentProject,
+    resources: updatedResources,
+    docs: updatedResources
+  };
+
+  // Zaktualizuj w nadrzędnej liście projektów i pamięci podręcznej (localStorage)
   const pIndex = AppState.userProjects.findIndex((p) => p.id === AppState.currentProject.id);
   if (pIndex !== -1) {
-    AppState.userProjects[pIndex] = AppState.currentProject;
+    AppState.userProjects[pIndex] = { ...AppState.currentProject };
+  } else {
+    AppState.userProjects.unshift({ ...AppState.currentProject });
   }
+
   if (userEmail) {
     localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
   }
@@ -8931,6 +8985,7 @@ async function handleCreateGoogleDocSubmit(e) {
   }
   isCreatingProjectDoc = false;
 
+  // Natychmiastowe zamknięcie modalu i render nowej listy zasobów
   closeCreateProjectDocModal();
   renderWorkspaceResources();
   renderSidebarProjects();
@@ -8940,9 +8995,9 @@ async function handleCreateGoogleDocSubmit(e) {
     window.open(newDoc.url, "_blank");
   }
 
-  showToast(`Dokument «${docTitle}» został utworzony i otwarty w edytorze!`, "success");
+  showToast(`Dokument «${docTitle}» został pomyślnie utworzony i dodany do projektu!`, "success");
 
-  // Asynchroniczne odświeżenie listy projektów z Arkusza Google dla pełnej spójności
+  // Asynchroniczne odświeżenie listy projektów z Arkusza Google dla pełnej spójności w tle
   loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
