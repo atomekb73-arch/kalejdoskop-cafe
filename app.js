@@ -48,8 +48,9 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwipe3eDZNEM2gkNM5PJ
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
+ * Domyślny limit czasu: 90 sekund (90000 ms) dla pełnego pipeline'u zapisu i analizy Gemini AI
  */
-async function fetchFromAppsScript(payload = { action: "scan" }, timeoutMs = 18000) {
+async function fetchFromAppsScript(payload = { action: "scan" }, timeoutMs = 90000) {
   const controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
   const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
@@ -102,11 +103,11 @@ async function fetchFromAppsScript(payload = { action: "scan" }, timeoutMs = 180
 /**
  * Bezpieczna funkcja wywołania Google Apps Script
  */
-async function callGoogleScript(action, payload = {}) {
+async function callGoogleScript(action, payload = {}, timeoutMs = 90000) {
   return await fetchFromAppsScript({
     action: action,
     ...payload
-  });
+  }, timeoutMs);
 }
 if (typeof window !== "undefined") {
   window.fetchFromAppsScript = fetchFromAppsScript;
@@ -7621,7 +7622,7 @@ async function handleUploadPipeline() {
       let cloudSyncSuccess = false;
 
       const webController = (typeof AbortController !== "undefined") ? new AbortController() : null;
-      const webTimer = webController ? setTimeout(() => webController.abort(), 15000) : null;
+      const webTimer = webController ? setTimeout(() => webController.abort(), 90000) : null;
 
       try {
         if (AppState.isGasEnvironment) {
@@ -7665,7 +7666,7 @@ async function handleUploadPipeline() {
         }
       } catch (cloudErr) {
         if (cloudErr && cloudErr.name === "AbortError") {
-          console.warn("Krok 5: Przekroczono limit czasu oczekiwania na Google Apps Script (15s). Przechodzę na zapis optymistyczny.");
+          console.warn("Krok 5: Przekroczono limit czasu oczekiwania na Google Apps Script (90s). Przechodzę na zapis optymistyczny.");
         } else {
           console.warn("Krok 5: Zapis w chmurze nie powiódł się, kontynuacja z zapisem lokalnym:", cloudErr);
         }
@@ -7796,7 +7797,7 @@ async function handleUploadPipeline() {
         adminPin: AppState.currentPin
       });
   } else {
-    animateStep(2, "2/5: Przesyłanie strumienia PDF do bezpiecznego magazynu Google Drive...");
+    animateStep(2, "2/5: Przesyłanie pliku i generowanie analizy AI... Może to potrwać około 30-40 sekund.");
 
     try {
       const resData = await uploadAndAnalyzePDF(AppState.selectedUploadFile, selectedCategory || "Edukacja Seksualna", uploadSelectedCategories);

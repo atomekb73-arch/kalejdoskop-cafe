@@ -10,11 +10,15 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwipe3eDZNEM2gkNM5PJ
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
+ * Domyślny limit czasu: 90 sekund (90000 ms) dla pełnego pipeline'u zapisu i analizy Gemini AI
  */
-export const fetchFromAppsScript = async (payload = { action: "scan" }) => {
+export const fetchFromAppsScript = async (payload = { action: "scan" }, timeoutMs = 90000) => {
+  const controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
   try {
     const scriptUrl = localStorage.getItem("APPS_SCRIPT_WEBAPP_URL") || localStorage.getItem("gas_api_url") || APP_CONFIG?.API_URL || SCRIPT_URL;
-    const response = await fetch(scriptUrl, {
+    const fetchOptions = {
       method: "POST",
       // Użycie text/plain zapobiega wysyłaniu zapytania wstępnego OPTIONS (preflight CORS):
       headers: {
@@ -23,7 +27,13 @@ export const fetchFromAppsScript = async (payload = { action: "scan" }) => {
       body: JSON.stringify(payload),
       // Google Apps Script zawsze zwraca kod 302 przekierowujący na właściwe dane:
       redirect: "follow",
-    });
+    };
+    if (controller) {
+      fetchOptions.signal = controller.signal;
+    }
+
+    const response = await fetch(scriptUrl, fetchOptions);
+    if (timer) clearTimeout(timer);
 
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
@@ -41,6 +51,11 @@ export const fetchFromAppsScript = async (payload = { action: "scan" }) => {
     const data = await response.json();
     return data;
   } catch (error) {
+    if (timer) clearTimeout(timer);
+    if (error && error.name === "AbortError") {
+      console.warn(`Przekroczono limit czasu oczekiwania na Google Apps Script (${Math.round(timeoutMs / 1000)}s).`);
+      throw new Error(`Przekroczono limit czasu odpowiedzi Google Apps Script (${Math.round(timeoutMs / 1000)}s).`);
+    }
     console.error("Błąd połączenia z Google Apps Script:", error);
     throw error;
   }
@@ -49,15 +64,15 @@ export const fetchFromAppsScript = async (payload = { action: "scan" }) => {
 /**
  * Bezpieczna funkcja wywołania akcji Google Apps Script
  */
-export async function callGoogleScript(action, payload = {}) {
+export async function callGoogleScript(action, payload = {}, timeoutMs = 90000) {
   return await fetchFromAppsScript({
     action: action,
     ...payload
-  });
+  }, timeoutMs);
 }
 
-export async function sendGasRequest(payload) {
-  return await fetchFromAppsScript(payload);
+export async function sendGasRequest(payload, timeoutMs = 90000) {
+  return await fetchFromAppsScript(payload, timeoutMs);
 }
 
 /**
