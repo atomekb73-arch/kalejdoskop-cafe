@@ -8301,19 +8301,23 @@ window.isMemberOrAdmin = isMemberOrAdmin;
 
 function normalizeProjectData(p, fallbackEmail) {
   if (!p) return p;
+  const resolvedId = p.id || p.projectId || p.project_id || p.ID_PROJEKTU || (p.folderId ? `PRJ-${p.folderId}` : `PRJ-${Date.now()}`);
   const resList = Array.isArray(p.resources) ? p.resources : (Array.isArray(p.docs) ? p.docs : []);
   const normalizedDocs = resList.map((doc) => {
     const docId = doc.id || doc.fileId || doc.docId || `doc-${Math.random().toString(36).substr(2, 6)}`;
-    const isGoogleDoc = doc.type === "GOOGLE_DOC" || doc.type === "doc" || (!doc.type && (!doc.fileUrl && !doc.pdfUrl && !doc.url?.endsWith(".pdf")));
+    const isGoogleDoc = (doc.type === "GOOGLE_DOC" || doc.type === "doc" || doc.mimeType?.includes("document") || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
     const docUrl = doc.url || doc.docUrl || doc.webViewLink || doc.fileUrl || (isGoogleDoc && docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : (isGoogleDoc ? "https://docs.google.com/document/create" : null));
     return {
       id: docId,
+      fileId: docId,
       title: doc.title || doc.name || "Dokument bez tytułu",
-      type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : "PDF"),
+      name: doc.name || doc.title || "Dokument bez tytułu",
+      type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : (doc.mimeType?.includes("pdf") ? "PDF" : "FILE")),
       url: docUrl,
+      webViewLink: docUrl,
       authorEmail: doc.authorEmail || doc.author || fallbackEmail,
-      createdAt: doc.createdAt || new Date().toISOString().split("T")[0],
-      updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString().split("T")[0]
+      createdAt: doc.createdAt || doc.createdDate || new Date().toISOString().split("T")[0],
+      updatedAt: doc.updatedAt || doc.lastUpdated || doc.createdAt || new Date().toISOString().split("T")[0]
     };
   });
 
@@ -8321,7 +8325,10 @@ function normalizeProjectData(p, fallbackEmail) {
 
   return {
     ...p,
+    id: String(resolvedId),
+    projectId: String(resolvedId),
     folderUrl: folderUrl,
+    folderId: p.folderId || p.folder_id || "",
     leader: p.leader || p.leaderEmail || fallbackEmail,
     leaderEmail: p.leaderEmail || p.leader || fallbackEmail,
     leaderName: p.leaderName || p.leader || "Lider Projektu",
@@ -8333,9 +8340,19 @@ function normalizeProjectData(p, fallbackEmail) {
 function mergeProjectsWithLocal(serverProjects, userEmail) {
   return serverProjects.map((sProj) => {
     const normalizedServer = normalizeProjectData(sProj, userEmail);
-    const localProj = (AppState.currentProject && AppState.currentProject.id === normalizedServer.id)
+    const localProj = (AppState.currentProject && (AppState.currentProject.id === normalizedServer.id || AppState.currentProject.projectId === normalizedServer.projectId || (AppState.currentProject.name && normalizedServer.name && AppState.currentProject.name.trim().toLowerCase() === normalizedServer.name.trim().toLowerCase())))
       ? AppState.currentProject
-      : AppState.userProjects.find((p) => p.id === normalizedServer.id);
+      : AppState.userProjects.find((p) => p.id === normalizedServer.id || p.projectId === normalizedServer.projectId || (p.name && normalizedServer.name && p.name.trim().toLowerCase() === normalizedServer.name.trim().toLowerCase()));
+
+    if (AppState.currentProject && (AppState.currentProject.id === normalizedServer.id || (AppState.currentProject.name && normalizedServer.name && AppState.currentProject.name.trim().toLowerCase() === normalizedServer.name.trim().toLowerCase()))) {
+      AppState.currentProject = {
+        ...AppState.currentProject,
+        id: normalizedServer.id,
+        projectId: normalizedServer.projectId,
+        folderId: normalizedServer.folderId || AppState.currentProject.folderId,
+        folderUrl: normalizedServer.folderUrl || AppState.currentProject.folderUrl
+      };
+    }
 
     if (!localProj) return normalizedServer;
 
@@ -8946,8 +8963,8 @@ async function handleDeleteProjectClick() {
 window.handleDeleteProjectClick = handleDeleteProjectClick;
 
 async function loadProjectDriveFiles(projectId) {
-  if (!projectId) return;
-  const targetProjectId = projectId;
+  const targetProjectId = projectId || AppState.currentProject?.id || AppState.currentProject?.projectId;
+  if (!targetProjectId) return;
 
   try {
     const response = await callGoogleScript("getProjectDriveFiles", { projectId: targetProjectId });
@@ -8957,20 +8974,23 @@ async function loadProjectDriveFiles(projectId) {
 
       const normalizedResources = rawList.map((doc) => {
         const docId = doc.id || doc.fileId || doc.docId || `doc-${Math.random().toString(36).substr(2, 6)}`;
-        const isGoogleDoc = doc.type === "GOOGLE_DOC" || doc.type === "doc" || (!doc.type && (!doc.fileUrl && !doc.pdfUrl && !doc.url?.endsWith(".pdf")));
+        const isGoogleDoc = (doc.type === "GOOGLE_DOC" || doc.type === "doc" || doc.mimeType?.includes("document") || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
         const docUrl = doc.url || doc.docUrl || doc.webViewLink || doc.fileUrl || (isGoogleDoc && docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : (isGoogleDoc ? "https://docs.google.com/document/create" : null));
         return {
           id: docId,
+          fileId: docId,
           title: doc.title || doc.name || "Dokument bez tytułu",
-          type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : "PDF"),
+          name: doc.name || doc.title || "Dokument bez tytułu",
+          type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : (doc.mimeType?.includes("pdf") ? "PDF" : "FILE")),
           url: docUrl,
+          webViewLink: docUrl,
           authorEmail: doc.authorEmail || doc.author || userEmail,
-          createdAt: doc.createdAt || new Date().toISOString().split("T")[0],
-          updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString().split("T")[0]
+          createdAt: doc.createdAt || doc.createdDate || new Date().toISOString().split("T")[0],
+          updatedAt: doc.updatedAt || doc.lastUpdated || doc.createdAt || new Date().toISOString().split("T")[0]
         };
       });
 
-      if (AppState.currentProject && AppState.currentProject.id === targetProjectId) {
+      if (AppState.currentProject && (AppState.currentProject.id === targetProjectId || AppState.currentProject.projectId === targetProjectId)) {
         AppState.currentProject = {
           ...AppState.currentProject,
           resources: normalizedResources,
@@ -8979,7 +8999,7 @@ async function loadProjectDriveFiles(projectId) {
         renderWorkspaceResources();
       }
 
-      const pIndex = AppState.userProjects.findIndex((p) => p.id === targetProjectId);
+      const pIndex = AppState.userProjects.findIndex((p) => p.id === targetProjectId || p.projectId === targetProjectId);
       if (pIndex !== -1) {
         AppState.userProjects[pIndex] = {
           ...AppState.userProjects[pIndex],
@@ -8999,7 +9019,7 @@ async function loadProjectDriveFiles(projectId) {
 window.loadProjectDriveFiles = loadProjectDriveFiles;
 
 function openProjectWorkspace(projectId) {
-  const project = AppState.userProjects.find((p) => p.id === projectId);
+  const project = AppState.userProjects.find((p) => String(p.id) === String(projectId) || String(p.projectId) === String(projectId));
   if (!project) {
     showToast("Nie odnaleziono wybranego projektu.", "error");
     return;
@@ -9007,6 +9027,7 @@ function openProjectWorkspace(projectId) {
 
   const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   AppState.currentProject = normalizeProjectData(project, userEmail);
+  window.activeProject = AppState.currentProject;
   AppState.activeMainView = "project";
 
   const catalogView = document.getElementById("publications-view-container");
@@ -9044,7 +9065,7 @@ function openProjectWorkspace(projectId) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 
   // Bezpośrednia synchronizacja plików z folderu projektu na Dysku Google
-  loadProjectDriveFiles(projectId).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
+  loadProjectDriveFiles(AppState.currentProject.id || projectId).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
 }
 window.openProjectWorkspace = openProjectWorkspace;
 
@@ -9161,19 +9182,59 @@ function renderWorkspaceResources() {
 }
 window.renderWorkspaceResources = renderWorkspaceResources;
 
+function renderProjectResources(resources) {
+  const project = AppState.currentProject;
+  if (!project) return;
+
+  if (Array.isArray(resources)) {
+    const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+    const normalized = resources.map((doc) => {
+      const docId = doc.id || doc.fileId || doc.docId || `doc-${Math.random().toString(36).substr(2, 6)}`;
+      const isGoogleDoc = (doc.type === "GOOGLE_DOC" || doc.type === "doc" || doc.mimeType?.includes("document") || !doc.type || (doc.url && doc.url.includes("docs.google.com")));
+      const docUrl = doc.url || doc.webViewLink || doc.docUrl || doc.fileUrl || (isGoogleDoc && docId && !docId.startsWith("doc-") ? `https://docs.google.com/document/d/${docId}/edit` : (isGoogleDoc ? "https://docs.google.com/document/create" : null));
+      return {
+        id: docId,
+        fileId: docId,
+        title: doc.title || doc.name || "Dokument bez tytułu",
+        name: doc.name || doc.title || "Dokument bez tytułu",
+        type: doc.type || (isGoogleDoc ? "GOOGLE_DOC" : (doc.mimeType?.includes("pdf") ? "PDF" : "FILE")),
+        url: docUrl,
+        webViewLink: docUrl,
+        authorEmail: doc.authorEmail || doc.author || userEmail,
+        createdAt: doc.createdAt || doc.createdDate || new Date().toISOString().split("T")[0],
+        updatedAt: doc.updatedAt || doc.lastUpdated || doc.createdAt || new Date().toISOString().split("T")[0]
+      };
+    });
+    project.resources = normalized;
+    project.docs = normalized;
+    AppState.currentProject = project;
+
+    const pIndex = AppState.userProjects.findIndex((p) => p.id === project.id || p.projectId === project.id);
+    if (pIndex !== -1) {
+      AppState.userProjects[pIndex] = { ...project };
+      if (userEmail) {
+        localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+      }
+    }
+  }
+  renderWorkspaceResources();
+  renderSidebarProjects();
+}
+window.renderProjectResources = renderProjectResources;
+
 async function deleteProjectResource(resourceId, docTitle = "dokument") {
   if (!AppState.currentProject) {
     showToast("Brak aktywnego projektu.", "error");
     return;
   }
 
-  const confirmed = window.confirm("Czy na pewno chcesz usunąć ten dokument? Zostanie on przeniesiony do kosza na Dysku Google.");
+  const confirmed = window.confirm(`Czy na pewno chcesz usunąć dokument «${docTitle}»? Zostanie on przeniesiony do kosza na Dysku Google.`);
   if (!confirmed) {
     return;
   }
 
   const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
-  const projectId = AppState.currentProject.id;
+  const projectId = AppState.currentProject.id || AppState.currentProject.projectId;
 
   const payload = {
     action: "deleteProjectResource",
@@ -9202,7 +9263,7 @@ async function deleteProjectResource(resourceId, docTitle = "dokument") {
   };
 
   // Zaktualizuj w nadrzędnej liście projektów i pamięci cache
-  const pIndex = AppState.userProjects.findIndex((p) => p.id === projectId);
+  const pIndex = AppState.userProjects.findIndex((p) => p.id === projectId || p.projectId === projectId);
   if (pIndex !== -1) {
     AppState.userProjects[pIndex] = { ...AppState.currentProject };
   }
@@ -9249,21 +9310,28 @@ async function handleCreateGoogleDocSubmit(e) {
     return;
   }
 
-  if (!AppState.currentProject) {
+  const activeProject = AppState.currentProject;
+  if (!activeProject) {
     showToast("Brak aktywnego projektu.", "error");
     return;
   }
 
-  const titleInput = document.getElementById("project-doc-title-input");
-  const submitBtn = document.getElementById("submit-create-doc-btn");
-  const docTitle = titleInput ? titleInput.value.trim() : "";
-
-  if (!docTitle) {
-    showToast("Wprowadź tytuł nowego dokumentu.", "error");
+  // Upewnij się, że activeProject posiada poprawny identyfikator ID (np. PRJ-20260911-...)
+  const validProjectId = activeProject.id || activeProject.projectId || activeProject.project_id;
+  if (!validProjectId) {
+    showToast("Błąd: Nie odnaleziono identyfikatora projektu.", "error");
     return;
   }
+  activeProject.id = String(validProjectId);
+  activeProject.projectId = String(validProjectId);
 
-  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+  const titleInput = document.getElementById("project-doc-title-input");
+  const submitBtn = document.getElementById("submit-create-doc-btn");
+  const docTitleInput = titleInput ? titleInput.value : "";
+  const docTitle = docTitleInput.trim() || "Nowy dokument";
+
+  const currentUser = AppState.currentUser;
+  const userEmail = (currentUser && currentUser.email) || (AppState.currentRole === "ADMIN" || AppState.currentUser?.role === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
   const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
 
   isCreatingProjectDoc = true;
@@ -9275,96 +9343,95 @@ async function handleCreateGoogleDocSubmit(e) {
 
   const payload = {
     action: "createProjectGoogleDoc",
-    projectId: AppState.currentProject.id,
-    title: docTitle,
-    authorEmail: userEmail
+    projectId: activeProject.id, // MUSI być przekazany pełny identyfikator np. PRJ-20260911-...
+    title: docTitleInput.trim() || "Nowy dokument",
+    authorEmail: (currentUser && currentUser.email) || ""
   };
-
-  let newDoc = null;
 
   try {
     const response = await callGoogleScript("createProjectGoogleDoc", payload);
-    if (response && (response.status === "success" || response.success) && (response.doc || response.data || response.resource)) {
-      const rawDoc = response.doc || response.data || response.resource;
-      const docId = rawDoc.id || rawDoc.fileId || rawDoc.docId;
-      const docUrl = rawDoc.url || rawDoc.docUrl || rawDoc.webViewLink || (docId ? `https://docs.google.com/document/d/${docId}/edit` : null);
-      newDoc = {
-        id: docId || `doc-${Date.now()}`,
-        title: rawDoc.title || docTitle,
-        type: rawDoc.type || "GOOGLE_DOC",
-        url: docUrl,
-        authorEmail: rawDoc.authorEmail || userEmail,
-        createdAt: rawDoc.createdAt || new Date().toISOString().split("T")[0],
-        updatedAt: rawDoc.updatedAt || new Date().toISOString().split("T")[0]
-      };
+
+    if (submitBtn) {
+      submitBtn.removeAttribute("disabled");
+      submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+    isCreatingProjectDoc = false;
+
+    if (response && (response.status === "success" || response.success)) {
+      // 1. Zamknij modal tworzenia dokumentu
+      closeCreateProjectDocModal();
+
+      // 2. Otwórz window.open(response.doc.url, '_blank')
+      const docObj = response.doc || response.data || response.resource;
+      const targetUrl = docObj?.url || docObj?.webViewLink || (docObj?.id ? `https://docs.google.com/document/d/${docObj.id}/edit` : null);
+      if (targetUrl) {
+        window.open(targetUrl, "_blank");
+      }
+
+      showToast(`Dokument «${docTitle}» został pomyślnie utworzony w folderze projektu!`, "success");
+
+      // Optymistyczne dodanie dokumentu do widoku
+      if (docObj) {
+        const tempDoc = {
+          id: docObj.id || `doc-${Date.now()}`,
+          fileId: docObj.id || `doc-${Date.now()}`,
+          title: docObj.title || docObj.name || docTitle,
+          name: docObj.name || docObj.title || docTitle,
+          type: "GOOGLE_DOC",
+          url: targetUrl || "https://docs.google.com/document/create",
+          webViewLink: targetUrl || "https://docs.google.com/document/create",
+          authorEmail: docObj.authorEmail || (currentUser && currentUser.email) || userEmail,
+          createdAt: docObj.createdAt || new Date().toISOString().split("T")[0],
+          updatedAt: docObj.updatedAt || new Date().toISOString().split("T")[0]
+        };
+        const currentResources = Array.isArray(activeProject.resources) ? activeProject.resources : (Array.isArray(activeProject.docs) ? activeProject.docs : []);
+        if (!currentResources.some((r) => r.id === tempDoc.id)) {
+          const updated = [tempDoc, ...currentResources.filter((r) => r.id !== tempDoc.id)];
+          activeProject.resources = updated;
+          activeProject.docs = updated;
+          renderProjectResources(updated);
+        }
+      }
+
+      // 3. Natychmiast wywołaj pobranie aktualnych zasobów z folderu projektu:
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          action: "getProjectDriveFiles",
+          projectId: activeProject.id
+        }),
+        redirect: "follow"
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.resources) {
+          activeProject.resources = data.resources;
+          renderProjectResources(data.resources); // Odświeżenie kafelków na ekranie
+        }
+      })
+      .catch((fetchErr) => {
+        console.warn("Błąd fetch getProjectDriveFiles po utworzeniu dokumentu:", fetchErr);
+        loadProjectDriveFiles(activeProject.id);
+      });
+
+    } else {
+      showToast(response?.message || "Nie udało się utworzyć dokumentu w folderze projektu.", "error");
     }
   } catch (err) {
-    console.warn("Błąd Apps Script przy tworzeniu dokumentu Google Docs (użyto fallbacku):", err);
+    console.error("Błąd przy tworzeniu dokumentu Google Docs:", err);
+    showToast("Wystąpił błąd podczas tworzenia dokumentu.", "error");
+    if (submitBtn) {
+      submitBtn.removeAttribute("disabled");
+      submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+    isCreatingProjectDoc = false;
+    closeCreateProjectDocModal();
   }
-
-  if (!newDoc) {
-    // Fallback wyłącznie gdy backend nie zwrócił dokumentu
-    const mockId = `doc-${Date.now()}`;
-    newDoc = {
-      id: mockId,
-      title: docTitle,
-      type: "GOOGLE_DOC",
-      url: "https://docs.google.com/document/create",
-      authorEmail: userEmail,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0]
-    };
-  }
-
-  // Atomowe reaktywne dopisanie do zasobów projektu
-  const existingResources = Array.isArray(AppState.currentProject.resources) 
-    ? AppState.currentProject.resources 
-    : (Array.isArray(AppState.currentProject.docs) ? AppState.currentProject.docs : []);
-
-  // Usuń ewentualne duplikaty o tym samym id lub tytule przed dodaniem
-  const filteredResources = existingResources.filter(r => r.id !== newDoc.id && r.title !== newDoc.title);
-  const updatedResources = [newDoc, ...filteredResources];
-
-  AppState.currentProject = {
-    ...AppState.currentProject,
-    resources: updatedResources,
-    docs: updatedResources
-  };
-
-  // Zaktualizuj w nadrzędnej liście projektów i pamięci podręcznej (localStorage)
-  const pIndex = AppState.userProjects.findIndex((p) => p.id === AppState.currentProject.id);
-  if (pIndex !== -1) {
-    AppState.userProjects[pIndex] = { ...AppState.currentProject };
-  } else {
-    AppState.userProjects.unshift({ ...AppState.currentProject });
-  }
-
-  if (userEmail) {
-    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
-  }
-
-  if (submitBtn) {
-    submitBtn.removeAttribute("disabled");
-    submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
-    submitBtn.innerHTML = originalBtnHtml;
-  }
-  isCreatingProjectDoc = false;
-
-  // Natychmiastowe zamknięcie modalu i render nowej listy zasobów
-  closeCreateProjectDocModal();
-  renderWorkspaceResources();
-  renderSidebarProjects();
-
-  // Otwórz utworzony dokument w nowej karcie dokładnie z przypisanym adresem URL
-  if (newDoc.url) {
-    window.open(newDoc.url, "_blank");
-  }
-
-  showToast(`Dokument «${docTitle}» został pomyślnie utworzony i dodany do projektu!`, "success");
-
-  // Asynchroniczne odświeżenie listy plików z Dysku Google oraz bazy projektów w tle
-  loadProjectDriveFiles(AppState.currentProject?.id).catch((err) => console.warn("Background loadProjectDriveFiles error:", err));
-  loadUserProjects().catch((err) => console.warn("Background loadUserProjects error:", err));
 }
 window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
 

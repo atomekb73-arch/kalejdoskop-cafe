@@ -241,7 +241,11 @@ export async function createProject(projectData) {
 }
 
 export async function createProjectGoogleDoc(docData) {
-  return await callGoogleScript("createProjectGoogleDoc", docData);
+  const projectId = docData.projectId || docData.id;
+  return await callGoogleScript("createProjectGoogleDoc", {
+    ...docData,
+    projectId: projectId
+  });
 }
 
 export async function deleteProjectResource(resourceData) {
