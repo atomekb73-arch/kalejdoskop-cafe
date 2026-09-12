@@ -1,4 +1,4 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-theme-toggle";
+const CACHE_NAME = "kalejdoskop-v-20260912-fullbleed-logo";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",

@@ -1,11 +1,11 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-theme-toggle";
+const CACHE_NAME = "kalejdoskop-v-20260912-fullbleed-logo";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260912_theme_toggle",
-  "/app.js?v=20260912_theme_toggle",
-  "/config.js?v=20260912_theme_toggle",
-  "/authResetFlow.js?v=20260912_theme_toggle",
+  "/styles.css?v=20260912_fullbleed_logo",
+  "/app.js?v=20260912_fullbleed_logo",
+  "/config.js?v=20260912_fullbleed_logo",
+  "/authResetFlow.js?v=20260912_fullbleed_logo",
   "/manifest.json",
   "/logo.png",
   "/logo-cube.png",
