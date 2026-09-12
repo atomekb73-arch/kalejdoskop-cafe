@@ -1,11 +1,11 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-0800";
+const CACHE_NAME = "kalejdoskop-v-20260912-0820";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260912_0800",
-  "/app.js?v=20260912_0800",
-  "/config.js?v=20260912_0800",
-  "/authResetFlow.js?v=20260912_0800",
+  "/styles.css?v=20260912_0820",
+  "/app.js?v=20260912_0820",
+  "/config.js?v=20260912_0820",
+  "/authResetFlow.js?v=20260912_0820",
   "/manifest.json",
   "/logo.png",
   "/logo192.png",

@@ -2639,15 +2639,15 @@ function renderArticleActionToolbar(art, isAdmin = false) {
       <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" 
               class="p-2 rounded-lg transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 relative group cursor-pointer active:scale-95 shrink-0" 
               title="Otwórz zabezpieczony czytnik ze stemplem (PDF)">
-        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <i class="fas fa-file-shield text-sm"></i>
       </button>
     `;
   } else if (isWeb) {
     pdfIconBtn = `
       <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" 
-         class="p-2 rounded-lg transition text-sky-600 hover:text-sky-700 hover:bg-sky-50 relative group cursor-pointer active:scale-95 inline-flex items-center justify-center shrink-0" 
+         class="p-2 rounded-lg transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 relative group cursor-pointer active:scale-95 inline-flex items-center justify-center shrink-0" 
          title="Otwórz oryginalne źródło Web / PDF">
-        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <i class="fas fa-file-pdf text-sm"></i>
       </a>
     `;
   } else {
@@ -2655,7 +2655,7 @@ function renderArticleActionToolbar(art, isAdmin = false) {
       <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" 
               class="p-2 rounded-lg transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 relative group cursor-pointer active:scale-95 shrink-0" 
               title="Otwórz oryginalny PDF">
-        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+        <i class="fas fa-file-pdf text-sm"></i>
       </button>
     `;
   }
@@ -2693,7 +2693,7 @@ function renderArticleActionToolbar(art, isAdmin = false) {
       <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" 
               class="p-2 rounded-lg transition text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 relative group cursor-pointer active:scale-95 shrink-0" 
               title="Raport syntetyczny AI">
-        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <i class="fas fa-brain text-sm"></i>
       </button>
     `;
   } else {
@@ -2701,7 +2701,7 @@ function renderArticleActionToolbar(art, isAdmin = false) {
       <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" 
               class="p-2 rounded-lg transition text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 relative group cursor-pointer active:scale-95 shrink-0" 
               title="Wygeneruj raport syntetyczny AI">
-        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <i class="fas fa-brain text-sm"></i>
       </button>
     `;
   }
@@ -9126,23 +9126,23 @@ function renderWorkspaceResources() {
       const authorText = (res.author || res.authorEmail) ? `Autor: ${escapeHtml(res.author || res.authorEmail)}` : (res.createdAt ? escapeHtml(res.createdAt.slice(0, 10)) : '');
 
       return `
-        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50/60 border-0 border-none outline-none rounded-xl transition shadow-none">
+        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50/80 rounded-xl transition shadow-none">
           
           <!-- Lewa strona: Ikona typu + Tytuł + Autor / Meta -->
-          <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-3">
-            <!-- Ikona badge (PDF czerwona, Docs niebieska) -->
-            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isDoc ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}">
-              ${isDoc ? 'DOC' : 'PDF'}
+          <div class="flex items-center gap-3 min-w-0 flex-1 pr-3">
+            <!-- Wektorowa ikona w wycentrowanym boksie 32x32 -->
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${isDoc ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-2xs' : 'bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs'}">
+              <i class="${isDoc ? 'fas fa-file-lines text-sm' : 'fas fa-file-pdf text-sm'}"></i>
             </div>
             
             <!-- Tytuł pliku i autor w jednym zwięzłym bloku -->
             <div class="min-w-0 flex-1">
-              <h4 class="text-xs sm:text-sm font-semibold text-slate-800 truncate" title="${escapeHtml(title)}">
+              <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer"
+                 class="text-sm sm:text-base font-semibold text-slate-900 leading-snug hover:text-indigo-600 hover:underline transition truncate block cursor-pointer"
+                 title="${escapeHtml(title)}">
                 ${escapeHtml(title)}
-              </h4>
-              <p class="text-[10px] text-slate-400 truncate">
-                ${authorText}
-              </p>
+              </a>
+              ${authorText ? `<p class="text-[11px] sm:text-xs text-slate-500 font-normal leading-tight truncate mt-0.5">${authorText}</p>` : ''}
             </div>
           </div>
 
@@ -9150,18 +9150,18 @@ function renderWorkspaceResources() {
           <div class="flex items-center gap-1.5 flex-shrink-0">
             <!-- Zwarty przycisk Otwórz -->
             <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer"
-               class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition ${isDoc ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+               class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition cursor-pointer ${isDoc ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
               <span>Otwórz</span>
-              <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <svg class="w-3 h-3 opacity-70 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
 
             <!-- Przycisk usunięcia dokumentu (Kosz) -->
             <button type="button" onclick="handleDeleteProjectResource('${escapeHtml(res.id)}', event)" title="Usuń plik z projektu"
-                    class="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    class="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer">
+              <svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
