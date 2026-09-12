@@ -1,16 +1,18 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-branding";
+const CACHE_NAME = "kalejdoskop-v-20260912-ui-scale";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260912_branding",
-  "/app.js?v=20260912_branding",
-  "/config.js?v=20260912_branding",
-  "/authResetFlow.js?v=20260912_branding",
+  "/styles.css?v=20260912_ui_scale",
+  "/app.js?v=20260912_ui_scale",
+  "/config.js?v=20260912_ui_scale",
+  "/authResetFlow.js?v=20260912_ui_scale",
   "/manifest.json",
   "/logo.png",
+  "/logo-cube.png",
   "/logo192.png",
   "/logo512.png",
   "/icons/logo.png",
+  "/icons/logo-cube.png",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
   "/images/cube-repo-hero.webp",

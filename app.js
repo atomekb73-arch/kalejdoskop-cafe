@@ -3093,7 +3093,7 @@ function updateAuthUI() {
       roleBadge.style.setProperty("display", "none", "important");
     }
     if (userSessionPill) {
-      userSessionPill.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 bg-white border border-slate-200 rounded-md text-[11px] font-medium shrink-0";
+      userSessionPill.className = "inline-flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-8 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium shrink-0";
       userSessionPill.classList.remove("hidden");
       userSessionPill.style.setProperty("display", "inline-flex", "important");
     }
@@ -3103,21 +3103,21 @@ function updateAuthUI() {
     if (userDisplayRole) {
       userDisplayRole.innerText = AppState.currentRole === "ADMIN" ? "Administrator" : "Członek SKN";
       userDisplayRole.className = AppState.currentRole === "ADMIN" 
-        ? "hidden sm:inline font-semibold text-amber-700 text-[10.5px] bg-amber-50 border border-amber-200 px-1 py-0.5 rounded leading-none" 
-        : "hidden sm:inline font-semibold text-indigo-700 text-[10.5px] bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded leading-none";
+        ? "hidden sm:inline font-semibold text-amber-700 text-[10.5px] bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded leading-none" 
+        : "hidden sm:inline font-semibold text-indigo-700 text-[10.5px] bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded leading-none";
     }
     if (loginNavBtn) {
       loginNavBtn.classList.add("hidden");
       loginNavBtn.style.setProperty("display", "none", "important");
     }
     if (logoutNavBtn) {
-      logoutNavBtn.className = "inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-medium border border-slate-200 transition cursor-pointer active:scale-95 shrink-0";
+      logoutNavBtn.className = "inline-flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-8 px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-xs font-medium border border-slate-200 transition cursor-pointer active:scale-95 shrink-0";
       logoutNavBtn.classList.remove("hidden");
       logoutNavBtn.style.setProperty("display", "inline-flex", "important");
     }
   } else {
     if (roleBadge) {
-      roleBadge.innerHTML = `<span class="inline-flex items-center justify-center gap-1.5 w-7 h-7 sm:w-auto sm:h-6 px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0"><svg class="w-3.5 h-3.5 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span class="hidden sm:inline">Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
+      roleBadge.innerHTML = `<span class="inline-flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-8 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap shrink-0"><svg class="w-4 h-4 stroke-[2] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span class="hidden sm:inline">Gość</span><span class="hidden md:inline">&nbsp;(Widok Publiczny)</span></span>`;
       roleBadge.classList.remove("hidden");
       roleBadge.style.setProperty("display", "inline-block", "important");
     }
