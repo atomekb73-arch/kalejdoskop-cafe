@@ -1,4 +1,4 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-ui-scale";
+const CACHE_NAME = "kalejdoskop-v-20260912-theme-toggle";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",

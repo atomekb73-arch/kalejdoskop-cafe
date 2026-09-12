@@ -1,11 +1,11 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-ui-scale";
+const CACHE_NAME = "kalejdoskop-v-20260912-theme-toggle";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260912_ui_scale",
-  "/app.js?v=20260912_ui_scale",
-  "/config.js?v=20260912_ui_scale",
-  "/authResetFlow.js?v=20260912_ui_scale",
+  "/styles.css?v=20260912_theme_toggle",
+  "/app.js?v=20260912_theme_toggle",
+  "/config.js?v=20260912_theme_toggle",
+  "/authResetFlow.js?v=20260912_theme_toggle",
   "/manifest.json",
   "/logo.png",
   "/logo-cube.png",

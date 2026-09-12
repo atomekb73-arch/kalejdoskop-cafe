@@ -58,14 +58,25 @@
           }
         }
       }
-    }
+    };
+    (function() {
+      try {
+        const mode = localStorage.getItem('kc_theme_mode') || 'system';
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (mode === 'dark' || (mode === 'system' && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
   </script>
 
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260912_ui_scale">
+  <link rel="stylesheet" href="styles.css?v=20260912_theme_toggle">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -395,6 +406,40 @@
             <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <span>Zaproponuj publikację</span>
           </button>
+        </div>
+
+        <!-- Sekcja: Motyw Graficzny -->
+        <div class="pt-2 border-t border-slate-100 space-y-1">
+          <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-0.5">Motyw graficzny</h4>
+          <div class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
+            <button 
+              type="button" 
+              id="theme-btn-light" 
+              onclick="setThemeMode('light')" 
+              class="flex-1 py-1.5 px-1 rounded-lg text-xs flex items-center justify-center transition-all duration-200 cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent" 
+              title="Motyw jasny"
+            >
+              <i class="fas fa-sun text-amber-500 text-xs"></i>
+            </button>
+            <button 
+              type="button" 
+              id="theme-btn-dark" 
+              onclick="setThemeMode('dark')" 
+              class="flex-1 py-1.5 px-1 rounded-lg text-xs flex items-center justify-center transition-all duration-200 cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent" 
+              title="Motyw ciemny"
+            >
+              <i class="fas fa-moon text-indigo-400 text-xs"></i>
+            </button>
+            <button 
+              type="button" 
+              id="theme-btn-system" 
+              onclick="setThemeMode('system')" 
+              class="flex-1 py-1.5 px-1 rounded-lg text-xs flex items-center justify-center transition-all duration-200 cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent" 
+              title="Motyw systemowy"
+            >
+              <i class="fas fa-desktop text-slate-500 text-xs"></i>
+            </button>
+          </div>
         </div>
 
         <div class="pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 leading-tight">
@@ -2649,8 +2694,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260912_ui_scale"></script>
-  <script src="/authResetFlow.js?v=20260912_ui_scale"></script>
-  <script src="app.js?v=20260912_ui_scale"></script>
+  <script src="/config.js?v=20260912_theme_toggle"></script>
+  <script src="/authResetFlow.js?v=20260912_theme_toggle"></script>
+  <script src="app.js?v=20260912_theme_toggle"></script>
 </body>
 </html>

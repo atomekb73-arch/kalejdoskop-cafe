@@ -117,6 +117,72 @@ if (typeof window !== "undefined") {
   window.callGoogleScript = callGoogleScript;
 }
 
+/**
+ * Obsługa Motywu Graficznego (Jasny / Ciemny / System)
+ */
+function setThemeMode(mode) {
+  if (!['light', 'dark', 'system'].includes(mode)) {
+    mode = 'system';
+  }
+
+  try {
+    localStorage.setItem('kc_theme_mode', mode);
+  } catch (e) {
+    console.warn('Nie można zapisać motywu w localStorage:', e);
+  }
+
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const shouldBeDark = mode === 'dark' || (mode === 'system' && prefersDark);
+
+  if (shouldBeDark) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+
+  updateThemeButtonsUI(mode);
+}
+if (typeof window !== "undefined") {
+  window.setThemeMode = setThemeMode;
+}
+
+function updateThemeButtonsUI(activeMode) {
+  const modes = ['light', 'dark', 'system'];
+  
+  modes.forEach(mode => {
+    const btn = document.getElementById(`theme-btn-${mode}`);
+    if (!btn) return;
+
+    if (mode === activeMode) {
+      btn.className = "flex-1 py-1.5 px-1 rounded-lg text-xs flex items-center justify-center transition-all duration-200 cursor-pointer bg-white text-indigo-600 font-bold border border-slate-200 shadow-2xs scale-[1.02]";
+    } else {
+      btn.className = "flex-1 py-1.5 px-1 rounded-lg text-xs flex items-center justify-center transition-all duration-200 cursor-pointer text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 border border-transparent";
+    }
+  });
+}
+
+function initThemeMode() {
+  let savedMode = 'system';
+  try {
+    savedMode = localStorage.getItem('kc_theme_mode') || 'system';
+  } catch (e) {
+    savedMode = 'system';
+  }
+  setThemeMode(savedMode);
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const currentSaved = localStorage.getItem('kc_theme_mode') || 'system';
+      if (currentSaved === 'system') {
+        setThemeMode('system');
+      }
+    });
+  }
+}
+if (typeof window !== "undefined") {
+  window.initThemeMode = initThemeMode;
+}
+
 // Start aplikacji po załadowaniu drzewa DOM
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
@@ -126,6 +192,7 @@ if (typeof document !== "undefined") {
 
 function initApp() {
   localStorage.setItem("APPS_SCRIPT_WEBAPP_URL", DEFAULT_EXEC_URL);
+  initThemeMode();
   restoreAuthSession();
   renderCategoryPills();
   setViewMode(AppState.viewMode);
