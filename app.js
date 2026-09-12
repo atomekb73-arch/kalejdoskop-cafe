@@ -8962,6 +8962,13 @@ async function loadProjectDriveFiles(projectId) {
         };
       });
 
+      // Sortuj zasoby z Dysku malejąco według daty utworzenia (najnowsze na początku)
+      normalizedResources.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
       if (AppState.currentProject && (AppState.currentProject.id === targetProjectId || AppState.currentProject.projectId === targetProjectId)) {
         AppState.currentProject = {
           ...AppState.currentProject,
@@ -9094,6 +9101,15 @@ function openCurrentProjectDrive() {
 }
 window.openCurrentProjectDrive = openCurrentProjectDrive;
 
+function handleWorkspaceResourcesSortChange(sortMode) {
+  if (!AppState.resourcesSortOrder) {
+    AppState.resourcesSortOrder = "newest";
+  }
+  AppState.resourcesSortOrder = sortMode;
+  renderWorkspaceResources();
+}
+window.handleWorkspaceResourcesSortChange = handleWorkspaceResourcesSortChange;
+
 function renderWorkspaceResources() {
   const project = AppState.currentProject;
   if (!project) return;
@@ -9101,22 +9117,46 @@ function renderWorkspaceResources() {
   const listEl = document.getElementById("workspace-resources-list");
   const emptyEl = document.getElementById("workspace-empty-resources");
   const countEl = document.getElementById("workspace-resources-count");
+  const sortSelect = document.getElementById("workspace-resources-sort-select");
 
-  const docs = (Array.isArray(project.resources) && project.resources.length > 0)
+  const rawDocs = (Array.isArray(project.resources) && project.resources.length > 0)
     ? project.resources
     : (Array.isArray(project.docs) ? project.docs : []);
 
   if (countEl) {
-    countEl.innerText = `${docs.length} ${docs.length === 1 ? 'dokument' : (docs.length >= 2 && docs.length <= 4) ? 'dokumenty' : 'dokumentów'}`;
+    countEl.innerText = `${rawDocs.length} ${rawDocs.length === 1 ? 'dokument' : (rawDocs.length >= 2 && rawDocs.length <= 4) ? 'dokumenty' : 'dokumentów'}`;
   }
 
-  if (docs.length === 0) {
+  if (rawDocs.length === 0) {
     if (listEl) listEl.innerHTML = "";
     if (emptyEl) emptyEl.classList.remove("hidden");
     return;
   }
 
   if (emptyEl) emptyEl.classList.add("hidden");
+
+  // Sortowanie dynamiczne według wybranego trybu
+  const sortMode = sortSelect ? sortSelect.value : (AppState.resourcesSortOrder || "newest");
+  const docs = [...rawDocs];
+
+  docs.sort((a, b) => {
+    const titleA = (a.title || a.name || "").toString();
+    const titleB = (b.title || b.name || "").toString();
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+    switch (sortMode) {
+      case "oldest":
+        return timeA - timeB;
+      case "title-asc":
+        return titleA.localeCompare(titleB, "pl", { numeric: true, sensitivity: "base" });
+      case "title-desc":
+        return titleB.localeCompare(titleA, "pl", { numeric: true, sensitivity: "base" });
+      case "newest":
+      default:
+        return timeB !== timeA ? (timeB - timeA) : 0;
+    }
+  });
 
   if (listEl) {
     listEl.innerHTML = docs.map((res) => {
@@ -9126,7 +9166,7 @@ function renderWorkspaceResources() {
       const authorText = (res.author || res.authorEmail) ? `Autor: ${escapeHtml(res.author || res.authorEmail)}` : (res.createdAt ? escapeHtml(res.createdAt.slice(0, 10)) : '');
 
       return `
-        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-50/80 rounded-xl transition shadow-none">
+        <div class="group flex items-center justify-between p-2.5 px-3.5 bg-white hover:bg-slate-100 border border-slate-200/90 hover:border-indigo-400 hover:ring-1 hover:ring-indigo-400/40 rounded-xl transition duration-150 shadow-2xs">
           
           <!-- Lewa strona: Ikona typu + Tytuł + Autor / Meta -->
           <div class="flex items-center gap-3 min-w-0 flex-1 pr-3">
@@ -9148,11 +9188,11 @@ function renderWorkspaceResources() {
 
           <!-- Prawa strona: Przycisk otwarcia + Kosz -->
           <div class="flex items-center gap-1.5 flex-shrink-0">
-            <!-- Zwarty przycisk Otwórz -->
+            <!-- Zwarty przycisk Otwórz z kontrastową bazową szarością -->
             <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer"
-               class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition cursor-pointer ${isDoc ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+               class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition cursor-pointer ${isDoc ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs' : 'bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300/60 shadow-2xs'}">
               <span>Otwórz</span>
-              <svg class="w-3 h-3 opacity-70 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 opacity-80 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
