@@ -264,6 +264,10 @@ export async function deleteProject(projectData) {
   return await callGoogleScript("deleteProject", projectData);
 }
 
+export async function addArticleToProject(data) {
+  return await callGoogleScript("addArticleToProject", data);
+}
+
 export default {
   fetchFromAppsScript,
   callGoogleScript,
@@ -282,5 +286,6 @@ export default {
   deleteProjectResource,
   getProjectDriveFiles,
   updateProjectMembers,
-  deleteProject
+  deleteProject,
+  addArticleToProject
 };

@@ -2604,6 +2604,140 @@ window.changeArticleCategories = changeArticleCategories;
 window.changeArticleCategory = (id, cat) => changeArticleCategories(id, [cat]);
 
 /**
+ * Zwarty Pasek Ikon Akcji Publikacji (Icon Toolbar)
+ * 1. Abstrakt, 2. Oryginał PDF, 3. Tłumaczenie PL, 4. Raport AI, 5. Dodaj do Projektu, 6. Kosz (Admin)
+ */
+function renderArticleActionToolbar(art, isAdmin = false) {
+  const meta = art.meta || art.data || art || {};
+  const isInternal = isInternalArticle(art);
+  const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(art.id);
+  const hasReport = hasArticleReport(art);
+  const isTranslating = AppState.translatingIds && AppState.translatingIds.has(art.id);
+  const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
+  const hasTranslation = hasArticleTranslation(art) || Boolean(art.translationUrl && art.translationUrl.trim().length > 0 && art.translationUrl !== "#");
+  const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
+
+  // 1. Abstrakt
+  const abstractIconBtn = `
+    <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" 
+            class="p-2 rounded-lg transition text-slate-500 hover:text-indigo-600 hover:bg-slate-100 relative group cursor-pointer active:scale-95 shrink-0" 
+            title="Pokaż / ukryj abstrakt">
+      <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+    </button>
+  `;
+
+  // 2. Oryginał PDF
+  let pdfIconBtn = "";
+  if (isWatermarking) {
+    pdfIconBtn = `
+      <button disabled class="p-2 rounded-lg text-rose-600 bg-rose-50 cursor-wait shrink-0" title="Trwa znakowanie PDF...">
+        <svg class="w-4 h-4 animate-spin stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      </button>
+    `;
+  } else if (isInternal) {
+    pdfIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" 
+              class="p-2 rounded-lg transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Otwórz zabezpieczony czytnik ze stemplem (PDF)">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      </button>
+    `;
+  } else if (isWeb) {
+    pdfIconBtn = `
+      <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" 
+         class="p-2 rounded-lg transition text-sky-600 hover:text-sky-700 hover:bg-sky-50 relative group cursor-pointer active:scale-95 inline-flex items-center justify-center shrink-0" 
+         title="Otwórz oryginalne źródło Web / PDF">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </a>
+    `;
+  } else {
+    pdfIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" 
+              class="p-2 rounded-lg transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Otwórz oryginalny PDF">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+      </button>
+    `;
+  }
+
+  // 3. Tłumaczenie PL
+  let transIconBtn = "";
+  if (hasTranslation) {
+    transIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" 
+              class="p-2 rounded-lg transition text-purple-600 hover:text-purple-800 hover:bg-purple-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Przejdź do tłumaczenia PL">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+      </button>
+    `;
+  } else {
+    transIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" 
+              class="p-2 rounded-lg transition text-slate-400 hover:text-purple-600 hover:bg-purple-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Wgraj tłumaczenie PL">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m17 14v6"/><path d="m14 17h6"/></svg>
+      </button>
+    `;
+  }
+
+  // 4. Raport AI / Synteza
+  let reportIconBtn = "";
+  if (isTranslating) {
+    reportIconBtn = `
+      <button disabled class="p-2 rounded-lg text-emerald-600 bg-emerald-50 cursor-wait shrink-0" title="Generowanie raportu...">
+        <svg class="w-4 h-4 animate-spin stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      </button>
+    `;
+  } else if (hasReport) {
+    reportIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" 
+              class="p-2 rounded-lg transition text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Raport syntetyczny AI">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      </button>
+    `;
+  } else {
+    reportIconBtn = `
+      <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" 
+              class="p-2 rounded-lg transition text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 relative group cursor-pointer active:scale-95 shrink-0" 
+              title="Wygeneruj raport syntetyczny AI">
+        <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      </button>
+    `;
+  }
+
+  // 5. DODAJ DO PROJEKTU (NOWOŚĆ)
+  const assignProjectIconBtn = `
+    <button type="button" onclick="event.stopPropagation(); openAssignArticleToProjectModal('${art.id}')" 
+            class="p-2 rounded-lg transition text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 relative group cursor-pointer active:scale-95 shrink-0" 
+            title="Przypisz do projektu badawczego">
+      <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+    </button>
+  `;
+
+  // 6. Kosz (Admin)
+  const deleteIconBtn = isAdmin ? `
+    <button type="button" onclick="openDeleteModal('${art.id}', event)" 
+            class="p-2 rounded-lg transition text-rose-400 hover:text-rose-600 hover:bg-rose-50 relative group cursor-pointer active:scale-95 shrink-0" 
+            title="Usuń / Przenieś do kosza">
+      <svg class="w-4 h-4 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+    </button>
+  ` : "";
+
+  return `
+    <div class="flex items-center gap-1 flex-shrink-0">
+      ${abstractIconBtn}
+      ${pdfIconBtn}
+      ${transIconBtn}
+      ${reportIconBtn}
+      ${assignProjectIconBtn}
+      ${deleteIconBtn}
+    </div>
+  `;
+}
+window.renderArticleActionToolbar = renderArticleActionToolbar;
+
+/**
  * Renderowanie publikacji (Domyślny widok zwartej listy 'list' lub siatka kafelków 'grid')
  */
 function renderArticleCards(articles) {
@@ -2635,9 +2769,6 @@ function renderArticleCards(articles) {
     const meta = art.meta || art.data || art || {};
     const isInternal = isInternalArticle(art);
     const isPublic = Boolean(art.isPublic !== undefined ? art.isPublic : (art.accessLevel ? art.accessLevel === "PUBLIC" : (!isInternal && art.status !== "INTERNAL")));
-    const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(art.id);
-    const hasReport = hasArticleReport(art);
-    const isTranslating = AppState.translatingIds && AppState.translatingIds.has(art.id);
     const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
 
     let accessBadge = "";
@@ -2655,18 +2786,10 @@ function renderArticleCards(articles) {
       accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span></span>`;
     }
 
-    const deleteBtnHtml = isAdmin
-      ? `<button onclick="openDeleteModal('${art.id}', event)" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer ml-auto shrink-0" title="Usuń / Przenieś do kosza">
-          <i class="fas fa-trash-can text-xs"></i>
-        </button>`
-      : "";
-
     const displayTitlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || art.titlePL || art.polishTitle || art.name || "Brak tytułu");
     const displayTitleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || meta.titleOriginal || art.titleEN || art.titleOriginal || art.originalTitle || "");
     const displayAuthors = cleanDisplayText(meta.authors || art.authors || "Autor nieznany");
     const displayYear = meta.year || art.year || "";
-    const rawCategory = meta.category || art.category || "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
-    const mappedCategory = mapToAcademicDepartment(rawCategory);
     const displayAbstract = cleanAbstractText(meta.abstractPL || art.abstractPL);
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
@@ -2696,148 +2819,6 @@ function renderArticleCards(articles) {
       ? `<span class="text-[10.5px] font-bold tracking-wide uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-sky-500"></i> Źródło Web</span>`
       : "";
 
-    // Przyciski akcji: 1. Abstrakt, 2. PDF, 3. Tłumaczenie, 4. Raport
-    const targetWebUrl = safeUrl(art.sourceUrl || art.url || art.urlOriginal || "#");
-
-    // 2. Przycisk PDF (list & grid)
-    let pdfBtnListHtml = "";
-    let pdfBtnGridHtml = "";
-
-    if (isInternal) {
-      if (isWatermarking) {
-        pdfBtnListHtml = `
-          <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-md cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-rose-600 text-[10px] shrink-0"></i>
-            <span class="truncate">PDF...</span>
-          </button>`;
-        pdfBtnGridHtml = `
-          <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-wait truncate">
-            <i class="fas fa-circle-notch fa-spin text-rose-600 text-xs shrink-0"></i>
-            <span class="truncate">Znakowanie...</span>
-          </button>`;
-      } else {
-        pdfBtnListHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
-            <i class="fas fa-file-shield text-rose-500 text-[10px] shrink-0"></i>
-            <span class="truncate">PDF</span>
-          </button>`;
-        pdfBtnGridHtml = `
-          <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz zabezpieczony czytnik ze stemplem">
-            <i class="fas fa-file-shield text-rose-500 text-xs shrink-0"></i>
-            <span class="truncate">PDF</span>
-          </button>`;
-      }
-    } else if (isWeb) {
-      pdfBtnListHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
-          <i class="fas fa-globe text-sky-500 text-[10px] shrink-0"></i>
-          <span class="truncate">PDF / Web ↗</span>
-        </a>`;
-      pdfBtnGridHtml = `
-        <a href="${targetWebUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-sky-700 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz źródło www">
-          <i class="fas fa-globe text-sky-500 text-xs shrink-0"></i>
-          <span class="truncate">PDF ↗</span>
-        </a>`;
-    } else {
-      pdfBtnListHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Otwórz plik PDF">
-          <i class="fas fa-file-pdf text-rose-500 text-[10px] shrink-0"></i>
-          <span class="truncate">PDF</span>
-        </button>`;
-      pdfBtnGridHtml = `
-        <button type="button" onclick="event.stopPropagation(); openSecureViewer('${art.id}', 'original')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Otwórz plik PDF">
-          <i class="fas fa-file-pdf text-rose-500 text-xs shrink-0"></i>
-          <span class="truncate">PDF</span>
-        </button>`;
-    }
-
-    // 3. Przycisk Tłumaczenie (list & grid)
-    const hasTranslation = hasArticleTranslation(art) || Boolean(art.translationUrl && art.translationUrl.trim().length > 0 && art.translationUrl !== "#");
-
-    let translationBtnListHtml = "";
-    let translationBtnGridHtml = "";
-
-    if (hasTranslation) {
-      translationBtnListHtml = `
-        <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200 rounded-md transition truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
-          <i class="fas fa-language text-purple-600 text-[11px] shrink-0"></i>
-          <span class="truncate">Tłumaczenie PL</span>
-        </button>`;
-
-      translationBtnGridHtml = `
-        <button type="button" onclick="event.stopPropagation(); openTranslationModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pełne tłumaczenie artykułu na język polski">
-          <i class="fas fa-language text-purple-600 text-xs shrink-0"></i>
-          <span class="truncate">Tłumaczenie PL</span>
-        </button>`;
-    } else {
-      translationBtnListHtml = `
-        <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-md transition truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
-          <i class="fas fa-plus text-purple-600 text-[10px] shrink-0"></i>
-          <span class="truncate">Dodaj tłumaczenie PL</span>
-        </button>`;
-
-      translationBtnGridHtml = `
-        <button type="button" onclick="event.stopPropagation(); uploadTranslationPdfForArticle('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-dashed border-slate-300 hover:border-purple-300 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Wgraj plik tłumaczenia PDF">
-          <i class="fas fa-plus text-purple-600 text-xs shrink-0"></i>
-          <span class="truncate">Dodaj tłumaczenie PL</span>
-        </button>`;
-    }
-
-    // 4. Przycisk Raport (list & grid)
-    let reportBtnListHtml = "";
-    let reportBtnGridHtml = "";
-
-    if (isTranslating) {
-      reportBtnListHtml = `
-        <button disabled class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md cursor-wait truncate">
-          <i class="fas fa-circle-notch fa-spin text-emerald-600 text-[10px] shrink-0"></i>
-          <span class="truncate">Raport...</span>
-        </button>`;
-      reportBtnGridHtml = `
-        <button disabled class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl cursor-wait truncate shadow-2xs">
-          <i class="fas fa-circle-notch fa-spin text-emerald-600 text-xs shrink-0"></i>
-          <span class="truncate">Raport...</span>
-        </button>`;
-    } else if (hasReport) {
-      reportBtnListHtml = `
-        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-          <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
-          <span class="truncate">Raport</span>
-        </button>`;
-      reportBtnGridHtml = `
-        <button type="button" onclick="event.stopPropagation(); openClinicalReportModal('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Otwórz raport kliniczny SKN">
-          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
-          <span class="truncate">Raport</span>
-        </button>`;
-    } else {
-      reportBtnListHtml = `
-        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1 py-0.5 px-2 h-6 text-[11px] font-semibold rounded-md border transition truncate cursor-pointer active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-          <i class="fas fa-brain text-emerald-600 text-[10px] shrink-0"></i>
-          <span class="truncate">Raport</span>
-        </button>`;
-      reportBtnGridHtml = `
-        <button type="button" onclick="event.stopPropagation(); generateClinicalReport('${art.id}')" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold rounded-xl border transition-all truncate cursor-pointer shadow-2xs active:scale-95 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200/90" title="Zleć wygenerowanie raportu klinicznego SKN przez AI">
-          <i class="fas fa-brain text-emerald-600 text-xs shrink-0"></i>
-          <span class="truncate">Raport</span>
-        </button>`;
-    }
-
-    const listButtonsHtml = `
-      ${pdfBtnListHtml}
-      ${translationBtnListHtml}
-      ${reportBtnListHtml}
-    `;
-
-    const bottomButtonsHtml = `
-      <button type="button" onclick="event.stopPropagation(); toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all shadow-2xs truncate cursor-pointer active:scale-95" title="Pokaż / ukryj abstrakt">
-        <i class="fas fa-align-left text-slate-500 text-xs shrink-0"></i>
-        <span class="truncate">Abstrakt</span>
-      </button>
-      ${pdfBtnGridHtml}
-      ${translationBtnGridHtml}
-      ${reportBtnGridHtml}
-    `;
-
     const isSeminar = (art.publication_type === "seminar_presentation" || meta.publication_type === "seminar_presentation" || art.publicationType === "seminar_presentation");
     const seminarBadge = isSeminar
       ? `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 flex items-center gap-1 shadow-2xs shrink-0" title="Wystąpienie seminaryjne / prezentacja członków SKN"><svg class="w-3 h-3 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h20v14H2z"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> <span>Seminarium SKN</span></span>`
@@ -2848,17 +2829,13 @@ function renderArticleCards(articles) {
       ? `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 shadow-2xs shrink-0" title="${artReviews.length} recenzji akademickich Critical Appraisal (EBM)"><svg class="w-3 h-3 stroke-[1.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span>${artReviews.length} ${artReviews.length === 1 ? "recenzja EBM" : "recenzje EBM"}</span></span>`
       : "";
 
+    const toolbarHtml = renderArticleActionToolbar(art, isAdmin);
+
     const card = document.createElement("div");
     card.id = `card-${art.id}`;
 
     if (isListView) {
-      // 1. WIDOK ZWARTEJ LISTY (Compact List Row - Standard Mikro-Etykiet h-6 text-[11px] font-semibold z obcięciem do krawędzi)
-      const listDeleteBtn = isAdmin
-        ? `<button onclick="openDeleteModal('${art.id}', event)" class="h-6 w-6 p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Usuń / Przenieś do kosza">
-            <i class="fas fa-trash-can text-[10px]"></i>
-          </button>`
-        : "";
-
+      // 1. WIDOK ZWARTEJ LISTY (Compact List Row z Paskiem Ikon Akcji)
       card.className = `w-full max-w-full overflow-hidden bg-white border border-slate-200/90 hover:border-indigo-300 rounded-xl ${isAdmin ? "py-2.5 px-3 sm:px-4" : "py-2 px-3.5"} shadow-2xs hover:shadow-xs transition-all duration-200 select-text flex flex-col gap-1`;
       card.innerHTML = `
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 w-full max-w-full overflow-hidden">
@@ -2886,16 +2863,9 @@ function renderArticleCards(articles) {
             </div>
           </div>
 
-          <!-- Prawa część: Przyciski akcji (h-6, text-[11px] font-semibold mikro-standard) -->
-          <div class="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-end overflow-hidden">
-            <button type="button" onclick="toggleCardAbstract('${art.id}', event)" class="inline-flex items-center justify-center gap-1 px-2 py-0.5 h-6 rounded-md text-[11px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition cursor-pointer shrink-0" title="Pokaż abstrakt publikacji">
-              <span id="card-abstract-btn-${art.id}">Abstrakt ▾</span>
-            </button>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${listButtonsHtml}
-              ${listDeleteBtn}
-            </div>
+          <!-- Prawa część: Zwarty pasek ikon akcji (Icon Toolbar) -->
+          <div class="flex items-center justify-end shrink-0 self-end md:self-center pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-100">
+            ${toolbarHtml}
           </div>
         </div>
 
@@ -2918,7 +2888,7 @@ function renderArticleCards(articles) {
       card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-4 shadow-sm hover:shadow-md transition-all duration-200 select-text";
       card.innerHTML = `
         <div class="w-full flex-1">
-          <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła + Kosz -->
+          <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła -->
           <div class="flex items-center justify-between gap-1.5 mb-2">
             <div class="flex flex-wrap items-center gap-1.5">
               ${categoryBadgeHtml}
@@ -2927,7 +2897,6 @@ function renderArticleCards(articles) {
               ${webSourceBadge}
               ${accessBadge}
             </div>
-            ${deleteBtnHtml}
           </div>
 
           <!-- 2. Tytuł polski z mikro-ikonami kategorii -->
@@ -2966,9 +2935,12 @@ function renderArticleCards(articles) {
           ${tagsHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>` : ""}
         </div>
 
-        <!-- 7. Dolny pasek akcji: 1. Abstrakt, 2. PDF, 3. Tłumaczenie, 4. Raport -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-auto pt-2.5 border-t border-slate-100 w-full">
-          ${bottomButtonsHtml}
+        <!-- 7. Dolny pasek akcji: Szczegóły + Pasek ikon wektorowych -->
+        <div class="flex items-center justify-between mt-auto pt-2.5 border-t border-slate-100 w-full gap-2">
+          <button type="button" onclick="event.stopPropagation(); openArticleDetail('${art.id}')" class="text-xs text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-1 transition cursor-pointer shrink-0">
+            <span>Szczegóły →</span>
+          </button>
+          ${toolbarHtml}
         </div>
       `;
     }
@@ -3288,7 +3260,7 @@ function handleBackdropClick(event, modalId) {
 }
 
 function closeAllModals() {
-  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal", "add-review-modal", "focus-reader-modal", "addTranslationModal", "categoryChangeModal"].forEach((id) => {
+  ["loginModal", "deleteModal", "detailModal", "uploadModal", "syncModal", "configModal", "statsModal", "securePdfViewerModal", "add-review-modal", "focus-reader-modal", "addTranslationModal", "categoryChangeModal", "createProjectModal", "createProjectDocModal", "projectMembersModal", "assignArticleToProjectModal", "addFromLibraryModal"].forEach((id) => {
     hideModalElement(id);
   });
 }
@@ -9467,4 +9439,269 @@ async function handleCreateGoogleDocSubmit(e) {
   }
 }
 window.handleCreateGoogleDocSubmit = handleCreateGoogleDocSubmit;
+
+/**
+ * =====================================================================
+ * MODUŁ: PRZYPISYWANIE PUBLIKACJI DO PROJEKTU BADAWCZEGO
+ * =====================================================================
+ */
+let pendingAssignArticleId = null;
+
+function openAssignArticleToProjectModal(articleId) {
+  pendingAssignArticleId = articleId;
+  const article = (AppState.articles || []).find(a => String(a.id) === String(articleId)) || (AppState.filteredArticles || []).find(a => String(a.id) === String(articleId));
+  if (!article) {
+    showToast("Nie znaleziono wybranej publikacji.", "error");
+    return;
+  }
+
+  const meta = article.meta || article.data || article || {};
+  const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.polishTitle || article.title || article.name || "Publikacja");
+  const titleEl = document.getElementById("assign-modal-article-title");
+  if (titleEl) {
+    titleEl.innerText = titlePL;
+    titleEl.title = titlePL;
+  }
+
+  renderAssignModalProjectsList(article);
+  showModalElement("assignArticleToProjectModal");
+}
+window.openAssignArticleToProjectModal = openAssignArticleToProjectModal;
+
+function closeAssignArticleToProjectModal() {
+  hideModalElement("assignArticleToProjectModal");
+  pendingAssignArticleId = null;
+}
+window.closeAssignArticleToProjectModal = closeAssignArticleToProjectModal;
+
+function renderAssignModalProjectsList(article) {
+  const listEl = document.getElementById("assign-modal-projects-list");
+  const emptyEl = document.getElementById("assign-modal-empty-projects");
+  if (!listEl) return;
+
+  const projects = AppState.userProjects || [];
+  if (projects.length === 0) {
+    listEl.innerHTML = "";
+    if (emptyEl) emptyEl.classList.remove("hidden");
+    return;
+  }
+
+  if (emptyEl) emptyEl.classList.add("hidden");
+
+  listEl.innerHTML = projects.map((project) => {
+    const pId = project.id || project.projectId;
+    const pName = project.name || "Projekt bez nazwy";
+    const resources = Array.isArray(project.resources) ? project.resources : (Array.isArray(project.docs) ? project.docs : []);
+    const driveFileId = article.driveFileId || article.fileIdOriginal || article.id;
+    const isAlreadyAdded = resources.some(r => String(r.id) === String(article.id) || String(r.articleId) === String(article.id) || String(r.fileId) === String(driveFileId));
+    const members = Array.isArray(project.members) ? project.members : [];
+
+    return `
+      <div class="flex items-center justify-between p-3 rounded-xl border ${isAlreadyAdded ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50/80 hover:bg-indigo-50/50 border-slate-200 hover:border-indigo-300'} transition">
+        <div class="min-w-0 flex-1 pr-3">
+          <div class="flex items-center gap-2 mb-0.5">
+            <h4 class="text-xs font-bold text-slate-800 truncate" title="${escapeHtml(pName)}">${escapeHtml(pName)}</h4>
+            ${isAlreadyAdded ? `<span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 rounded-full">Powiązano</span>` : ''}
+          </div>
+          <div class="flex items-center gap-3 text-[11px] text-slate-500">
+            <span><i class="fas fa-layer-group text-indigo-500 mr-1"></i>${resources.length} zasobów</span>
+            <span><i class="fas fa-users text-purple-500 mr-1"></i>${members.length} osób</span>
+          </div>
+        </div>
+        <div>
+          ${isAlreadyAdded ? `
+            <button disabled class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-white border border-emerald-200 opacity-80 cursor-default">
+              <i class="fas fa-check text-[10px] mr-1"></i> W projekcie
+            </button>
+          ` : `
+            <button type="button" onclick="executeAssignArticleToProject('${pId}', '${article.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition active:scale-95 shadow-xs cursor-pointer">
+              <span>Przypisz</span>
+              <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+window.renderAssignModalProjectsList = renderAssignModalProjectsList;
+
+async function executeAssignArticleToProject(projectId, articleId) {
+  const article = (AppState.articles || []).find(a => String(a.id) === String(articleId)) || (AppState.filteredArticles || []).find(a => String(a.id) === String(articleId));
+  const project = (AppState.userProjects || []).find(p => String(p.id) === String(projectId) || String(p.projectId) === String(projectId));
+  if (!article || !project) {
+    showToast("Błąd powiązania: nie odnaleziono danych artykułu lub projektu.", "error");
+    return;
+  }
+
+  const pId = project.id || project.projectId;
+  const userEmail = AppState.currentUser?.email || (AppState.currentRole === "ADMIN" ? "admin@skn.pl" : "czlonek@student.wskz.pl");
+  const meta = article.meta || article.data || article || {};
+  const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || article.titlePL || article.polishTitle || article.title || article.name || "Publikacja");
+  const driveFileId = article.driveFileId || article.fileIdOriginal || article.id;
+  const targetUrl = article.url || article.urlOriginal || (article.fileIdOriginal ? `https://drive.google.com/file/d/${article.fileIdOriginal}/view` : "");
+
+  const newResource = {
+    id: article.id,
+    articleId: article.id,
+    fileId: driveFileId,
+    title: titlePL,
+    name: titlePL,
+    type: "PDF",
+    url: targetUrl,
+    webViewLink: targetUrl,
+    author: cleanDisplayText(meta.authors || article.authors || "Autor nieznany"),
+    authorEmail: userEmail,
+    createdAt: new Date().toISOString().split("T")[0],
+    updatedAt: new Date().toISOString().split("T")[0]
+  };
+
+  // Optymistyczne dodanie zasobu do projektu
+  const curResources = Array.isArray(project.resources) ? project.resources : (Array.isArray(project.docs) ? project.docs : []);
+  if (!curResources.some(r => String(r.id) === String(article.id) || String(r.fileId) === String(driveFileId))) {
+    project.resources = [newResource, ...curResources];
+    project.docs = project.resources;
+  }
+
+  // Zapis w stanie i localStorage
+  const pIndex = AppState.userProjects.findIndex(p => String(p.id) === String(pId) || String(p.projectId) === String(pId));
+  if (pIndex !== -1) {
+    AppState.userProjects[pIndex] = { ...project };
+  }
+  if (AppState.currentProject && (String(AppState.currentProject.id) === String(pId) || String(AppState.currentProject.projectId) === String(pId))) {
+    AppState.currentProject = { ...project };
+    renderWorkspaceResources();
+  }
+  if (userEmail) {
+    localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
+  }
+  renderSidebarProjects();
+
+  closeAssignArticleToProjectModal();
+  closeAddFromLibraryModal();
+  showToast(`Publikacja została powiązana z projektem «${project.name}»`, "success");
+
+  // Wysłanie żądania do Apps Script
+  const payload = {
+    action: "addArticleToProject",
+    projectId: pId,
+    articleId: article.id,
+    title: titlePL,
+    driveFileId: driveFileId,
+    url: targetUrl,
+    authorEmail: userEmail
+  };
+
+  try {
+    await callGoogleScript("addArticleToProject", payload);
+  } catch (err) {
+    console.warn("Błąd wysyłania addArticleToProject do Apps Script (zapisano lokalnie):", err);
+  }
+}
+window.executeAssignArticleToProject = executeAssignArticleToProject;
+
+/**
+ * =====================================================================
+ * MODUŁ: DODAWANIE PUBLIKACJI Z BIBLIOTEKI (WIDOK PROJEKTU)
+ * =====================================================================
+ */
+function openAddFromLibraryModal() {
+  if (!AppState.currentProject) {
+    showToast("Wybierz najpierw projekt badawczy.", "error");
+    return;
+  }
+  const nameEl = document.getElementById("add-library-modal-project-name");
+  if (nameEl) {
+    nameEl.innerText = `Do projektu: ${AppState.currentProject.name}`;
+  }
+  const searchInput = document.getElementById("library-picker-search-input");
+  if (searchInput) {
+    searchInput.value = "";
+  }
+  renderLibraryPickerArticles(AppState.articles || []);
+  showModalElement("addFromLibraryModal");
+  if (searchInput) {
+    setTimeout(() => searchInput.focus(), 50);
+  }
+}
+window.openAddFromLibraryModal = openAddFromLibraryModal;
+
+function closeAddFromLibraryModal() {
+  hideModalElement("addFromLibraryModal");
+}
+window.closeAddFromLibraryModal = closeAddFromLibraryModal;
+
+function filterLibraryPickerArticles(query) {
+  const q = (query || "").trim().toLowerCase();
+  if (!q) {
+    renderLibraryPickerArticles(AppState.articles || []);
+    return;
+  }
+  const filtered = (AppState.articles || []).filter(art => {
+    const meta = art.meta || art.data || art || {};
+    const titlePL = (meta.titlePL || meta.polishTitle || art.titlePL || art.polishTitle || art.title || art.name || "").toLowerCase();
+    const titleEN = (meta.titleEN || meta.originalTitle || meta.titleOriginal || art.titleEN || art.titleOriginal || art.originalTitle || "").toLowerCase();
+    const authors = (meta.authors || art.authors || "").toLowerCase();
+    const tags = Array.isArray(meta.tags) ? meta.tags.join(" ").toLowerCase() : (Array.isArray(meta.keywords) ? meta.keywords.join(" ").toLowerCase() : (Array.isArray(art.tags) ? art.tags.join(" ").toLowerCase() : ""));
+    return titlePL.includes(q) || titleEN.includes(q) || authors.includes(q) || tags.includes(q);
+  });
+  renderLibraryPickerArticles(filtered);
+}
+window.filterLibraryPickerArticles = filterLibraryPickerArticles;
+window.filterAddFromLibraryArticles = filterLibraryPickerArticles;
+
+function renderLibraryPickerArticles(articles) {
+  const listEl = document.getElementById("library-picker-articles-list");
+  const countEl = document.getElementById("library-picker-count");
+  if (!listEl) return;
+
+  if (countEl) {
+    countEl.innerText = `${articles.length} publikacji`;
+  }
+
+  if (articles.length === 0) {
+    listEl.innerHTML = `
+      <div class="text-center py-8 text-slate-400 text-xs">
+        <i class="fas fa-search text-slate-300 text-2xl mb-2"></i>
+        <p>Nie znaleziono pasujących publikacji w Bibliotece.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const project = AppState.currentProject;
+  const projectResources = project ? (Array.isArray(project.resources) ? project.resources : (Array.isArray(project.docs) ? project.docs : [])) : [];
+
+  listEl.innerHTML = articles.map(art => {
+    const meta = art.meta || art.data || art || {};
+    const titlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || art.titlePL || art.polishTitle || art.title || art.name || "Brak tytułu");
+    const authors = cleanDisplayText(meta.authors || art.authors || "Autor nieznany");
+    const year = meta.year || art.year || "";
+    const driveFileId = art.driveFileId || art.fileIdOriginal || art.id;
+    const isAdded = projectResources.some(r => String(r.id) === String(art.id) || String(r.articleId) === String(art.id) || String(r.fileId) === String(driveFileId));
+
+    return `
+      <div class="flex items-center justify-between p-2.5 px-3 bg-slate-50 hover:bg-indigo-50/40 border border-slate-200/90 hover:border-indigo-200 rounded-xl transition gap-3">
+        <div class="min-w-0 flex-1">
+          <h4 class="text-xs font-semibold text-slate-800 truncate" title="${escapeHtml(titlePL)}">${escapeHtml(titlePL)}</h4>
+          <p class="text-[11px] text-slate-500 truncate mt-0.5">
+            <span>${escapeHtml(authors)}</span> ${year ? `• <span>${escapeHtml(year)}</span>` : ''}
+          </p>
+        </div>
+        <div class="shrink-0">
+          ${isAdded ? `
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <i class="fas fa-check text-[10px]"></i> Powiązano
+            </span>
+          ` : `
+            <button type="button" onclick="executeAssignArticleToProject('${project?.id}', '${art.id}')" class="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition active:scale-95 cursor-pointer shadow-2xs">
+              <i class="fas fa-plus text-[10px]"></i> Dodaj
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+window.renderLibraryPickerArticles = renderLibraryPickerArticles;
 
