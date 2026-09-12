@@ -1,15 +1,20 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-0830";
+const CACHE_NAME = "kalejdoskop-v-20260912-branding";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260912_0830",
-  "/app.js?v=20260912_0830",
-  "/config.js?v=20260912_0830",
-  "/authResetFlow.js?v=20260912_0830",
+  "/styles.css?v=20260912_branding",
+  "/app.js?v=20260912_branding",
+  "/config.js?v=20260912_branding",
+  "/authResetFlow.js?v=20260912_branding",
   "/manifest.json",
   "/logo.png",
   "/logo192.png",
   "/logo512.png",
+  "/icons/logo.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/images/cube-repo-hero.webp",
+  "/images/cube-repo-hero.png",
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico"

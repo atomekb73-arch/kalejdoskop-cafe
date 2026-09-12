@@ -1,4 +1,4 @@
-const CACHE_NAME = "kalejdoskop-v3.0.0";
+const CACHE_NAME = "kalejdoskop-v-20260912-branding";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -8,6 +8,11 @@ const ASSETS_TO_CACHE = [
   "/logo.png",
   "/logo192.png",
   "/logo512.png",
+  "/icons/logo.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/images/cube-repo-hero.webp",
+  "/images/cube-repo-hero.png",
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico"

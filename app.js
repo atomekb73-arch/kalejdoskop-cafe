@@ -1553,6 +1553,14 @@ function filterAndRenderArticles() {
   });
 
   AppState.filteredArticles = list;
+  const repoBanner = document.getElementById("repository-hero-banner");
+  if (repoBanner) {
+    if (AppState.activeCategory === "08. Repozytorium Badawcze SKN") {
+      repoBanner.classList.remove("hidden");
+    } else {
+      repoBanner.classList.add("hidden");
+    }
+  }
   renderArticleCards(list);
   updateStatsHeader(list.length);
 }
