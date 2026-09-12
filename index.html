@@ -9,35 +9,35 @@
   <meta name="description" content="Naukowa baza wiedzy, repozytorium abstraktów klinicznych oraz asystent Journal Club AI Studenckiego Koła Naukowego Seksuologii." />
   <meta name="author" content="atomekb" />
 
-  <!-- Open Graph / WhatsApp Preview -->
+  <!-- Open Graph / WhatsApp Preview (Zoptymalizowany kwadrat 300x300 dla małego podglądu) -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/" />
   <meta property="og:site_name" content="Kalejdoskop Café" />
-  <meta property="og:title" content="Kalejdoskop Café – Inteligentna Biblioteka Seksuologii" />
-  <meta property="og:description" content="Naukowa baza wiedzy, raporty kliniczne i asystent AI SKN Seksuologii." />
-  <meta property="og:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/icon-192x192.png" />
-  <meta property="og:image:secure_url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/icon-192x192.png" />
-  <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="192" />
-  <meta property="og:image:height" content="192" />
+  <meta property="og:title" content="Kalejdoskop Café – Biblioteka SKN Seksuologii" />
+  <meta property="og:description" content="Inteligentna baza wiedzy i repozytorium badawcze SKN Seksuologii." />
+  <meta property="og:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/og-thumb.jpg" />
+  <meta property="og:image:secure_url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/og-thumb.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="300" />
+  <meta property="og:image:height" content="300" />
   <meta property="og:image:alt" content="Kalejdoskop Café Logo" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/" />
-  <meta name="twitter:title" content="Kalejdoskop Café – Inteligentna Biblioteka Seksuologii" />
-  <meta name="twitter:description" content="Naukowa baza wiedzy, raporty kliniczne i asystent AI SKN Seksuologii." />
-  <meta name="twitter:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/icon-192x192.png" />
+  <meta name="twitter:title" content="Kalejdoskop Café – Biblioteka SKN Seksuologii" />
+  <meta name="twitter:description" content="Inteligentna baza wiedzy i repozytorium badawcze SKN Seksuologii." />
+  <meta name="twitter:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/og-thumb.jpg" />
   <meta name="twitter:image:alt" content="Kalejdoskop Café Logo" />
   
-  <!-- Progressive Web App (PWA) -->
+  <!-- Progressive Web App (PWA) & Ikony -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Kalejdoskop" />
-  <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" type="image/jpeg" href="/icons/og-thumb.jpg" />
+  <link rel="apple-touch-icon" href="/icons/og-thumb.jpg" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   
   <!-- Tailwind CSS CDN -->
@@ -76,7 +76,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260912_fullbleed_logo">
+  <link rel="stylesheet" href="styles.css?v=20260912_og_thumb">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -251,12 +251,11 @@
   <header class="flex-shrink-0 h-16 py-2 px-4 sm:px-6 bg-white border-b-0 border-none z-50 flex items-center justify-between gap-2 sm:gap-4 light-header">
     <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
     <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 overflow-visible">
-      <!-- Czysty, bezramkowy kafelek wypełniony w 100% grafiką -->
-      <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl overflow-hidden flex-shrink-0 shadow-sm">
+      <div class="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 shadow-sm bg-slate-100 flex items-center justify-center">
         <img 
-          src="/icons/logo.png" 
+          src="/icons/Kalejdoskop.jpg" 
           alt="Kalejdoskop Café Logo" 
-          class="w-full h-full object-cover block"
+          class="w-full h-full object-contain block"
         />
       </div>
       <div class="overflow-visible whitespace-nowrap">
@@ -2699,8 +2698,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260912_fullbleed_logo"></script>
-  <script src="/authResetFlow.js?v=20260912_fullbleed_logo"></script>
-  <script src="app.js?v=20260912_fullbleed_logo"></script>
+  <script src="/config.js?v=20260912_og_thumb"></script>
+  <script src="/authResetFlow.js?v=20260912_og_thumb"></script>
+  <script src="app.js?v=20260912_og_thumb"></script>
 </body>
 </html>

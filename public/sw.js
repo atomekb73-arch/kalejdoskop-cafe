@@ -1,4 +1,4 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-fullbleed-logo";
+const CACHE_NAME = "kalejdoskop-v-20260912-og-thumb";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -9,8 +9,12 @@ const ASSETS_TO_CACHE = [
   "/logo-cube.png",
   "/logo192.png",
   "/logo512.png",
+  "/Kalejdoskop.jpg",
+  "/og-thumb.jpg",
   "/icons/logo.png",
   "/icons/logo-cube.png",
+  "/icons/Kalejdoskop.jpg",
+  "/icons/og-thumb.jpg",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
   "/images/cube-repo-hero.webp",
