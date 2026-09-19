@@ -6,8 +6,8 @@
 const APP_CONFIG = {
   APP_NAME: "Kalejdoskop Café",
   VERSION: "2.1.1",
-  API_URL: "https://script.google.com/macros/s/AKfycbxDO8hUWIvrjWOKRlPTEWfAUekVB4F-9uZBvellGELK92n4nMBt3gq_a6NSihfux7Pd/exec",
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxDO8hUWIvrjWOKRlPTEWfAUekVB4F-9uZBvellGELK92n4nMBt3gq_a6NSihfux7Pd/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbzYN-Li31tj2doOE3H9O09LL6upO53n2AO_sPuWHDrFjLMFscU5_aQR2BpchJkTooix/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzYN-Li31tj2doOE3H9O09LL6upO53n2AO_sPuWHDrFjLMFscU5_aQR2BpchJkTooix/exec",
   SPREADSHEET_ID: "1O_PbmKe8Dy8g1YeuUNmSgqsFBVZTdoVFIciJxQ0Ta_w",
   DRIVE_BASE_VIEW: "https://drive.google.com/file/d/",
   ADMIN_PIN: "2026",
