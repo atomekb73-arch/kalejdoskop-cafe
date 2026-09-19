@@ -1,11 +1,11 @@
-const CACHE_NAME = 'kalejdoskop-v-tb-v2';
+const CACHE_NAME = 'kalejdoskop-v-tb-white';
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260919_tb_v2",
-  "/app.js?v=20260919_tb_v2",
-  "/config.js?v=20260919_tb_v2",
-  "/authResetFlow.js?v=20260919_tb_v2",
+  "/styles.css?v=20260919_white",
+  "/app.js?v=20260919_white",
+  "/config.js?v=20260919_white",
+  "/authResetFlow.js?v=20260919_white",
   "/manifest.json",
   "/logo-tb.jpg",
   "/logo-tb.png",
@@ -27,9 +27,14 @@ const ASSETS_TO_CACHE = [
   "/icons/og-thumb.jpg",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
+  "/icons/favicon-32x32.png",
+  "/icons/favicon-16x16.png",
+  "/icons/apple-touch-icon.png",
   "/images/cube-repo-hero.webp",
   "/images/cube-repo-hero.png",
   "/apple-touch-icon.png",
+  "/favicon-32x32.png",
+  "/favicon-16x16.png",
   "/favicon.png",
   "/favicon.ico"
 ];
