@@ -1,11 +1,11 @@
-const CACHE_NAME = "kalejdoskop-v-20260919-gas-endpoint-update";
+const CACHE_NAME = 'kalejdoskop-v-20260919-exec';
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260919_gas_endpoint_update",
-  "/app.js?v=20260919_gas_endpoint_update",
-  "/config.js?v=20260919_gas_endpoint_update",
-  "/authResetFlow.js?v=20260919_gas_endpoint_update",
+  "/styles.css?v=20260919_exec",
+  "/app.js?v=20260919_exec",
+  "/config.js?v=20260919_exec",
+  "/authResetFlow.js?v=20260919_exec",
   "/manifest.json",
   "/logo.png",
   "/logo-cube.png",
