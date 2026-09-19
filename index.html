@@ -251,13 +251,17 @@
   <header class="flex-shrink-0 h-16 py-2 px-4 sm:px-6 bg-white border-b-0 border-none z-50 flex items-center justify-between gap-2 sm:gap-4 light-header">
     <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
     <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 overflow-visible">
-      <!-- Kontener z dwukolorową obwódką gradientową i białym tłem -->
-      <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl p-[2px] bg-gradient-to-tr from-[#14b8a6] via-[#2dd4bf] to-[#94a3b8] shadow-sm flex-shrink-0">
-        <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center p-1 overflow-hidden">
+      <!-- Zewnętrzny kontener z dwukolorową obwódką o pionowym podziale (lewo/prawo) -->
+      <div class="relative w-12 h-12 sm:w-13 sm:h-13 rounded-2xl p-[2.5px] shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden"
+           style="background: linear-gradient(90deg, #94a3b8 0%, #94a3b8 50%, #14b8a6 50%, #14b8a6 100%);">
+        
+        <!-- Wewnętrzne, czyste białe tło idealnie centrujące grafikę -->
+        <div class="w-full h-full bg-white rounded-[13px] flex items-center justify-center overflow-hidden p-0">
           <img 
             src="/icons/logo-tb.png" 
             alt="Tb" 
-            class="w-full h-full object-contain block"
+            class="w-full h-full object-contain p-0.5 m-auto block select-none pointer-events-none"
+            style="transform: scale(1.15);"
           />
         </div>
       </div>
