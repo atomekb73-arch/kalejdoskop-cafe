@@ -3,7 +3,7 @@
  * Studenckie Koło Naukowe Seksuologii
  */
 
-const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbypmn9p9A3B_FxijUaBDP8riMqmnnaqV5XvY9S46TGq3BTR7Maqdgn-wSn6Kc8wbA4g/exec";
+const DEFAULT_EXEC_URL = "https://script.google.com/macros/s/AKfycbxDO8hUWIvrjWOKRlPTEWfAUekVB4F-9uZBvellGELK92n4nMBt3gq_a6NSihfux7Pd/exec";
 
 const AppState = {
   articles: [],
@@ -47,7 +47,7 @@ if (typeof window !== "undefined") {
 /**
  * Bezpieczna funkcja wywołania Google Apps Script odporna na blokady CORS (text/plain + redirect: follow)
  */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypmn9p9A3B_FxijUaBDP8riMqmnnaqV5XvY9S46TGq3BTR7Maqdgn-wSn6Kc8wbA4g/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDO8hUWIvrjWOKRlPTEWfAUekVB4F-9uZBvellGELK92n4nMBt3gq_a6NSihfux7Pd/exec";
 
 /**
  * Klient sieciowy Google Apps Script z obsługą CORS text/plain i przekierowań 302
