@@ -76,7 +76,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260919_sync_spinner">
+  <link rel="stylesheet" href="styles.css?v=20260919_scale_fix">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -251,7 +251,7 @@
   <header class="flex-shrink-0 h-16 py-2 px-4 sm:px-6 bg-white border-b-0 border-none z-50 flex items-center justify-between gap-2 sm:gap-4 light-header">
     <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
     <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 overflow-visible">
-      <div class="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 shadow-sm bg-slate-100 flex items-center justify-center">
+      <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden flex-shrink-0 shadow-sm bg-slate-100 flex items-center justify-center">
         <img 
           src="/icons/Kalejdoskop.jpg" 
           alt="Kalejdoskop Café Logo" 
@@ -455,14 +455,14 @@
     <!-- 2. PRAWY OBSZAR GŁÓWNY -->
     <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-slate-200">
       <!-- Mobilny pasek wyboru kategorii (widoczny tylko na ekranach <= 1024px) -->
-      <div class="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 h-12 py-1.5 px-4 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <button type="button" onclick="openCategoryDrawer()" class="flex-1 max-w-max min-w-0 flex items-center justify-between h-9 py-1 px-3.5 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-sm sm:text-base font-medium transition active:scale-98 cursor-pointer">
-          <span class="flex items-center gap-2 min-w-0">
-            <svg class="w-5 h-5 stroke-[2] text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
-            <span class="text-slate-500 font-normal shrink-0">Dział:</span>
-            <span id="mobile-active-category-label" class="text-indigo-900 font-medium text-sm sm:text-base">Wszystkie materiały</span>
+      <div class="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 h-11 py-1 px-4 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <button type="button" onclick="openCategoryDrawer()" class="flex-1 min-w-0 flex items-center justify-between h-9 py-1 px-3.5 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-sm font-medium transition active:scale-98 cursor-pointer overflow-hidden">
+          <span class="flex items-center gap-1.5 sm:gap-2 min-w-0 truncate whitespace-nowrap">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 stroke-[2] text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+            <span class="text-slate-500 font-normal shrink-0 whitespace-nowrap">Dział:</span>
+            <span id="mobile-active-category-label" class="text-indigo-900 font-semibold text-xs sm:text-sm truncate whitespace-nowrap">Wszystkie materiały</span>
           </span>
-          <span id="mobile-category-count-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-indigo-700 border border-indigo-200 shadow-2xs shrink-0">0 prac</span>
+          <span id="mobile-category-count-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-indigo-700 border border-indigo-200 shadow-2xs shrink-0 whitespace-nowrap">0 prac</span>
         </button>
         <button type="button" onclick="openCategoryDrawer()" class="p-2 bg-white hover:bg-slate-50 text-indigo-600 border border-slate-200 rounded-xl text-xs transition cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0 w-9 h-9" title="Otwórz menu działów">
           <svg class="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
@@ -2720,8 +2720,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260919_sync_spinner"></script>
-  <script src="/authResetFlow.js?v=20260919_sync_spinner"></script>
-  <script src="app.js?v=20260919_sync_spinner"></script>
+  <script src="/config.js?v=20260919_scale_fix"></script>
+  <script src="/authResetFlow.js?v=20260919_scale_fix"></script>
+  <script src="app.js?v=20260919_scale_fix"></script>
 </body>
 </html>

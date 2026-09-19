@@ -1,11 +1,11 @@
-const CACHE_NAME = 'kalejdoskop-v-20260919-sync-spinner';
+const CACHE_NAME = 'kalejdoskop-v-20260919-scale-fix';
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260919_sync_spinner",
-  "/app.js?v=20260919_sync_spinner",
-  "/config.js?v=20260919_sync_spinner",
-  "/authResetFlow.js?v=20260919_sync_spinner",
+  "/styles.css?v=20260919_scale_fix",
+  "/app.js?v=20260919_scale_fix",
+  "/config.js?v=20260919_scale_fix",
+  "/authResetFlow.js?v=20260919_scale_fix",
   "/manifest.json",
   "/logo.png",
   "/logo-cube.png",
