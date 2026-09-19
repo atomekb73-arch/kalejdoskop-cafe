@@ -8324,17 +8324,43 @@ function updatePwaButtonsVisibility(show) {
   }
 }
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((reg) => {
-        console.log("PWA: Service Worker zarejestrowany pomyślnie:", reg.scope);
-        reg.update().catch(() => {});
-      })
-      .catch((err) => {
-        console.warn("PWA: Rejestracja Service Workera pominięta/błąd:", err);
+if ('serviceWorker' in navigator) {
+  let refreshing = false;
+
+  // Gdy nowy Service Worker przejmie kontrolę – odśwież widok aplikacji w ułamku sekundy
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      // 1. Sprawdź dostępność aktualizacji natychmiast po załadowaniu okna
+      registration.update();
+
+      // 2. Sprawdzaj aktualizację za każdym razem, gdy użytkownik wraca do aplikacji (np. odblokowuje telefon)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          registration.update();
+        }
       });
+
+      // 3. Jeśli w tle pobierze się nowa wersja, wyślij sygnał do natychmiastowego przełączenia
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ action: 'skipWaiting' });
+            }
+          });
+        }
+      });
+    }).catch((err) => {
+      console.warn('Błąd rejestracji Service Workera:', err);
+    });
   });
 }
 

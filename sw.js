@@ -26,30 +26,49 @@ const ASSETS_TO_CACHE = [
   "/favicon.ico"
 ];
 
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
+// Wymuszenie natychmiastowej aktywacji nowego Service Workera
+self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Nie czekaj na zamknięcie kart – instaluj od razu
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.map((key) => {
+          // Usuń wszystkie stare wersje pamięci podręcznej oprócz bieżącej
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()) // Przejmij kontrolę nad wszystkimi otwartymi oknami natychmiast
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
+// Obsługa wiadomości do wymuszenia skipWaiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
 
-  // Ignorujemy zapytania do Google Apps Script i zewnętrznych serwisów API
+// Strategia Network-First dla zapytań do API Apps Script (żadnego starego cache dla bazy!)
+self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+  if (url.includes('script.google.com') || url.includes('/exec')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Ignorujemy pozostałe zewnętrzne serwisy CDN
   if (
-    url.hostname.includes("script.google.com") ||
-    url.hostname.includes("googleusercontent.com") ||
-    url.hostname.includes("googleapis.com") ||
-    url.hostname.includes("cdnjs.cloudflare.com") ||
-    url.hostname.includes("cdn.tailwindcss.com")
+    url.includes('googleusercontent.com') ||
+    url.includes('googleapis.com') ||
+    url.includes('cdnjs.cloudflare.com') ||
+    url.includes('cdn.tailwindcss.com')
   ) {
     return;
   }
