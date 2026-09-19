@@ -1,11 +1,11 @@
-const CACHE_NAME = "kalejdoskop-v-20260919-access-toggle";
+const CACHE_NAME = "kalejdoskop-v-20260919-access-toggle-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260919_access_toggle",
-  "/app.js?v=20260919_access_toggle",
-  "/config.js?v=20260919_access_toggle",
-  "/authResetFlow.js?v=20260919_access_toggle",
+  "/styles.css?v=20260919_access_toggle_v2",
+  "/app.js?v=20260919_access_toggle_v2",
+  "/config.js?v=20260919_access_toggle_v2",
+  "/authResetFlow.js?v=20260919_access_toggle_v2",
   "/manifest.json",
   "/logo.png",
   "/logo-cube.png",

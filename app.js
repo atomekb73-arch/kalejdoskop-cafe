@@ -2888,15 +2888,13 @@ function renderArticleCards(articles) {
   articles.forEach((art) => {
     const meta = art.meta || art.data || art || {};
     const isInternal = isInternalArticle(art);
-    const isPublic = Boolean(art.isPublic !== undefined ? art.isPublic : (art.accessLevel ? art.accessLevel === "PUBLIC" : (!isInternal && art.status !== "INTERNAL")));
+    const isPublic = Boolean(art.isPublic !== undefined ? art.isPublic : (art.accessLevel ? (art.accessLevel === "PUBLIC" || art.accessLevel === "Otwarty") : (!isInternal && art.status !== "INTERNAL")));
     const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
+    const currentAccessLevel = isPublic ? 'Otwarty' : 'SKN';
 
-    let accessBadge = "";
-    if (isPublic) {
-      accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleAccessLevel('${art.id}', 'Otwarty', event)" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-900 border border-emerald-300 hover:border-emerald-400 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Materiał SKN"><i class="fas fa-lock-open text-[9px] text-emerald-600"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
-    } else {
-      accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleAccessLevel('${art.id}', 'SKN', event)" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-300 hover:border-rose-400 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Dostęp Otwarty"><i class="fas fa-lock text-[9px] text-rose-600"></i> <span>Materiał SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
-    }
+    const accessBadge = `<button type="button" onclick="toggleAccessLevel('${art.id}', '${currentAccessLevel}', event)" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${currentAccessLevel === 'SKN' ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}" title="${currentAccessLevel === 'SKN' ? 'Kliknij, aby przełączyć na: Dostęp Otwarty' : 'Kliknij, aby przełączyć na: Materiał SKN'}">
+  <span>${currentAccessLevel === 'SKN' ? '🔒 Materiał SKN' : '🔓 Dostęp Otwarty'}</span>
+</button>`;
 
     const displayTitlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || art.titlePL || art.polishTitle || art.name || "Brak tytułu");
     const displayTitleEN = cleanDisplayText(meta.titleEN || meta.originalTitle || meta.titleOriginal || art.titleEN || art.titleOriginal || art.originalTitle || "");
@@ -6804,11 +6802,10 @@ function openArticleDetail(articleId) {
 
   const accessContainer = document.getElementById("detail-access-badge-container");
   if (accessContainer) {
-    if (isPublic) {
-      accessContainer.innerHTML = `<button type="button" onclick="toggleAccessLevel('${article.id}', 'Otwarty', event)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-900 border border-emerald-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Materiał SKN"><i class="fas fa-lock-open text-[9px] text-emerald-600"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8.5px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
-    } else {
-      accessContainer.innerHTML = `<button type="button" onclick="toggleAccessLevel('${article.id}', 'SKN', event)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Dostęp Otwarty"><i class="fas fa-lock text-[9px] text-rose-600"></i> <span>Materiał SKN</span> <i class="fas fa-arrows-rotate text-[8.5px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
-    }
+    const detailAccessLevel = isPublic ? 'Otwarty' : 'SKN';
+    accessContainer.innerHTML = `<button type="button" onclick="toggleAccessLevel('${article.id}', '${detailAccessLevel}', event)" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${detailAccessLevel === 'SKN' ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}" title="${detailAccessLevel === 'SKN' ? 'Kliknij, aby przełączyć na: Dostęp Otwarty' : 'Kliknij, aby przełączyć na: Materiał SKN'}">
+  <span>${detailAccessLevel === 'SKN' ? '🔒 Materiał SKN' : '🔓 Dostęp Otwarty'}</span>
+</button>`;
   }
 
   const catEl = document.getElementById("detail-category");
