@@ -38,6 +38,7 @@ const AppState = {
   currentUser: null,
   userProjects: [],
   currentProject: null,
+  syncingProjectIds: new Set(),
   activeMainView: "catalog"
 };
 if (typeof window !== "undefined") {
@@ -8604,7 +8605,8 @@ function renderSidebarProjects() {
     }
 
     return AppState.userProjects.map((project) => {
-      const isActive = AppState.activeMainView === "project" && AppState.currentProject && AppState.currentProject.id === project.id;
+      const isActive = AppState.activeMainView === "project" && AppState.currentProject && String(AppState.currentProject.id) === String(project.id);
+      const isProjectSyncing = Boolean(AppState.syncingProjectIds && AppState.syncingProjectIds.has(String(project.id)));
       const docsList = (Array.isArray(project.resources) && project.resources.length > 0) ? project.resources : (Array.isArray(project.docs) ? project.docs : []);
       const docsCount = docsList.length;
       return `
@@ -8624,11 +8626,27 @@ function renderSidebarProjects() {
             </span>
             <span class="text-[11px] leading-snug truncate flex-1 font-medium">${escapeHtml(project.name)}</span>
           </div>
-          <span class="px-1.5 py-0.2 rounded-full text-[9.5px] font-mono shrink-0 ${
-            isActive ? 'bg-white/25 text-white font-bold' : 'bg-purple-50 text-purple-700 border border-purple-200'
-          }">
-            ${docsCount} dok.
-          </span>
+          ${
+            isProjectSyncing
+              ? `
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono shrink-0 ${
+              isActive ? 'bg-white/25 text-white' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+            }" title="Synchronizacja z Dyskiem Google...">
+              <svg class="animate-spin h-2.5 w-2.5 text-current" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Sync...</span>
+            </span>
+          `
+              : `
+            <span class="px-1.5 py-0.2 rounded-full text-[9.5px] font-mono shrink-0 ${
+              isActive ? 'bg-white/25 text-white font-bold' : 'bg-purple-50 text-purple-700 border border-purple-200'
+            }">
+              ${docsCount} dok.
+            </span>
+          `
+          }
         </button>
       `;
     }).join("");
@@ -9079,9 +9097,58 @@ async function handleDeleteProjectClick() {
 }
 window.handleDeleteProjectClick = handleDeleteProjectClick;
 
-async function loadProjectDriveFiles(projectId) {
+function updateProjectSyncUI(projectId, isSyncing) {
+  if (!AppState.syncingProjectIds) {
+    AppState.syncingProjectIds = new Set();
+  }
+  const strId = String(projectId);
+  if (isSyncing) {
+    AppState.syncingProjectIds.add(strId);
+  } else {
+    AppState.syncingProjectIds.delete(strId);
+  }
+
+  // Odśwież ikony/odznaki w lewym menu
+  renderSidebarProjects();
+
+  // Jeśli otwarty jest ten projekt, zaktualizuj wskaźnik i przycisk w workspace
+  if (AppState.currentProject && (String(AppState.currentProject.id) === strId || String(AppState.currentProject.projectId) === strId)) {
+    const syncingEl = document.getElementById("workspace-resources-syncing");
+    const forceSyncIcon = document.getElementById("workspace-force-sync-icon");
+    const forceSyncBtn = document.getElementById("workspace-force-sync-btn");
+
+    if (isSyncing) {
+      if (syncingEl) {
+        syncingEl.classList.remove("hidden");
+        syncingEl.style.display = "inline-flex";
+      }
+      if (forceSyncIcon) forceSyncIcon.classList.add("animate-spin");
+      if (forceSyncBtn) forceSyncBtn.classList.add("opacity-80");
+    } else {
+      if (syncingEl) {
+        syncingEl.classList.add("hidden");
+        syncingEl.style.display = "none";
+      }
+      if (forceSyncIcon) forceSyncIcon.classList.remove("animate-spin");
+      if (forceSyncBtn) forceSyncBtn.classList.remove("opacity-80");
+    }
+  }
+}
+window.updateProjectSyncUI = updateProjectSyncUI;
+
+function updateProjectBadgeCount(projectId, count) {
+  const pIndex = AppState.userProjects.findIndex((p) => String(p.id) === String(projectId) || String(p.projectId) === String(projectId));
+  if (pIndex !== -1) {
+    renderSidebarProjects();
+  }
+}
+window.updateProjectBadgeCount = updateProjectBadgeCount;
+
+async function loadProjectDriveFiles(projectId, isManual = false) {
   const targetProjectId = projectId || AppState.currentProject?.id || AppState.currentProject?.projectId;
   if (!targetProjectId) return;
+
+  updateProjectSyncUI(targetProjectId, true);
 
   try {
     const response = await callGoogleScript("getProjectDriveFiles", { projectId: targetProjectId });
@@ -9114,16 +9181,17 @@ async function loadProjectDriveFiles(projectId) {
         return timeB - timeA;
       });
 
-      if (AppState.currentProject && (AppState.currentProject.id === targetProjectId || AppState.currentProject.projectId === targetProjectId)) {
+      if (AppState.currentProject && (String(AppState.currentProject.id) === String(targetProjectId) || String(AppState.currentProject.projectId) === String(targetProjectId))) {
         AppState.currentProject = {
           ...AppState.currentProject,
           resources: normalizedResources,
           docs: normalizedResources
         };
+        window.activeProject = AppState.currentProject;
         renderWorkspaceResources();
       }
 
-      const pIndex = AppState.userProjects.findIndex((p) => p.id === targetProjectId || p.projectId === targetProjectId);
+      const pIndex = AppState.userProjects.findIndex((p) => String(p.id) === String(targetProjectId) || String(p.projectId) === String(targetProjectId));
       if (pIndex !== -1) {
         AppState.userProjects[pIndex] = {
           ...AppState.userProjects[pIndex],
@@ -9135,12 +9203,32 @@ async function loadProjectDriveFiles(projectId) {
           localStorage.setItem(`skn_user_projects_${userEmail}`, JSON.stringify(AppState.userProjects));
         }
       }
+
+      if (isManual) {
+        showToast(`Zsynchronizowano pliki z Dyskiem Google (${normalizedResources.length} dok.)`, "success");
+      }
+    } else {
+      if (isManual) {
+        showToast("Nie znaleziono nowych plików na Dysku Google.", "info");
+      }
     }
   } catch (err) {
     console.warn("Błąd pobierania plików z Dysku projektu (getProjectDriveFiles):", err);
+    if (isManual) {
+      showToast("Błąd synchronizacji plików z Dyskiem Google.", "error");
+    }
+  } finally {
+    updateProjectSyncUI(targetProjectId, false);
   }
 }
 window.loadProjectDriveFiles = loadProjectDriveFiles;
+
+async function forceSyncProjectResources(projectId) {
+  const targetId = projectId || AppState.currentProject?.id || window.activeProject?.id;
+  if (!targetId) return;
+  await loadProjectDriveFiles(targetId, true);
+}
+window.forceSyncProjectResources = forceSyncProjectResources;
 
 function openProjectWorkspace(projectId) {
   const project = AppState.userProjects.find((p) => String(p.id) === String(projectId) || String(p.projectId) === String(projectId));
