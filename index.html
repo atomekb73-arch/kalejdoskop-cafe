@@ -15,8 +15,8 @@
   <meta property="og:site_name" content="Kalejdoskop Café" />
   <meta property="og:title" content="Kalejdoskop Café – Biblioteka SKN Seksuologii" />
   <meta property="og:description" content="Inteligentna baza wiedzy i repozytorium badawcze SKN Seksuologii." />
-  <meta property="og:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-designer.jpg" />
-  <meta property="og:image:secure_url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-designer.jpg" />
+  <meta property="og:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-tb.jpg" />
+  <meta property="og:image:secure_url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-tb.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
@@ -27,7 +27,7 @@
   <meta name="twitter:url" content="https://kalejdoskop-cafe-atomekb73.vercel.app/" />
   <meta name="twitter:title" content="Kalejdoskop Café – Biblioteka SKN Seksuologii" />
   <meta name="twitter:description" content="Inteligentna baza wiedzy i repozytorium badawcze SKN Seksuologii." />
-  <meta name="twitter:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-designer.jpg" />
+  <meta name="twitter:image" content="https://kalejdoskop-cafe-atomekb73.vercel.app/icons/logo-tb.jpg" />
   <meta name="twitter:image:alt" content="Sygnatura Projektanta Tb" />
   
   <!-- Progressive Web App (PWA) & Ikony -->
@@ -36,8 +36,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Kalejdoskop" />
-  <link rel="icon" type="image/jpeg" href="/icons/logo-designer.jpg" />
-  <link rel="apple-touch-icon" href="/icons/logo-designer.jpg" />
+  <link rel="icon" type="image/jpeg" href="/icons/logo-tb.jpg" />
+  <link rel="apple-touch-icon" href="/icons/logo-tb.jpg" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   
   <!-- Tailwind CSS CDN -->
@@ -252,11 +252,12 @@
     <!-- Lewa strona: Logo + Kalejdoskop Café + Podtytuł -->
     <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 overflow-visible">
       <!-- Dedykowany, ciemny kafelek dla sygnatury Tb -->
-      <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden bg-black flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-800 p-0.5">
+      <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-black flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-800">
         <img 
-          src="/icons/logo-designer.jpg" 
-          alt="Sygnatura Tb" 
-          class="w-full h-full object-contain object-center block"
+          src="/icons/logo-tb.jpg" 
+          alt="Tb" 
+          class="w-full h-full object-contain p-0.5 block"
+          onerror="this.style.display='none'; this.parentElement.classList.add('flex', 'items-center', 'justify-center', 'text-teal-400', 'font-bold', 'text-sm'); this.parentElement.innerText='Tb';"
         />
       </div>
       <div class="overflow-visible whitespace-nowrap">
@@ -457,11 +458,11 @@
     <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-slate-200">
       <!-- Mobilny pasek wyboru kategorii (widoczny tylko na ekranach <= 1024px) -->
       <div class="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 h-11 py-1 px-4 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <button type="button" onclick="openCategoryDrawer()" class="flex-1 min-w-0 flex items-center justify-between h-9 py-1 px-3.5 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-sm font-medium transition active:scale-98 cursor-pointer overflow-hidden">
-          <span class="flex items-center gap-1.5 sm:gap-2 min-w-0 truncate whitespace-nowrap">
+        <button type="button" onclick="openCategoryDrawer()" class="flex-1 min-w-0 flex items-center justify-between h-9 py-1 px-3.5 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100/90 hover:to-purple-100/90 text-indigo-950 border border-indigo-200/80 rounded-xl text-sm font-medium transition active:scale-98 cursor-pointer">
+          <span class="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0">
             <svg class="w-4 h-4 sm:w-5 sm:h-5 stroke-[2] text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
             <span class="text-slate-500 font-normal shrink-0 whitespace-nowrap">Dział:</span>
-            <span id="mobile-active-category-label" class="text-indigo-900 font-semibold text-xs sm:text-sm truncate whitespace-nowrap">Wszystkie materiały</span>
+            <span id="mobile-active-category-label" class="text-indigo-900 font-semibold text-xs sm:text-sm whitespace-nowrap flex-shrink-0">Wszystkie materiały</span>
           </span>
           <span id="mobile-category-count-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-indigo-700 border border-indigo-200 shadow-2xs shrink-0 whitespace-nowrap">0 prac</span>
         </button>
@@ -2721,8 +2722,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260919_tb_signature"></script>
-  <script src="/authResetFlow.js?v=20260919_tb_signature"></script>
-  <script src="app.js?v=20260919_tb_signature"></script>
+  <script src="/config.js?v=20260919_tb_v2"></script>
+  <script src="/authResetFlow.js?v=20260919_tb_v2"></script>
+  <script src="app.js?v=20260919_tb_v2"></script>
 </body>
 </html>

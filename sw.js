@@ -1,12 +1,14 @@
-const CACHE_NAME = 'kalejdoskop-v-tb-signature';
+const CACHE_NAME = 'kalejdoskop-v-tb-v2';
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
-  "/styles.css?v=20260919_tb_signature",
-  "/app.js?v=20260919_tb_signature",
-  "/config.js?v=20260919_tb_signature",
-  "/authResetFlow.js?v=20260919_tb_signature",
+  "/styles.css?v=20260919_tb_v2",
+  "/app.js?v=20260919_tb_v2",
+  "/config.js?v=20260919_tb_v2",
+  "/authResetFlow.js?v=20260919_tb_v2",
   "/manifest.json",
+  "/logo-tb.jpg",
+  "/logo-tb.png",
   "/logo-designer.jpg",
   "/logo-designer.png",
   "/logo.png",
@@ -15,6 +17,8 @@ const ASSETS_TO_CACHE = [
   "/logo512.png",
   "/Kalejdoskop.jpg",
   "/og-thumb.jpg",
+  "/icons/logo-tb.jpg",
+  "/icons/logo-tb.png",
   "/icons/logo-designer.jpg",
   "/icons/logo-designer.png",
   "/icons/logo.png",
