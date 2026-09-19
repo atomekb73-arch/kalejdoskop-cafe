@@ -76,7 +76,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Custom Light Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260912_og_thumb">
+  <link rel="stylesheet" href="styles.css?v=20260919_access_toggle">
 
   <style>
     /* Całkowite wyłączenie Vercel Toolbar i Live Feedback (eliminacja konfliktu skrótów klawiszy AltGr / polskich znaków) */
@@ -1249,7 +1249,10 @@
     <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[95vh] h-auto flex flex-col p-6 sm:p-8 shadow-2xl relative text-left overflow-y-auto transition-all duration-300" onclick="event.stopPropagation()">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="flex-1 min-w-0">
-          <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
+          <div class="flex items-center gap-2 flex-wrap mb-1.5">
+            <div id="detail-access-badge-container"></div>
+            <span id="detail-category" class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200"></span>
+          </div>
           <div class="flex items-start gap-2.5 mt-2">
             <div id="detail-category-icons" class="flex items-center gap-1.5 shrink-0 mt-1 select-none"></div>
             <div class="flex-1 min-w-0">
@@ -2698,8 +2701,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="/js/pdf-lib.min.js"></script>
   <script>if (typeof PDFLib === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.9/pdf-lib.min.js"><\/script>'); }</script>
-  <script src="/config.js?v=20260912_og_thumb"></script>
-  <script src="/authResetFlow.js?v=20260912_og_thumb"></script>
-  <script src="app.js?v=20260912_og_thumb"></script>
+  <script src="/config.js?v=20260919_access_toggle"></script>
+  <script src="/authResetFlow.js?v=20260919_access_toggle"></script>
+  <script src="app.js?v=20260919_access_toggle"></script>
 </body>
 </html>

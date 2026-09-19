@@ -1,4 +1,4 @@
-const CACHE_NAME = "kalejdoskop-v-20260912-og-thumb";
+const CACHE_NAME = "kalejdoskop-v-20260919-access-toggle";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",

@@ -1519,10 +1519,14 @@ function updateLibraryWithRealDriveFiles(files) {
 
 function isInternalArticle(article) {
   if (!article) return false;
+  if (article.isPublic === true || article.accessLevel === "PUBLIC" || article.accessLevel === "Otwarty" || article.accessLevel === "Dostęp Otwarty") return false;
   if (article.isInternal === true || article.SKN_INTERNAL === true) return true;
-  if (article.accessLevel === "MEMBERS" || article.accessLevel === "RESTRICTED") return true;
+  if (article.accessLevel === "MEMBERS" || article.accessLevel === "RESTRICTED" || article.accessLevel === "SKN" || article.accessLevel === "Materiał SKN" || article.accessLevel === "Dostęp SKN") return true;
 
   const meta = article.meta || article.data || {};
+  if (meta.isPublic === true || meta.accessLevel === "PUBLIC" || meta.accessLevel === "Otwarty") return false;
+  if (meta.isInternal === true || meta.SKN_INTERNAL === true || meta.accessLevel === "MEMBERS" || meta.accessLevel === "RESTRICTED" || meta.accessLevel === "SKN") return true;
+
   const raw = [
     article.category,
     article.categories,
@@ -1535,8 +1539,7 @@ function isInternalArticle(article) {
   return raw.includes("materiały własne") ||
          raw.includes("własne skn") ||
          raw.includes("repozytorium badawcze") ||
-         raw.includes("repozytorium skn") ||
-         raw.includes("08.");
+         raw.includes("repozytorium skn");
 }
 
 function filterAndRenderArticles() {
@@ -2399,73 +2402,115 @@ window.generateClinicalReport = generateClinicalReport;
 window.requestAiTranslation = requestAiTranslation;
 
 /**
- * Przełączanie poziomu dostępu publikacji (Dostęp Otwarty / Dostęp SKN) przez Administratora
+ * Optymistyczna aktualizacja lokalnego stanu i widoku dla poziomu dostępu
  */
-async function toggleArticleAccessLevel(articleId) {
-  if (AppState.currentRole !== "ADMIN") {
-    showToast("Wymagane uprawnienia Administratora.", "error");
-    return;
+function updateArticleAccessUI(articleId, newLevel) {
+  const isPublic = (newLevel === "Otwarty" || newLevel === "PUBLIC" || newLevel === "Dostęp Otwarty");
+  const accessLevelNormalized = isPublic ? "PUBLIC" : "RESTRICTED";
+
+  const updateObj = (art) => {
+    if (!art) return;
+    art.accessLevel = accessLevelNormalized;
+    art.isPublic = isPublic;
+    art.isInternal = !isPublic;
+    art.SKN_INTERNAL = !isPublic;
+    if (art.meta) {
+      art.meta.accessLevel = accessLevelNormalized;
+      art.meta.isPublic = isPublic;
+      art.meta.isInternal = !isPublic;
+      art.meta.SKN_INTERNAL = !isPublic;
+    }
+  };
+
+  const mainArt = AppState.articles.find((a) => a.id === articleId || a.fileIdOriginal === articleId);
+  if (mainArt) updateObj(mainArt);
+
+  const filteredArt = AppState.filteredArticles.find((a) => a.id === articleId || a.fileIdOriginal === articleId);
+  if (filteredArt && filteredArt !== mainArt) updateObj(filteredArt);
+
+  // Zapis do trwałego cache
+  saveArticlesToCache(AppState.articles);
+
+  // Przeładowanie widoku kart
+  filterAndRenderArticles();
+
+  // Jeśli otwarty jest modal szczegółów tej publikacji, odśwież modal
+  const detailModal = document.getElementById("detailModal");
+  const currentDetailId = document.getElementById("detail-id")?.innerText?.trim();
+  if (detailModal && !detailModal.classList.contains("hidden") && currentDetailId === articleId && typeof openArticleDetail === "function") {
+    openArticleDetail(articleId);
+  }
+}
+window.updateArticleAccessUI = updateArticleAccessUI;
+
+/**
+ * Dwukierunkowy przełącznik poziomu dostępu (Dostęp Otwarty <-> Materiał SKN)
+ */
+async function toggleAccessLevel(articleId, currentLevel, event) {
+  if (event && typeof event.stopPropagation === "function") {
+    event.stopPropagation();
   }
 
-  const article = AppState.articles.find((a) => a.id === articleId) || AppState.filteredArticles.find((a) => a.id === articleId);
+  const article = AppState.articles.find((a) => a.id === articleId || a.fileIdOriginal === articleId) ||
+                  AppState.filteredArticles.find((a) => a.id === articleId || a.fileIdOriginal === articleId);
   if (!article) return;
 
-  const currentIsPublic = Boolean(article.isPublic !== undefined ? article.isPublic : (article.accessLevel ? article.accessLevel === "PUBLIC" : true));
-  const newAccessLevel = currentIsPublic ? "RESTRICTED" : "PUBLIC";
-  const category = article.category || article.meta?.category || "Edukacja Seksualna";
+  // Ustal obecny poziom jeśli nie podano
+  if (!currentLevel) {
+    const isPublic = Boolean(article.isPublic !== undefined ? article.isPublic : (article.accessLevel ? article.accessLevel === "PUBLIC" : !isInternalArticle(article)));
+    currentLevel = isPublic ? "Otwarty" : "SKN";
+  }
 
-  showToast("Aktualizacja poziomu dostępu w toku...", "info");
+  // Naprzemienne dwukierunkowe przełączanie:
+  const newLevel = (currentLevel === "SKN" || currentLevel === "Materiał SKN" || currentLevel === "RESTRICTED" || currentLevel === "MEMBERS")
+    ? "Otwarty"
+    : "SKN";
+
+  const newAccessLevelGas = (newLevel === "Otwarty") ? "PUBLIC" : "RESTRICTED";
+
+  // 1. Optymistyczna aktualizacja lokalnego stanu i widoku
+  updateArticleAccessUI(articleId, newLevel);
+  showToast(`Zmieniono poziom dostępu na: ${newLevel === "SKN" ? "Materiał SKN" : "Dostęp Otwarty"}`, "info");
+
+  // 2. Wysłanie żądania zapisu do Google Apps Script
+  const payload = {
+    action: "updateAccessLevel",
+    articleId: article.id,
+    recordId: article.id,
+    accessLevel: newAccessLevelGas,
+    category: article.category || article.meta?.category || "Edukacja Seksualna",
+    adminPin: AppState.currentPin || "2026"
+  };
 
   try {
-    const payload = {
-      action: "updateArticleMeta",
-      recordId: article.id,
-      articleId: article.id,
-      accessLevel: newAccessLevel,
-      category: category,
-      adminPin: AppState.currentPin || "2026"
-    };
-
-    let res = null;
+    let response = null;
     if (AppState.isGasEnvironment) {
-      res = await new Promise((resolve, reject) => {
+      response = await new Promise((resolve, reject) => {
         google.script.run
           .withSuccessHandler(resolve)
           .withFailureHandler(reject)
-          .apiUpdateArticleMeta(payload);
+          .apiUpdateArticle(payload);
       });
     } else {
-      res = await callGoogleScript("updateArticleMeta", payload);
+      response = await callGoogleScript("updateAccessLevel", payload);
     }
 
-    if (res && (res.status === "success" || res.success)) {
-      article.accessLevel = newAccessLevel;
-      article.isPublic = (newAccessLevel === "PUBLIC");
-      if (article.meta) {
-        article.meta.accessLevel = newAccessLevel;
-        article.meta.isPublic = (newAccessLevel === "PUBLIC");
-      }
-      const mainArt = AppState.articles.find((a) => a.id === article.id);
-      if (mainArt && mainArt !== article) {
-        mainArt.accessLevel = newAccessLevel;
-        mainArt.isPublic = (newAccessLevel === "PUBLIC");
-        if (mainArt.meta) {
-          mainArt.meta.accessLevel = newAccessLevel;
-          mainArt.meta.isPublic = (newAccessLevel === "PUBLIC");
-        }
-      }
-
-      filterAndRenderArticles();
-      showToast(`Zmieniono poziom dostępu na: ${newAccessLevel === "PUBLIC" ? "Dostęp Otwarty" : "Dostęp SKN"}`, "success");
+    if (response && (response.success || response.status === "success" || response.updated)) {
+      showToast(`Pomyślnie zapisano w arkuszu: ${newLevel === "SKN" ? "Materiał SKN" : "Dostęp Otwarty"}`, "success");
     } else {
-      throw new Error(res?.message || res?.error || "Nie udało się zaktualizować poziomu dostępu.");
+      throw new Error(response?.message || response?.error || "Błąd zapisu statusu w arkuszu");
     }
   } catch (err) {
-    console.error("Błąd zmiany poziomu dostępu:", err);
-    showToast("Błąd aktualizacji dostępu: " + (err.message || err), "error");
+    console.error("Błąd zapisu poziomu dostępu w arkuszu:", err);
+    showToast("Błąd zapisu statusu w arkuszu – przywracanie poprzedniego stanu", "error");
+    // Rollback w razie błędu:
+    updateArticleAccessUI(articleId, currentLevel);
   }
 }
-window.toggleArticleAccessLevel = toggleArticleAccessLevel;
+window.toggleAccessLevel = toggleAccessLevel;
+window.toggleArticleAccessLevel = function(articleId, currentLevel, event) {
+  return toggleAccessLevel(articleId, currentLevel, event);
+};
 
 let currentModalSelectedCategories = new Set();
 let currentModalArticleId = null;
@@ -2847,18 +2892,10 @@ function renderArticleCards(articles) {
     const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
 
     let accessBadge = "";
-    if (isInternal) {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Materiał SKN</span></span>`;
-    } else if (isAdmin) {
-      if (isPublic) {
-        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp SKN (Tylko Członkowie)"><i class="fas fa-lock-open text-[9px]"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
-      } else {
-        accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleArticleAccessLevel('${art.id}')" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs shrink-0" title="Administrator: Kliknij, aby zmienić na: Dostęp Otwarty (Dla wszystkich)"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-60 ml-0.5"></i></button>`;
-      }
-    } else if (isPublic) {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-globe text-[9px]"></i> <span>Dostęp Otwarty</span></span>`;
+    if (isPublic) {
+      accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleAccessLevel('${art.id}', 'Otwarty', event)" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-900 border border-emerald-300 hover:border-emerald-400 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Materiał SKN"><i class="fas fa-lock-open text-[9px] text-emerald-600"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
     } else {
-      accessBadge = `<span class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-2xs shrink-0"><i class="fas fa-lock text-[9px]"></i> <span>Dostęp SKN</span></span>`;
+      accessBadge = `<button type="button" onclick="event.stopPropagation(); toggleAccessLevel('${art.id}', 'SKN', event)" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-300 hover:border-rose-400 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Dostęp Otwarty"><i class="fas fa-lock text-[9px] text-rose-600"></i> <span>Materiał SKN</span> <i class="fas fa-arrows-rotate text-[8px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
     }
 
     const displayTitlePL = cleanDisplayText(meta.titlePL || meta.polishTitle || art.titlePL || art.polishTitle || art.name || "Brak tytułu");
@@ -6762,7 +6799,17 @@ function openArticleDetail(articleId) {
   if (yearEl) yearEl.innerText = year;
 
   const isInternal = isInternalArticle(article);
+  const isPublic = Boolean(article.isPublic !== undefined ? article.isPublic : (article.accessLevel ? article.accessLevel === "PUBLIC" : (!isInternal && article.status !== "INTERNAL")));
   const isWatermarking = AppState.watermarkingIds && AppState.watermarkingIds.has(article.id);
+
+  const accessContainer = document.getElementById("detail-access-badge-container");
+  if (accessContainer) {
+    if (isPublic) {
+      accessContainer.innerHTML = `<button type="button" onclick="toggleAccessLevel('${article.id}', 'Otwarty', event)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-900 border border-emerald-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Materiał SKN"><i class="fas fa-lock-open text-[9px] text-emerald-600"></i> <span>Dostęp Otwarty</span> <i class="fas fa-arrows-rotate text-[8.5px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
+    } else {
+      accessContainer.innerHTML = `<button type="button" onclick="toggleAccessLevel('${article.id}', 'SKN', event)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs shrink-0 group/badge" title="Kliknij, aby przełączyć na: Dostęp Otwarty"><i class="fas fa-lock text-[9px] text-rose-600"></i> <span>Materiał SKN</span> <i class="fas fa-arrows-rotate text-[8.5px] opacity-40 group-hover/badge:opacity-100 group-hover/badge:rotate-180 transition-all ml-0.5"></i></button>`;
+    }
+  }
 
   const catEl = document.getElementById("detail-category");
   if (catEl) {

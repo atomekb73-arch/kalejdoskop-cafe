@@ -107,7 +107,7 @@ function doPost(e) {
       result = apiAskDocument(postData);
     } else if (action === "deleteArticle" || action === "trash" || action === "trash_article") {
       result = apiDeleteArticle(postData.id || postData.articleId || postData.fileId, postData.adminPin, postData.fileId || postData.drive_file_id);
-    } else if (action === "updateArticle" || action === "updateTitle" || action === "updateArticleMeta") {
+    } else if (action === "updateArticle" || action === "updateTitle" || action === "updateArticleMeta" || action === "updateAccessLevel" || action === "toggleAccessLevel") {
       result = apiUpdateArticle(postData);
     } else if (action === "saveTranslationPdf" || action === "uploadTranslationPdf") {
       result = apiSaveTranslationPdf(postData);
@@ -254,6 +254,15 @@ function apiUpdateArticle(postData) {
     throw new Error("Brak identyfikatora artykułu (articleId).");
   }
 
+  let accessLevel = postData.accessLevel || postData.level;
+  if (accessLevel) {
+    if (accessLevel === "Otwarty" || accessLevel === "Dostęp Otwarty") {
+      accessLevel = "PUBLIC";
+    } else if (accessLevel === "SKN" || accessLevel === "Materiał SKN" || accessLevel === "Dostęp SKN") {
+      accessLevel = "RESTRICTED";
+    }
+  }
+
   const updateRes = SheetService.updateArticle(articleId, {
     titlePL: postData.titlePL || postData.title || postData.titlePl || postData.polishTitle,
     titleOriginal: postData.titleOriginal || postData.titleEN || postData.titleEn || postData.originalTitle,
@@ -261,13 +270,14 @@ function apiUpdateArticle(postData) {
     categories: postData.categories || postData.updatedCategories || postData.category,
     tags: postData.tags || postData.keywords || postData.updatedTags,
     keywords: postData.keywords || postData.tags,
-    accessLevel: postData.accessLevel
+    accessLevel: accessLevel
   });
 
   return {
     status: "success",
     success: true,
     articleId: articleId,
+    accessLevel: accessLevel,
     ...updateRes
   };
 }
