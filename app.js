@@ -2893,7 +2893,7 @@ function renderArticleCards(articles) {
     const isWeb = art.type === "WEB" || art.isWeb === true || (Boolean(art.sourceUrl) && (!art.fileIdOriginal || art.fileIdOriginal === art.id || (typeof art.url === "string" && !art.url.includes("drive.google.com") && !art.url.startsWith("#"))));
     const currentAccessLevel = isPublic ? 'Otwarty' : 'SKN';
 
-    const accessBadge = `<button type="button" onclick="toggleAccessLevel('${art.id}', '${currentAccessLevel}', event)" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${currentAccessLevel === 'SKN' ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}" title="${currentAccessLevel === 'SKN' ? 'Kliknij, aby przełączyć na: Dostęp Otwarty' : 'Kliknij, aby przełączyć na: Materiał SKN'}">
+    const accessBadge = `<button type="button" onclick="toggleAccessLevel('${art.id}', '${currentAccessLevel}', event)" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer flex-shrink-0 ${currentAccessLevel === 'SKN' ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 hover:bg-emerald-100'}" title="${currentAccessLevel === 'SKN' ? 'Kliknij, aby przełączyć na: Dostęp Otwarty' : 'Kliknij, aby przełączyć na: Materiał SKN'}">
   <span>${currentAccessLevel === 'SKN' ? '🔒 Materiał SKN' : '🔓 Dostęp Otwarty'}</span>
 </button>`;
 
@@ -2905,6 +2905,16 @@ function renderArticleCards(articles) {
     const keywordsList = Array.isArray(meta.keywords) ? meta.keywords : (Array.isArray(meta.tags) ? meta.tags : (Array.isArray(art.keywords) ? art.keywords : (Array.isArray(art.tags) ? art.tags : [])));
 
     const artDepts = getArticleDepartments(art);
+    const primaryDept = artDepts[0] || "07. Edukacja, Zdrowie Publiczne & Profilaktyka";
+    const primaryDeptMeta = getDepartmentMeta(primaryDept);
+    const cleanPrimaryCategoryName = stripCategoryPrefix(primaryDept);
+    const primaryDeptIconSvg = getDepartmentIconSvg(primaryDept, "w-3 h-3 shrink-0", primaryDeptMeta ? primaryDeptMeta.colorText : "text-indigo-600");
+    const primaryBadgeColorClasses = primaryDeptMeta ? primaryDeptMeta.badgeClasses : "bg-emerald-50 text-emerald-700 border border-emerald-200/60";
+
+    const gridCategoryBadge = isAdmin
+      ? `<button type="button" onclick="event.stopPropagation(); openCategoryChangeModal('${art.id}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider ${primaryBadgeColorClasses} border transition cursor-pointer truncate min-w-0 max-w-[65%]" title="Administrator: Kliknij, aby zmienić działy publikacji">${primaryDeptIconSvg}<span class="truncate">${escapeHtml(cleanPrimaryCategoryName)}</span> <i class="fas fa-pen text-[8px] opacity-70 shrink-0 ml-0.5"></i></button>`
+      : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider ${primaryBadgeColorClasses} border truncate min-w-0 max-w-[65%]" title="${escapeHtml(primaryDept)}">${primaryDeptIconSvg}<span class="truncate">${escapeHtml(cleanPrimaryCategoryName)}</span></span>`;
+
     const categoryBadgeHtml = artDepts.map(dept => {
       const deptMeta = getDepartmentMeta(dept);
       const cleanCategoryName = stripCategoryPrefix(dept);
@@ -2999,15 +3009,13 @@ function renderArticleCards(articles) {
       card.className = "academic-card w-full flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-4 shadow-sm hover:shadow-md transition-all duration-200 select-text";
       card.innerHTML = `
         <div class="w-full flex-1">
-          <!-- 1. Górny pasek: Kategoria + Plakietka Dostępu/Źródła -->
-          <div class="flex items-center justify-between gap-1.5 mb-2">
-            <div class="flex flex-wrap items-center gap-1.5">
-              ${categoryBadgeHtml}
-              ${seminarBadge}
-              ${reviewsBadge}
-              ${webSourceBadge}
-              ${accessBadge}
-            </div>
+          <!-- Kontener etykiet: dokładnie 1 wiersz, zakaz łamania linii, bezpieczny bufor pr-3 -->
+          <div class="flex items-center gap-1.5 w-full overflow-hidden flex-nowrap pr-3 mb-2.5">
+            ${gridCategoryBadge}
+            ${accessBadge}
+            ${seminarBadge}
+            ${reviewsBadge}
+            ${webSourceBadge}
           </div>
 
           <!-- 2. Tytuł polski z mikro-ikonami kategorii -->
